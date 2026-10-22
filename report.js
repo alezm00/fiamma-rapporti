@@ -8,11 +8,18 @@ const MARGIN = 42;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 const BOTTOM = MARGIN + 18; // spazio per il piè di pagina
 const PAD = 10;
-const TITLE_H = 26;
+const TITLE_H = 24;
+const GAP = 12; // spazio tra i blocchi
 
 // dati dello strumento: in che ordine mostrarli e quali tralasciare nel PDF
 const DEVICE_ORDER = ['name', 'serial', 'partNumber', 'deviceIdentifier', 'firmwareVersion', 'softwareVersion', 'lastServiceDate'];
 const SKIP_DEVICE_KEYS = ['boardIndex', 'deviceTime', 'measCycle'];
+
+// "19:10:24 → 19:11:24  (1 min 00 s)": la durata passa nell'etichetta
+function phaseItem({ label, value }) {
+    const [range, duration] = String(value).split(/\s{2,}/);
+    return { label: duration ? `${label} ${duration}` : label, value: range };
+}
 
 // ---------------------------------------------------------------------------
 // Caricamento librerie e font
@@ -55,6 +62,9 @@ export function preloadPdfLibs() {
 
 const clean = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
 const oneLine = (s) => clean(String(s ?? '').replace(/[\r\n]+/g, ', '));
+const code = (s) => clean(s).replace(/\s+/g, '').toUpperCase(); // codice fiscale, targa: senza spazi, maiuscolo
+// testo su più righe (note): righe pulite, al massimo una riga vuota di seguito
+const multiline = (s) => String(s ?? '').replace(/\r\n?/g, '\n').split('\n').map(clean).join('\n').replace(/\n{3,}/g, '\n\n').trim();
 
 function formatInstallDate(v) {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || '');
@@ -64,11 +74,14 @@ function formatInstallDate(v) {
 export function normalizeCustomer(c = {}) {
     return {
         name: clean(c.name),
+        fiscalCode: code(c.fiscalCode),
         address: oneLine(c.address),
         phone: clean(c.phone),
         brand: clean(c.brand),
         serial: clean(c.serial),
+        plateCode: code(c.plateCode),
         installDate: formatInstallDate(c.installDate),
+        notes: multiline(c.notes),
     };
 }
 
@@ -159,7 +172,7 @@ export async function createReportPdf(report, customer = {}, now = new Date()) {
         return items.map(({ label, value }) => {
             const v = clean(value);
             const lines = v ? wrap(v, 10.5, cellW) : ['—'];
-            return { label, lines, empty: !v, h: 11 + lines.length * 13 + 6 };
+            return { label, lines, empty: !v, h: 10 + lines.length * 13 + 5 };
         });
     }
 
@@ -184,7 +197,7 @@ export async function createReportPdf(report, customer = {}, now = new Date()) {
             row.cells.forEach((cell, i) => {
                 const cx = x + PAD + i * row.cellW;
                 text(truncate(cell.label, 8, row.cellW - 8), cx, top, 8, { color: GREY });
-                cell.lines.forEach((l, j) => text(l, cx, top - 11 - j * 13, 10.5, { color: cell.empty ? GREY : INK }));
+                cell.lines.forEach((l, j) => text(l, cx, top - 10 - j * 13, 10.5, { color: cell.empty ? GREY : INK }));
             });
             top -= row.h;
         }
@@ -222,7 +235,7 @@ export async function createReportPdf(report, customer = {}, now = new Date()) {
     }
     y = Math.min(left, right) - 8;
     page.drawLine({ start: { x: MARGIN, y }, end: { x: rx, y }, thickness: 1.2, color: ACCENT });
-    y -= 16;
+    y -= 12;
 
     // --- cliente e caldaia ----------------------------------------------------
 
@@ -230,30 +243,34 @@ export async function createReportPdf(report, customer = {}, now = new Date()) {
     const halfW = (CONTENT_W - gap) / 2;
     const clientRows = layoutRows([
         { label: 'Nome e cognome', value: c.name },
+        { label: 'Codice fiscale', value: c.fiscalCode },
         { label: 'Indirizzo', value: c.address },
         { label: 'Telefono', value: c.phone },
     ], 1, halfW - PAD * 2);
     const boilerRows = layoutRows([
         { label: 'Marca', value: c.brand },
         { label: 'Matricola / codice caldaia', value: c.serial },
+        { label: 'Targa impianto', value: c.plateCode },
         { label: 'Data di installazione', value: c.installDate },
     ], 1, halfW - PAD * 2);
     const h1 = Math.max(boxHeight(clientRows), boxHeight(boilerRows));
     ensure(h1);
     drawBox('Cliente', clientRows, MARGIN, halfW, h1);
     drawBox('Caldaia', boilerRows, MARGIN + halfW + gap, halfW, h1);
-    y -= h1 + 14;
+    y -= h1 + GAP;
 
     // --- dati della prova -----------------------------------------------------
 
     const testItems = report.header.map((h) => ({ label: h.label, value: h.value }));
     const testRows = layoutRows(testItems, 3, CONTENT_W - PAD * 2);
-    if (report.note) testRows.push(...layoutRows([{ label: 'Note', value: report.note }], 1, CONTENT_W - PAD * 2));
+    const phases = report.sections.find((x) => x.title === 'Fasi della prova');
+    if (phases) testRows.push(...layoutRows(phases.items.map(phaseItem), 3, CONTENT_W - PAD * 2));
+    if (report.note) testRows.push(...layoutRows([{ label: 'Nota sulla prova', value: report.note }], 1, CONTENT_W - PAD * 2));
     if (testRows.length) {
         const h = boxHeight(testRows);
         ensure(h);
         drawBox('Dati prova', testRows, MARGIN, CONTENT_W, h);
-        y -= h + 14;
+        y -= h + GAP;
     }
 
     // --- risultati ------------------------------------------------------------
@@ -262,7 +279,7 @@ export async function createReportPdf(report, customer = {}, now = new Date()) {
     const unitW = 54;
     const valW = cols.length > 1 ? 74 : 120;
     const labelW = CONTENT_W - unitW - cols.length * valW;
-    const ROW_H = 23;
+    const ROW_H = 21;
     const HEAD_H = 19;
 
     function tableHead() {
@@ -299,45 +316,41 @@ export async function createReportPdf(report, customer = {}, now = new Date()) {
             y -= ROW_H;
             page.drawLine({ start: { x: MARGIN, y }, end: { x: rx, y }, thickness: 0.5, color: LINE });
         }
-        y -= 14;
+        y -= GAP;
     } else {
         const msg = report.errors.length ? report.errors.join(' ') : 'Il QR non contiene valori di misura.';
         text(msg, MARGIN, y, 11, { color: GREY });
         y -= 24;
     }
 
-    // --- fasi e strumento -----------------------------------------------------
+    // --- strumento -----------------------------------------------------
 
-    const LABEL_W = 110;
     for (const s of report.sections) {
-        const isPhases = s.title === 'Fasi della prova';
-        if (!isPhases && !/^Strumento/.test(s.title)) continue;
-        const items = s.items.filter((i) => !SKIP_DEVICE_KEYS.includes(i.key));
-        if (!isPhases) {
-            const rank = (k) => (DEVICE_ORDER.includes(k) ? DEVICE_ORDER.indexOf(k) : DEVICE_ORDER.length);
-            items.sort((a, b) => rank(a.key) - rank(b.key));
-            const rows = layoutRows(items.map((i) => ({ label: i.label, value: i.value })), 3, CONTENT_W - PAD * 2);
-            const h = boxHeight(rows);
-            ensure(h);
-            drawBox(s.title, rows, MARGIN, CONTENT_W, h);
-            y -= h + 14;
-            continue;
-        }
-        const laid = items.map((i) => {
-            const lines = wrap(clean(i.value) || '—', 10, CONTENT_W - PAD * 2 - LABEL_W);
-            return { label: i.label, lines, h: Math.max(16, lines.length * 13 + 3) };
-        });
-        const h = TITLE_H + laid.reduce((n, i) => n + i.h, 0) + 4;
+        if (!/^Strumento/.test(s.title)) continue;
+        const rank = (k) => (DEVICE_ORDER.includes(k) ? DEVICE_ORDER.indexOf(k) : DEVICE_ORDER.length);
+        const items = s.items.filter((i) => !SKIP_DEVICE_KEYS.includes(i.key)).sort((a, b) => rank(a.key) - rank(b.key));
+        const rows = layoutRows(items.map((i) => ({ label: i.label, value: i.value })), 3, CONTENT_W - PAD * 2);
+        const h = boxHeight(rows);
         ensure(h);
-        page.drawRectangle({ x: MARGIN, y: y - h, width: CONTENT_W, height: h, borderColor: LINE, borderWidth: 0.8 });
-        text(s.title.toUpperCase(), MARGIN + PAD, y - 9, 8.5, { f: fontB, color: ACCENT });
-        let top = y - TITLE_H;
-        for (const it of laid) {
-            text(it.label, MARGIN + PAD, top, 9, { color: GREY });
-            it.lines.forEach((l, j) => text(l, MARGIN + PAD + LABEL_W, top - j * 13, 10));
-            top -= it.h;
+        drawBox(s.title, rows, MARGIN, CONTENT_W, h);
+        y -= h + GAP;
+    }
+
+    // --- note del tecnico: il riquadro continua sulla pagina dopo se serve ----
+
+    if (c.notes) {
+        const lines = c.notes.split('\n').flatMap((par) => wrap(par || ' ', 10.5, CONTENT_W - PAD * 2));
+        for (let i = 0, first = true; i < lines.length; first = false) {
+            ensure(TITLE_H + 13 * Math.min(3, lines.length - i) + 5);
+            const fit = Math.max(1, Math.floor((y - BOTTOM - TITLE_H - 5) / 13));
+            const chunk = lines.slice(i, i + fit);
+            const h = TITLE_H + chunk.length * 13 + 5;
+            page.drawRectangle({ x: MARGIN, y: y - h, width: CONTENT_W, height: h, borderColor: LINE, borderWidth: 0.8 });
+            text(first ? 'NOTE' : 'NOTE (SEGUE)', MARGIN + PAD, y - 9, 8.5, { f: fontB, color: ACCENT });
+            chunk.forEach((l, j) => text(l, MARGIN + PAD, y - TITLE_H - j * 13, 10.5));
+            y -= h + GAP;
+            i += chunk.length;
         }
-        y -= h + 14;
     }
 
     // --- piè di pagina ----------------------------------------------------------

@@ -7,7 +7,7 @@ Web app (PWA) per Android che legge il QR code mostrato dall'analizzatore di com
 - Il formato è letto in modo generico: analisi fumi (singola o media UNI 10389-1), tiraggio, pressione, prova di tenuta… Ogni canale viene mostrato con etichetta in italiano, valore e unità; i dati non riconosciuti finiscono in "Altri dati" e nel JSON grezzo.
 - Lo schermo resta acceso mentre guardi il risultato.
 - Le ultime 20 scansioni restano salvate sul telefono (solo in locale).
-- **Report PDF**: dal risultato, "Crea report PDF" apre il modulo con i dati del cliente (nome e cognome, indirizzo, telefono, marca e matricola/codice della caldaia, data di installazione). Il PDF A4 contiene cliente, caldaia, dati e risultati della prova e si può condividere (WhatsApp, email…) oppure salvare. I dati del cliente restano nella scansione salvata sul telefono.
+- **Report PDF**: dal risultato, "Crea report PDF" apre il modulo con i dati del cliente (nome e cognome, codice fiscale, indirizzo, telefono), della caldaia (marca, matricola/codice, targa impianto, data di installazione) e un campo note libero. Il PDF A4 contiene cliente, caldaia, dati e risultati della prova e si può condividere (WhatsApp, email…) oppure salvare. I dati del cliente restano nella scansione salvata sul telefono.
 - **Indirizzo dalla posizione**: "Usa la mia posizione" legge il GPS e ricava l'indirizzo da OpenStreetMap ([Nominatim](https://nominatim.org/release-docs/latest/api/Reverse/)); serve internet e vengono inviate solo le coordinate. Il PDF invece si crea anche offline.
 - "Da foto" legge il QR da una foto, utile se il QR è molto denso o ci sono riflessi sul display.
 

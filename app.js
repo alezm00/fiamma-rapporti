@@ -476,7 +476,10 @@ function renderReport(r, entry) {
 let currentReport = null;
 let currentEntry = null;
 
-const FIELDS = { name: 'c-name', address: 'c-address', phone: 'c-phone', brand: 'c-brand', serial: 'c-serial', installDate: 'c-date' };
+const FIELDS = {
+    name: 'c-name', fiscalCode: 'c-cf', address: 'c-address', phone: 'c-phone',
+    brand: 'c-brand', serial: 'c-serial', plateCode: 'c-plate', installDate: 'c-date', notes: 'c-notes',
+};
 
 function readCustomer() {
     return Object.fromEntries(Object.entries(FIELDS).map(([key, id]) => [key, $(id).value]));

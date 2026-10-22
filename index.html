@@ -154,6 +154,7 @@
             transition: border-color 0.3s;
         }
         textarea { resize: vertical; min-height: 4.2em; }
+        #c-cf, #c-plate { text-transform: uppercase; }
         input[type="date"] { color-scheme: dark; min-height: 54px; }
         input:focus, textarea:focus { border-color: #007bff; outline: none; }
         .small { font-size: .8rem; margin: 1rem 0 0; }
@@ -243,6 +244,9 @@
             <label class="field"><span>Nome e cognome</span>
                 <input id="c-name" type="text" autocomplete="off" autocapitalize="words" enterkeyhint="next">
             </label>
+            <label class="field"><span>Codice fiscale</span>
+                <input id="c-cf" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
+            </label>
             <div class="field">
                 <label for="c-address">Indirizzo</label>
                 <textarea id="c-address" rows="2" autocomplete="off" autocapitalize="words"></textarea>
@@ -261,8 +265,14 @@
             <label class="field"><span>Matricola / codice caldaia</span>
                 <input id="c-serial" type="text" autocomplete="off" autocapitalize="characters">
             </label>
+            <label class="field"><span>Targa impianto</span>
+                <input id="c-plate" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
+            </label>
             <label class="field"><span>Data di installazione</span>
                 <input id="c-date" type="date">
+            </label>
+            <label class="field"><span>Note</span>
+                <textarea id="c-notes" rows="4" autocomplete="off" autocapitalize="sentences" placeholder="Interventi eseguiti, anomalie, materiale…"></textarea>
             </label>
         </div>
         <p class="muted small">I dati del cliente restano solo su questo telefono, insieme alla scansione salvata. L'indirizzo dalla posizione usa OpenStreetMap e richiede internet: invia solo le coordinate.</p>
