@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" hidden>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -9,6 +9,7 @@
     <meta name="bingbot" content="noindex, nofollow">
 
     <meta name="theme-color" content="#121212">
+    <meta name="color-scheme" content="dark">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,345 +21,181 @@
     <link rel="apple-touch-icon" href="img/icon-192.png">
 
     <title>Testo QR</title>
-    <style>
-        /* Stili per il tema scuro (come Ricerca_targhe) */
-        * { box-sizing: border-box; }
-        html { -webkit-text-size-adjust: 100%; }
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
-            background-color: #121212;
-            color: #e0e0e0;
-            -webkit-tap-highlight-color: transparent;
-        }
-        [hidden] { display: none !important; }
-        .view { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
-        .container {
-            background: #1e1e1e;
-            padding: 1.25rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 1px solid #333;
-        }
-        h1 { font-size: 1.1rem; color: #fff; margin: 0; letter-spacing: .02em; }
-        h2 { color: #ffffff; margin: 0 0 0.5rem; font-size: 1.3rem; }
-        p { color: #b0b0b0; margin: 0 0 1rem; font-size: 0.9rem; }
-        .muted { color: #9e9e9e; font-size: .85rem; }
 
-        button, .button {
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            width: 100%;
-            padding: 14px;
-            background-color: #2a2a2a;
-            color: white;
-            border: 1px solid #3a3a3a;
-            border-radius: 8px;
-            cursor: pointer;
-            font: inherit;
-            font-size: 1rem;
-            font-weight: bold;
-            transition: background 0.3s, transform 0.1s;
-        }
-        button:active, .button:active { transform: scale(0.98); }
-        button:disabled { opacity: .6; cursor: default; }
-        .primary { background-color: #007bff; border-color: #007bff; }
-        .primary:hover { background-color: #0056b3; }
-        .big { padding: 20px; font-size: 1.15rem; }
-        .stack { display: flex; flex-direction: column; gap: 10px; }
-        .link { background: none; border: none; width: auto; padding: 4px; color: #4dabf5; font-weight: normal; font-size: .9rem; }
-        .icon { width: 22px; height: 22px; flex: none; }
-
-        .msg { padding: 1rem; border-radius: 8px; line-height: 1.45; font-size: .95rem; }
-        .success { background-color: #1b3320; color: #81c784; border: 1px solid #2e7d32; }
-        .error { background-color: #331b1b; color: #e57373; border: 1px solid #c62828; }
-        .warn { background-color: #332b1b; color: #ffb74d; border: 1px solid #b26a00; }
-        .info { background-color: #1b2733; color: #90caf9; border: 1px solid #1e5a8c; }
-
-        /* Storico */
-        .row-head { display: flex; justify-content: space-between; align-items: baseline; }
-        .row-head.center { align-items: center; }
-        .icon-btn { width: 44px; height: 44px; padding: 0; background: transparent; border: none; color: #9e9e9e; }
-        .actions .big { padding: 18px 10px; font-size: 1.05rem; white-space: nowrap; }
-        .actions #btn-pdf-email { flex: 1.35; }
-        .actions .icon-only { width: 64px; flex: none; padding: 0; }
-        #mail-info { overflow-wrap: anywhere; }
-        h3 { color: #fff; font-size: 1rem; margin: 1.2rem 0 .2rem; }
-        .radio { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; color: #e0e0e0; font-size: .95rem; line-height: 1.4; }
-        .radio input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: #007bff; }
-        .radio small { display: block; color: #9e9e9e; font-size: .8rem; margin-top: 2px; }
-        #history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-        #history li { display: flex; gap: 6px; }
-        .hitem { flex: 1; min-width: 0; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; font-weight: normal; background: #252525; }
-        .h-title { font-weight: bold; color: #fff; }
-        .h-meta { color: #9e9e9e; font-size: .85rem; }
-        .h-vals { color: #00ffcc; font-size: .9rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-        .hdel { width: 48px; flex: none; background: #252525; color: #e57373; font-size: 1.1rem; }
-        .footer { text-align: center; }
-
-        /* Scanner */
-        #view-scan { position: fixed; inset: 0; max-width: none; background: #000; z-index: 10; }
-        #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-        .frame {
-            position: absolute; left: 50%; top: 45%; width: min(80vw, 60vh); aspect-ratio: 1;
-            transform: translate(-50%, -50%);
-            border: 3px solid #00ffcc; border-radius: 16px;
-            box-shadow: 0 0 0 100vmax rgba(0,0,0,.45);
-        }
-        #scan-status {
-            position: absolute; left: 16px; right: 16px; top: calc(16px + env(safe-area-inset-top));
-            text-align: center; color: #fff; font-weight: bold; background: rgba(0,0,0,.55); padding: 10px; border-radius: 8px;
-        }
-        .scan-actions { position: absolute; left: 16px; right: 16px; bottom: calc(24px + env(safe-area-inset-bottom)); display: flex; gap: 10px; }
-        .scan-actions button { background: rgba(30,30,30,.85); }
-        #btn-torch.on { background: #ffd54f; color: #121212; }
-
-        /* Risultato */
-        .r-head h2 { font-size: 1.35rem; }
-        .r-meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 10px 0 0; }
-        .r-meta dt { color: #9e9e9e; }
-        .r-meta dd { margin: 0; color: #fff; font-weight: bold; }
-        .note { margin-top: 10px; color: #ffd54f; }
-
-        .vtable { display: grid; grid-template-columns: 1fr auto auto; }
-        .vtable.multi { grid-template-columns: repeat(var(--cols, 1), 1fr) auto; }
-        .vhead { display: contents; }
-        .vhead span { color: #9e9e9e; font-size: .8rem; text-align: right; padding: 4px 0 0 8px; }
-        .vrow { display: contents; }
-        .vrow > * { display: flex; flex-direction: column; justify-content: center; padding: 12px 0; border-bottom: 1px solid #2c2c2c; }
-        .vrow:last-child > * { border-bottom: none; }
-        .vlabel { min-width: 0; }
-        .vtable.multi .vlabel { grid-column: 1 / -1; flex-direction: row; justify-content: flex-start; align-items: baseline; gap: 8px; padding-bottom: 0; border-bottom: none; }
-        .vcode { font-weight: bold; color: #fff; font-size: 1.2rem; }
-        .vname { color: #9e9e9e; font-size: .8rem; }
-        .vnum { align-items: flex-end; padding-left: 12px !important; font-size: 2rem; font-weight: bold; color: #00ffcc; font-variant-numeric: tabular-nums; white-space: nowrap; }
-        .vtable.multi .vnum { font-size: 1.45rem; padding-left: 8px !important; }
-        .vunit { color: #b0b0b0; padding-left: 6px !important; min-width: 2.6em; font-size: .95rem; }
-
-        details.container { padding: 0; }
-        details summary { padding: 1rem 1.25rem; font-weight: bold; color: #fff; cursor: pointer; list-style: none; }
-        details summary::-webkit-details-marker { display: none; }
-        details summary::after { content: '▾'; float: right; color: #9e9e9e; }
-        details[open] summary::after { content: '▴'; }
-        /* etichetta sopra, valore sotto a tutta larghezza: i testi lunghi vanno a capo */
-        details dl { margin: 0; padding: 0 1.25rem .5rem; }
-        details dt { color: #9e9e9e; font-size: .8rem; padding-top: 10px; border-top: 1px solid #2c2c2c; }
-        details dt:first-child { border-top: none; padding-top: 0; }
-        details dd { margin: 2px 0 10px; color: #e0e0e0; font-size: 1.05rem; overflow-wrap: anywhere; }
-        details pre { margin: 0; padding: 0 1.25rem 1.25rem; font-size: .75rem; white-space: pre-wrap; overflow-wrap: anywhere; color: #b0b0b0; }
-        .actions { display: flex; gap: 10px; }
-        .outline { background: transparent; border: 2px solid #007bff; }
-
-        /* Report PDF: modulo dati cliente */
-        .form { display: flex; flex-direction: column; gap: 14px; margin-top: 1rem; }
-        .field { display: flex; flex-direction: column; gap: 6px; }
-        .field > span, .field > label { color: #9e9e9e; font-size: .85rem; }
-        input[type="text"], input[type="tel"], input[type="date"], input[type="email"], textarea {
-            width: 100%;
-            padding: 14px;
-            border: 2px solid #333;
-            border-radius: 8px;
-            background-color: #252525;
-            color: #fff;
-            font: inherit;
-            font-size: 1.05rem;
-            transition: border-color 0.3s;
-        }
-        textarea { resize: vertical; min-height: 4.2em; }
-        #c-cf, #c-plate { text-transform: uppercase; }
-        input[type="date"] { color-scheme: dark; min-height: 54px; }
-        input:focus, textarea:focus { border-color: #007bff; outline: none; }
-        .small { font-size: .8rem; margin: 1rem 0 0; }
-        .hint { padding: 8px 12px; font-size: .85rem; line-height: 1.4; }
-
-        /* Foto del report */
-        .photo-actions { display: flex; gap: 10px; }
-        .photo-actions .button { padding: 12px 8px; font-size: .95rem; }
-        .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .photo-grid:empty { display: none; }
-        .photo { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #252525; border: 1px solid #333; }
-        .photo img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer; }
-        .photo .photo-del { position: absolute; top: 4px; right: 4px; width: 32px; height: 32px; padding: 0; border-radius: 50%; background: rgba(0,0,0,.7); border: none; font-size: 1rem; }
-        #photo-view { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.92); display: flex; align-items: center; justify-content: center; padding: 12px; }
-        #photo-view img { max-width: 100%; max-height: 100%; object-fit: contain; }
-
-        .toast {
-            position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%);
-            background: #1b3320; color: #81c784; border: 1px solid #2e7d32; padding: 10px 18px; border-radius: 8px; z-index: 20;
-        }
-    </style>
+    <!-- Stile: Tailwind (build "browser" in vendor/, avviato da load-tailwind.js). Tema e componenti sono in css/tailwind.css -->
+    <script src="css/load-tailwind.js"></script>
 </head>
-<body>
+<body class="bg-page p-4 pb-[calc(24px+env(safe-area-inset-bottom))] font-sans leading-[normal] text-ink [-webkit-tap-highlight-color:transparent]">
 
-<main id="view-home" class="view">
-    <div class="container">
-        <div class="row-head center">
-            <h1>Testo QR</h1>
-            <button id="btn-settings" class="icon-btn" aria-label="Impostazioni"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+<main id="view-home" class="mx-auto flex max-w-[640px] flex-col gap-4">
+    <div class="card">
+        <div class="flex items-center justify-between">
+            <h1 class="text-[1.1rem] font-bold tracking-[.02em] text-white">Testo QR</h1>
+            <button id="btn-settings" class="grid size-11 cursor-pointer place-items-center text-muted" aria-label="Impostazioni"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
         </div>
-        <p style="margin-top: .5rem">Inquadra il QR code mostrato dall'analizzatore Testo 330 per vedere i risultati della prova.</p>
-        <div class="stack">
-            <button id="btn-scan" class="primary big">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg>
+        <p class="mt-2 mb-4 text-[.9rem] text-soft">Inquadra il QR code mostrato dall'analizzatore Testo 330 per vedere i risultati della prova.</p>
+        <div class="flex flex-col gap-2.5">
+            <button id="btn-scan" class="btn border-brand bg-brand hover:bg-brand-dark p-5 text-[1.15rem]">
+                <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg>
                 Scansiona QR
             </button>
-            <label class="button">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <label class="btn">
+                <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 Da foto
                 <input type="file" id="in-photo" accept="image/*" hidden>
             </label>
         </div>
-        <div id="home-msg" class="msg" style="margin-top: 1rem" hidden></div>
+        <div id="home-msg" hidden></div>
     </div>
 
-    <div class="container">
-        <div class="row-head">
-            <h2>Ultime scansioni</h2>
-            <button id="btn-clear" class="link" hidden>Cancella tutto</button>
+    <div class="card">
+        <div class="flex items-baseline justify-between">
+            <h2 class="mb-2 text-[1.3rem] font-bold text-white">Ultime scansioni</h2>
+            <button id="btn-clear" class="cursor-pointer p-1 text-[.9rem] text-link" hidden>Cancella tutto</button>
         </div>
-        <ul id="history"></ul>
-        <p id="history-empty" class="muted" style="margin: 0">Nessuna scansione salvata.</p>
+        <ul id="history" class="flex flex-col gap-2"></ul>
+        <p id="history-empty" class="text-[.85rem] text-muted">Nessuna scansione salvata.</p>
     </div>
 
-    <div class="footer">
-        <label class="link">Importa file (.gz / .json)<input type="file" id="in-file" accept=".gz,.json,.tjf,application/json,application/gzip" hidden></label>
+    <div class="text-center">
+        <label class="cursor-pointer p-1 text-[.9rem] text-link">Importa file (.gz / .json)<input type="file" id="in-file" accept=".gz,.json,.tjf,application/json,application/gzip" hidden></label>
     </div>
 </main>
 
-<section id="view-scan" class="view" hidden>
-    <video id="video" playsinline muted></video>
-    <div class="frame"></div>
-    <div id="scan-status">Inquadra il QR code</div>
-    <div class="scan-actions">
-        <button id="btn-torch" hidden>Torcia</button>
-        <button id="btn-cancel">Annulla</button>
+<section id="view-scan" class="fixed inset-0 z-10 bg-black" hidden>
+    <video id="video" class="absolute inset-0 size-full object-cover" playsinline muted></video>
+    <div class="absolute top-[45%] left-1/2 aspect-square w-[min(80vw,60vh)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border-[3px] border-accent shadow-[0_0_0_100vmax_rgba(0,0,0,.45)]"></div>
+    <div id="scan-status" class="absolute inset-x-4 top-[calc(16px+env(safe-area-inset-top))] rounded-lg bg-black/55 p-2.5 text-center font-bold text-white">Inquadra il QR code</div>
+    <div class="absolute inset-x-4 bottom-[calc(24px+env(safe-area-inset-bottom))] flex gap-2.5">
+        <button id="btn-torch" class="btn bg-[rgba(30,30,30,.85)] aria-pressed:bg-note aria-pressed:text-page" aria-pressed="false" hidden>Torcia</button>
+        <button id="btn-cancel" class="btn bg-[rgba(30,30,30,.85)]">Annulla</button>
     </div>
 </section>
 
-<main id="view-result" class="view" hidden>
-    <div class="container r-head">
-        <h2 id="r-title"></h2>
-        <div id="r-date" class="muted"></div>
-        <dl id="r-header" class="r-meta"></dl>
-        <div id="r-note" class="note" hidden></div>
+<main id="view-result" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
+    <div class="card">
+        <h2 id="r-title" class="mb-2 text-[1.35rem] font-bold text-white"></h2>
+        <div id="r-date" class="text-[.85rem] text-muted"></div>
+        <dl id="r-header" class="mt-2.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1"></dl>
+        <div id="r-note" class="mt-2.5 text-note" hidden></div>
     </div>
-    <div id="r-errors" class="msg error" hidden></div>
-    <div id="r-values" class="container">
-        <div id="r-table" class="vtable"></div>
+    <div id="r-errors" class="rounded-lg border border-err-edge bg-err-bg p-4 text-[.95rem] leading-[1.45] text-err-fg" hidden></div>
+    <div id="r-values" class="card">
+        <div id="r-table"></div>
     </div>
-    <div id="r-sections" class="stack"></div>
-    <details class="container">
-        <summary>Dati grezzi (JSON)</summary>
-        <pre id="r-json"></pre>
+    <div id="r-sections" class="flex flex-col gap-2.5"></div>
+    <details class="card group p-0">
+        <summary class="cursor-pointer list-none px-5 py-4 font-bold text-white after:float-right after:text-muted after:content-['▾'] group-open:after:content-['▴'] [&::-webkit-details-marker]:hidden">Dati grezzi (JSON)</summary>
+        <pre id="r-json" class="px-5 pb-5 text-[.75rem] whitespace-pre-wrap text-soft wrap-anywhere"></pre>
     </details>
-    <button id="btn-report" class="outline">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
+    <button id="btn-report" class="btn border-2 border-brand bg-transparent">
+        <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
         Crea report PDF
     </button>
-    <div class="actions">
-        <button id="btn-copy">Copia testo</button>
-        <button id="btn-home">Storico</button>
+    <div class="flex gap-2.5">
+        <button id="btn-copy" class="btn">Copia testo</button>
+        <button id="btn-home" class="btn">Storico</button>
     </div>
-    <button id="btn-again" class="primary big">Nuova scansione</button>
+    <button id="btn-again" class="btn border-brand bg-brand hover:bg-brand-dark p-5 text-[1.15rem]">Nuova scansione</button>
 </main>
 
-<main id="view-report" class="view" hidden>
-    <div class="container">
-        <h2>Report PDF</h2>
-        <p id="rp-summary" style="margin: 0"></p>
-        <div class="form">
-            <label class="field"><span>Nome e cognome</span>
-                <input id="c-name" type="text" autocomplete="off" autocapitalize="words" enterkeyhint="next">
+<main id="view-report" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
+    <div class="card">
+        <h2 class="mb-2 text-[1.3rem] font-bold text-white">Report PDF</h2>
+        <p id="rp-summary" class="text-[.9rem] text-soft"></p>
+        <div class="mt-4 flex flex-col gap-3.5">
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Nome e cognome</span>
+                <input id="c-name" class="input" type="text" autocomplete="off" autocapitalize="words" enterkeyhint="next">
             </label>
-            <label class="field"><span>Codice fiscale</span>
-                <input id="c-cf" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
-                <div id="cf-hint" class="msg warn hint" hidden></div>
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Codice fiscale</span>
+                <input id="c-cf" class="input uppercase" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
+                <div id="cf-hint" class="rounded-lg border border-warn-edge bg-warn-bg px-3 py-2 text-[.85rem] leading-[1.4] text-warn-fg" hidden></div>
             </label>
-            <div class="field">
-                <label for="c-address">Indirizzo</label>
-                <textarea id="c-address" rows="2" autocomplete="off" autocapitalize="words"></textarea>
-                <button type="button" id="btn-geo">
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <div class="flex flex-col gap-1.5">
+                <label for="c-address" class="text-[.85rem] text-muted">Indirizzo</label>
+                <textarea id="c-address" class="input min-h-[4.2em] resize-y" rows="2" autocomplete="off" autocapitalize="words"></textarea>
+                <button type="button" id="btn-geo" class="btn">
+                    <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     Usa la mia posizione
                 </button>
-                <div id="geo-msg" class="msg" hidden></div>
+                <div id="geo-msg" hidden></div>
             </div>
-            <label class="field"><span>Telefono</span>
-                <input id="c-phone" type="tel" inputmode="tel" autocomplete="off">
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Telefono</span>
+                <input id="c-phone" class="input" type="tel" inputmode="tel" autocomplete="off">
             </label>
-            <label class="field"><span>Marca caldaia</span>
-                <input id="c-brand" type="text" autocomplete="off" autocapitalize="words">
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Marca caldaia</span>
+                <input id="c-brand" class="input" type="text" autocomplete="off" autocapitalize="words">
             </label>
-            <label class="field"><span>Matricola / codice caldaia</span>
-                <input id="c-serial" type="text" autocomplete="off" autocapitalize="characters">
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Matricola / codice caldaia</span>
+                <input id="c-serial" class="input" type="text" autocomplete="off" autocapitalize="characters">
             </label>
-            <label class="field"><span>Targa impianto</span>
-                <input id="c-plate" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Targa impianto</span>
+                <input id="c-plate" class="input uppercase" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
             </label>
-            <label class="field"><span>Data di installazione</span>
-                <input id="c-date" type="date">
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Data di installazione</span>
+                <input id="c-date" class="input min-h-[54px] [color-scheme:dark]" type="date">
             </label>
-            <label class="field"><span>Note</span>
-                <textarea id="c-notes" rows="4" autocomplete="off" autocapitalize="sentences" placeholder="Interventi eseguiti, anomalie, materiale…"></textarea>
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Note</span>
+                <textarea id="c-notes" class="input min-h-[4.2em] resize-y" rows="4" autocomplete="off" autocapitalize="sentences" placeholder="Interventi eseguiti, anomalie, materiale…"></textarea>
             </label>
-            <div class="field">
-                <span>Foto <span id="photo-count"></span></span>
-                <div class="photo-actions">
-                    <label class="button">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <div class="flex flex-col gap-1.5">
+                <span class="text-[.85rem] text-muted">Foto <span id="photo-count"></span></span>
+                <div class="flex gap-2.5">
+                    <label class="btn px-2 py-3 text-[.95rem]">
+                        <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                         Scatta foto
                         <input type="file" id="in-shoot" accept="image/*" capture="environment" hidden>
                     </label>
-                    <label class="button">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    <label class="btn px-2 py-3 text-[.95rem]">
+                        <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                         Dalla galleria
                         <input type="file" id="in-gallery" accept="image/*" multiple hidden>
                     </label>
                 </div>
-                <div id="photo-grid" class="photo-grid"></div>
-                <div id="photo-msg" class="msg" hidden></div>
+                <div id="photo-grid" class="grid grid-cols-3 gap-2 empty:hidden"></div>
+                <div id="photo-msg" hidden></div>
             </div>
         </div>
-        <p class="muted small">I dati del cliente e le foto restano solo su questo telefono, insieme alla scansione salvata. L'indirizzo dalla posizione usa OpenStreetMap e richiede internet: invia solo le coordinate.</p>
+        <p class="mt-4 text-[.8rem] text-muted">I dati del cliente e le foto restano solo su questo telefono, insieme alla scansione salvata. L'indirizzo dalla posizione usa OpenStreetMap e richiede internet: invia solo le coordinate.</p>
     </div>
-    <div id="report-msg" class="msg" hidden></div>
-    <div class="actions">
-        <button id="btn-pdf-email" class="primary big"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg> Invia email</button>
-        <button id="btn-pdf-save" class="big">Salva PDF</button>
-        <button id="btn-pdf-share" class="big icon-only" aria-label="Condividi PDF"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
+    <div id="report-msg" hidden></div>
+    <div class="flex gap-2.5">
+        <button id="btn-pdf-email" class="btn flex-[1.35] border-brand bg-brand hover:bg-brand-dark px-2.5 py-[18px] text-[1.05rem] whitespace-nowrap"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg> Invia email</button>
+        <button id="btn-pdf-save" class="btn flex-1 px-2.5 py-[18px] text-[1.05rem] whitespace-nowrap">Salva PDF</button>
+        <button id="btn-pdf-share" class="btn w-16 flex-none p-0" aria-label="Condividi PDF"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
     </div>
-    <div id="mail-info" class="muted small"></div>
-    <button id="btn-report-back">Indietro</button>
+    <div id="mail-info" class="mt-4 text-[.8rem] text-muted wrap-anywhere"></div>
+    <button id="btn-report-back" class="btn">Indietro</button>
 </main>
 
-<main id="view-settings" class="view" hidden>
-    <div class="container">
-        <h2>Impostazioni</h2>
-        <h3>Email</h3>
-        <label class="field"><span>Destinatario</span>
-            <input id="s-email" type="email" inputmode="email" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ufficio@esempio.it">
-            <div id="s-email-hint" class="msg warn hint" hidden></div>
+<main id="view-settings" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
+    <div class="card">
+        <h2 class="mb-2 text-[1.3rem] font-bold text-white">Impostazioni</h2>
+        <h3 class="mt-[1.2rem] mb-[.2rem] text-[1rem] font-bold text-white">Email</h3>
+        <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Destinatario</span>
+            <input id="s-email" class="input" type="email" inputmode="email" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ufficio@esempio.it">
+            <div id="s-email-hint" class="rounded-lg border border-warn-edge bg-warn-bg px-3 py-2 text-[.85rem] leading-[1.4] text-warn-fg" hidden></div>
         </label>
-        <p class="muted small" style="margin: .6rem 0 0">Più indirizzi si separano con una virgola. L'oggetto è creato in automatico: «Rapporto di prova - Cliente - targa - data».</p>
-        <div class="field" style="margin-top: .8rem"><span>Il tasto "Invia email"</span>
-            <label class="radio"><input type="radio" name="s-method" value="share">
-                <span>Apre il menu di Android: scegli Gmail e la mail si apre con il PDF già allegato, oggetto e testo pronti.<small>Il destinatario viene copiato negli appunti: toccalo sopra la tastiera nel campo "A".</small></span></label>
-            <label class="radio"><input type="radio" name="s-method" value="mailto">
-                <span>Apre subito Gmail con destinatario, oggetto e testo già compilati.<small>Il PDF si salva nei download e va allegato con la graffetta.</small></span></label>
+        <p class="mt-[.6rem] text-[.8rem] text-muted">Più indirizzi si separano con una virgola. L'oggetto è creato in automatico: «Rapporto di prova - Cliente - targa - data».</p>
+        <div class="mt-[.8rem] flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Il tasto "Invia email"</span>
+            <label class="flex items-start gap-3 py-2 text-[.85rem] leading-[1.4] text-muted"><input type="radio" name="s-method" value="share" class="mt-0.5 size-5 shrink-0 accent-brand">
+                <span>Apre il menu di Android: scegli Gmail e la mail si apre con il PDF già allegato, oggetto e testo pronti.<small class="mt-0.5 block text-[.8rem] text-muted">Il destinatario viene copiato negli appunti: toccalo sopra la tastiera nel campo "A".</small></span></label>
+            <label class="flex items-start gap-3 py-2 text-[.85rem] leading-[1.4] text-muted"><input type="radio" name="s-method" value="mailto" class="mt-0.5 size-5 shrink-0 accent-brand">
+                <span>Apre subito Gmail con destinatario, oggetto e testo già compilati.<small class="mt-0.5 block text-[.8rem] text-muted">Il PDF si salva nei download e va allegato con la graffetta.</small></span></label>
         </div>
     </div>
-    <div class="container">
-        <h3 style="margin-top: 0">Dati predefiniti</h3>
-        <p class="muted small" style="margin: .4rem 0 0">Compilati in automatico nel modulo del report quando apri una nuova scansione. Utili se fai più prove per lo stesso cliente o condominio.</p>
-        <div id="s-defaults" class="form"></div>
-        <button type="button" id="btn-defaults-clear" style="margin-top: 1rem">Svuota i dati predefiniti</button>
+    <div class="card">
+        <h3 class="mb-[.2rem] text-[1rem] font-bold text-white">Dati predefiniti</h3>
+        <p class="mt-[.4rem] text-[.8rem] text-muted">Compilati in automatico nel modulo del report quando apri una nuova scansione. Utili se fai più prove per lo stesso cliente o condominio.</p>
+        <div id="s-defaults" class="mt-4 flex flex-col gap-3.5"></div>
+        <button type="button" id="btn-defaults-clear" class="btn mt-4">Svuota i dati predefiniti</button>
     </div>
-    <button id="btn-settings-back">Indietro</button>
+    <button id="btn-settings-back" class="btn">Indietro</button>
 </main>
 
-<div id="photo-view" hidden><img alt="Foto ingrandita"></div>
+<div id="photo-view" class="fixed inset-0 z-30 flex items-center justify-center bg-black/92 p-3" hidden><img alt="Foto ingrandita" class="max-h-full max-w-full object-contain"></div>
 
-<div id="toast" class="toast" hidden></div>
+<div id="toast" class="fixed bottom-[calc(24px+env(safe-area-inset-bottom))] left-1/2 z-20 -translate-x-1/2 rounded-lg border border-ok-edge bg-ok-bg px-[18px] py-2.5 text-ok-fg" hidden></div>
 
 <script src="vendor/zxing-reader.js"></script>
 <script type="module" src="app.js"></script>

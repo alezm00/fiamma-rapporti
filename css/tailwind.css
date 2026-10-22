@@ -1,0 +1,59 @@
+/* Tema e componenti dell'app per Tailwind (build "browser" in vendor/, nessuna compilazione).
+   Il resto dello stile sono classi utility nell'HTML e in ui.js.
+   Questo file viene letto da css/load-tailwind.js. */
+
+@theme {
+    --font-sans: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+    /* sfondi, bordi e testi (tema scuro) */
+    --color-page: #121212;
+    --color-card: #1e1e1e;
+    --color-field: #252525;
+    --color-btn: #2a2a2a;
+    --color-btn-edge: #3a3a3a;
+    --color-edge: #333333;
+    --color-line: #2c2c2c;
+    --color-ink: #e0e0e0;
+    --color-soft: #b0b0b0;
+    --color-muted: #9e9e9e;
+    --color-link: #4dabf5;
+
+    /* colori principali */
+    --color-brand: #007bff;
+    --color-brand-dark: #0056b3;
+    --color-accent: #00ffcc;
+    --color-note: #ffd54f;
+
+    /* messaggi: sfondo, testo e bordo */
+    --color-ok-bg: #1b3320;
+    --color-ok-fg: #81c784;
+    --color-ok-edge: #2e7d32;
+    --color-err-bg: #331b1b;
+    --color-err-fg: #e57373;
+    --color-err-edge: #c62828;
+    --color-warn-bg: #332b1b;
+    --color-warn-fg: #ffb74d;
+    --color-warn-edge: #b26a00;
+    --color-info-bg: #1b2733;
+    --color-info-fg: #90caf9;
+    --color-info-edge: #1e5a8c;
+}
+
+/* gli elementi che si ripetono ovunque, definiti una volta sola */
+@layer components {
+    .btn {
+        @apply flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-btn-edge bg-btn p-3.5 font-bold text-white transition active:scale-[.98] disabled:cursor-default disabled:opacity-60;
+    }
+
+    .card {
+        @apply rounded-2xl border border-edge bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,.5)];
+    }
+
+    .input {
+        @apply w-full rounded-lg border-2 border-edge bg-field p-3.5 text-[1.05rem] text-white transition-colors focus:border-brand focus:outline-none;
+    }
+
+    .icon {
+        @apply size-[22px] shrink-0;
+    }
+}

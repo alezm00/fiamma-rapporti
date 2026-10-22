@@ -1,6 +1,6 @@
 // Service worker: salva tutti i file dell'app per l'uso offline.
 // Dopo ogni modifica ai file aumentare la versione, così i telefoni scaricano l'aggiornamento.
-const CACHE = 'testo-qr-v11';
+const CACHE = 'testo-qr-v12';
 const FILES = [
     './',
     './index.html',
@@ -12,7 +12,11 @@ const FILES = [
     './photos.js',
     './mail.js',
     './settings.js',
+    './ui.js',
+    './css/tailwind.css',
+    './css/load-tailwind.js',
     './manifest.json',
+    './vendor/tailwindcss-browser.js',
     './vendor/zxing-reader.js',
     './vendor/zxing_reader.wasm',
     './vendor/pdf-lib.min.js',

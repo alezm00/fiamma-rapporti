@@ -21,11 +21,21 @@ Web app (PWA) per Android che legge il QR code mostrato dall'analizzatore di com
 2. Menu ⋮ → **Installa app** (o "Aggiungi a schermata Home").
 3. Da quel momento funziona anche **offline**.
 
+## Stile (Tailwind)
+Lo stile usa [Tailwind CSS 4](https://tailwindcss.com) nella versione "browser" (`vendor/tailwindcss-browser.js`): nessuna compilazione e nessun npm. Le classi sono scritte direttamente in `index.html` e in `ui.js` (quelle usate dal JavaScript).
+- `css/tailwind.css`: colori e font dell'app (`@theme`) e i 4 componenti che si ripetono (`btn`, `card`, `input`, `icon`), definiti con `@apply`.
+- `css/load-tailwind.js`: legge quel file e avvia Tailwind (il build "browser" non legge file CSS esterni). La pagina resta nascosta finché gli stili non sono pronti.
+- Le classi create dal JavaScript vanno scritte in `ui.js`: vengono registrate all'avvio, così il loro stile è già pronto quando servono.
+- Per aggiornare Tailwind: sostituire `vendor/tailwindcss-browser.js` con `dist/index.global.js` del pacchetto npm `@tailwindcss/browser` e alzare la versione in `sw.js`.
+- Il build "browser" compila gli stili a ogni apertura (circa 25 KB di CSS): Tailwind lo indica per lo sviluppo, non per la produzione. Sul telefono aggiunge qualche decimo di secondo all'apertura.
+
 ## Aggiornamenti
 I file sono salvati sul telefono dal service worker (`sw.js`). Dopo una modifica, aumentare `CACHE` in `sw.js` (es. `testo-qr-v2`): l'app scarica la nuova versione alla prima apertura con internet e la usa dall'apertura successiva.
 
 ## File
-- `index.html`: pagina e stili
+- `index.html`: pagina (lo stile è fatto con classi Tailwind)
+- `css/tailwind.css`, `css/load-tailwind.js`: tema e componenti di Tailwind; caricamento
+- `ui.js`: classi Tailwind usate dal JavaScript
 - `app.js`: fotocamera, storico, visualizzazione
 - `tjf.js`: decodifica del QR (gzip → JSON TJF) ed etichette dei canali
 - `report.js`: creazione del PDF (impaginazione A4, nome del file)
@@ -35,6 +45,7 @@ I file sono salvati sul telefono dal service worker (`sw.js`). Dopo una modifica
 - `mail.js`, `settings.js`: oggetto, testo e destinatari dell'email; impostazioni
 - `sw.js`, `manifest.json`, `img/`: PWA offline
 - `vendor/`: librerie incluse nell'app, con le rispettive licenze
+  - Tailwind CSS 4.3.3, build "browser" (stile, MIT)
   - zxing-wasm 3.1.5 (lettore QR, MIT)
   - pdf-lib 1.17.1 e @pdf-lib/fontkit 1.1.1 (creazione del PDF, MIT)
   - Liberation Sans (font del PDF, SIL Open Font License 1.1)

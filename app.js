@@ -5,10 +5,13 @@ import { checkFiscalCode } from './validate.js';
 import { listPhotos, addPhoto, removePhoto, keepPhotosOf } from './photos.js';
 import { buildBody, buildSubject, checkRecipients, mailtoUrl } from './mail.js';
 import { loadSettings, saveSettings } from './settings.js';
+import { CLS, MSG, MSG_TYPES, registerClasses } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
 const HISTORY_KEY = 'testoqr.history';
 const MAX_HISTORY = 20;
+
+registerClasses(); // le classi Tailwind create dal JS
 
 // Libreria QR (zxing-wasm): il file .wasm è servito in locale, così funziona offline
 const zxingReady = ZXingWASM.prepareZXingModule({
@@ -35,7 +38,8 @@ function el(tag, className, text) {
 function showMsg(text, type = 'error') {
     const box = $('home-msg');
     box.textContent = text;
-    box.className = `msg ${type}`;
+    box.className = `${MSG} ${MSG_TYPES[type] ?? ''} mt-4`;
+    box.dataset.type = type;
     box.hidden = false;
 }
 
@@ -114,17 +118,17 @@ function renderHistory() {
         } catch {
             continue;
         }
-        const li = el('li');
-        const open = el('button', 'hitem');
-        open.append(el('span', 'h-title', report.title));
+        const li = el('li', CLS.historyRow);
+        const open = el('button', CLS.historyOpen);
+        open.append(el('span', CLS.historyTitle, report.title));
         const fuel = report.header.find((h) => h.label === 'Combustibile');
-        open.append(el('span', 'h-meta', [formatDate(report.start || new Date(entry.savedAt)), fuel?.value, entry.customer?.name].filter(Boolean).join(' · ')));
+        open.append(el('span', CLS.historyMeta, [formatDate(report.start || new Date(entry.savedAt)), fuel?.value, entry.customer?.name].filter(Boolean).join(' · ')));
         const first = report.columns[0];
         const vals = report.rows.slice(0, 4).map((r) => `${r.short || r.label} ${r.cells[first] ?? ''}`).join(' · ');
-        if (vals) open.append(el('span', 'h-vals', vals));
+        if (vals) open.append(el('span', CLS.historyVals, vals));
         open.addEventListener('click', () => openEntry(entry));
 
-        const del = el('button', 'hdel', '✕');
+        const del = el('button', CLS.historyDel, '✕');
         del.setAttribute('aria-label', 'Elimina');
         del.addEventListener('click', () => {
             if (!confirm(`Eliminare "${report.title}"?`)) return;
@@ -245,7 +249,7 @@ async function startScan() {
     show('scan');
     setStatus('Avvio fotocamera…');
     $('btn-torch').hidden = true;
-    $('btn-torch').classList.remove('on');
+    $('btn-torch').setAttribute('aria-pressed', 'false');
     try {
         stream = await navigator.mediaDevices.getUserMedia({
             audio: false,
@@ -357,10 +361,10 @@ $('btn-home').addEventListener('click', goHome);
 $('btn-torch').addEventListener('click', async () => {
     const track = stream?.getVideoTracks()[0];
     if (!track) return;
-    const on = !$('btn-torch').classList.contains('on');
+    const on = $('btn-torch').getAttribute('aria-pressed') !== 'true';
     try {
         await track.applyConstraints({ advanced: [{ torch: on }] });
-        $('btn-torch').classList.toggle('on', on);
+        $('btn-torch').setAttribute('aria-pressed', String(on));
     } catch {}
 });
 
@@ -431,7 +435,7 @@ function renderReport(r, entry) {
 
     const head = $('r-header');
     head.replaceChildren();
-    for (const h of r.header) head.append(el('dt', null, h.label), el('dd', null, h.value));
+    for (const h of r.header) head.append(el('dt', CLS.headTerm, h.label), el('dd', CLS.headDef, h.value));
     $('r-note').hidden = !r.note;
     $('r-note').textContent = r.note ? `Note: ${r.note}` : '';
 
@@ -443,22 +447,27 @@ function renderReport(r, entry) {
     table.replaceChildren();
     const cols = r.columns.length ? r.columns : [''];
     const multi = cols.length > 1;
-    table.classList.toggle('multi', multi);
+    table.className = multi ? CLS.tableMulti : CLS.tableSingle;
     table.style.setProperty('--cols', cols.length);
     if (multi) {
-        const hdr = el('div', 'vhead');
-        hdr.append(...cols.map((c) => el('span', null, c)), el('span'));
+        const hdr = el('div', CLS.tableHead);
+        hdr.append(...cols.map((c) => el('span', CLS.tableHeadCell, c)), el('span', CLS.tableHeadCell));
         table.append(hdr);
     }
-    for (const row of r.rows) {
-        const div = el('div', 'vrow');
-        const label = el('div', 'vlabel');
-        label.append(el('span', 'vcode', row.short || row.label));
-        if (row.short && row.short !== row.label) label.append(el('span', 'vname', row.label));
+    r.rows.forEach((row, i) => {
+        const line = i < r.rows.length - 1 ? ` ${CLS.cellLine}` : ''; // linea sotto ogni riga tranne l'ultima
+        const div = el('div', CLS.row);
+        const label = el('div', multi ? `${CLS.cell} ${CLS.labelMulti}` : `${CLS.cell}${line}`);
+        label.append(el('span', CLS.code, row.short || row.label));
+        if (row.short && row.short !== row.label) label.append(el('span', CLS.name, row.label));
         // segno meno tipografico: più leggibile del trattino
-        div.append(label, ...cols.map((c) => el('div', 'vnum', (row.cells[c] ?? '').replace(/^-(?=\d)/, '\u2212'))), el('div', 'vunit', row.unit));
+        div.append(
+            label,
+            ...cols.map((c) => el('div', `${CLS.cell} ${multi ? CLS.numMulti : CLS.num}${line}`, (row.cells[c] ?? '').replace(/^-(?=\d)/, '−'))),
+            el('div', `${CLS.cell} ${CLS.unit}${line}`, row.unit),
+        );
         table.append(div);
-    }
+    });
     $('r-values').hidden = r.rows.length === 0;
     if (!r.rows.length && !r.errors.length) {
         $('r-errors').hidden = false;
@@ -469,11 +478,11 @@ function renderReport(r, entry) {
     const box = $('r-sections');
     box.replaceChildren();
     for (const s of r.sections) {
-        const d = el('details', 'container');
+        const d = el('details', CLS.section);
         if (s.title === 'Fasi della prova') d.open = true;
-        const dl = el('dl');
-        for (const it of s.items) dl.append(el('dt', null, it.label), el('dd', null, it.value));
-        d.append(el('summary', null, s.title), dl);
+        const dl = el('dl', CLS.sectionList);
+        for (const it of s.items) dl.append(el('dt', CLS.term, it.label), el('dd', CLS.def, it.value));
+        d.append(el('summary', CLS.summary, s.title), dl);
         box.append(d);
     }
     $('r-json').textContent = JSON.stringify(entry.json, null, 2);
@@ -514,7 +523,8 @@ function saveCustomer() {
 function showBoxMsg(id, text, type = 'info') {
     const box = $(id);
     box.textContent = text;
-    box.className = `msg ${type}`;
+    box.className = `${MSG} ${MSG_TYPES[type] ?? ''}`;
+    box.dataset.type = type;
     box.hidden = !text;
 }
 
@@ -629,15 +639,15 @@ async function renderPhotos() {
     for (const photo of photos) {
         const url = URL.createObjectURL(photo.blob);
         photoUrls.push(url);
-        const cell = el('div', 'photo');
-        const img = el('img');
+        const cell = el('div', CLS.photo);
+        const img = el('img', CLS.photoImg);
         img.src = url;
         img.alt = 'Foto';
         img.addEventListener('click', () => {
             $('photo-view').querySelector('img').src = url;
             $('photo-view').hidden = false;
         });
-        const del = el('button', 'photo-del', '✕');
+        const del = el('button', CLS.photoDel, '✕');
         del.type = 'button';
         del.setAttribute('aria-label', 'Elimina foto');
         del.addEventListener('click', async () => {
@@ -824,9 +834,9 @@ const FIELD_DEFS = [
 function buildDefaultsForm() {
     const box = $('s-defaults');
     for (const def of FIELD_DEFS) {
-        const label = el('label', 'field');
-        label.append(el('span', null, def.label));
-        const input = def.rows ? el('textarea') : el('input');
+        const label = el('label', CLS.field);
+        label.append(el('span', CLS.fieldLabel, def.label));
+        const input = def.rows ? el('textarea', CLS.textarea) : el('input', def.type === 'date' ? CLS.dateInput : CLS.input);
         input.id = `s-d-${def.key}`;
         if (def.rows) input.rows = def.rows;
         else input.type = def.type || 'text';
