@@ -1,6 +1,7 @@
 // Report PDF (pdf-lib + font Liberation Sans): tutto in locale, funziona anche offline.
 // Le librerie e i font si caricano solo quando serve il PDF.
 import { formatDate } from './tjf.js';
+import { checkPhone } from './validate.js';
 
 const PAGE_W = 595.28; // A4
 const PAGE_H = 841.89;
@@ -76,7 +77,7 @@ export function normalizeCustomer(c = {}) {
         name: clean(c.name),
         fiscalCode: code(c.fiscalCode),
         address: oneLine(c.address),
-        phone: clean(c.phone),
+        phone: checkPhone(c.phone).ok ? checkPhone(c.phone).value : clean(c.phone), // se non è valido resta come scritto
         brand: clean(c.brand),
         serial: clean(c.serial),
         plateCode: code(c.plateCode),

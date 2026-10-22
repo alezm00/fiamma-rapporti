@@ -1,6 +1,7 @@
 import { bytesToJson, buildReport, reportToText, formatDate } from './tjf.js';
 import { createReportPdf, preloadPdfLibs, reportFileName } from './report.js';
 import { getPosition, geoErrorMessage, reverseGeocode } from './geo.js';
+import { checkFiscalCode, checkPhone } from './validate.js';
 
 const $ = (id) => document.getElementById(id);
 const HISTORY_KEY = 'testoqr.history';
@@ -499,6 +500,36 @@ function showBoxMsg(id, text, type = 'info') {
     box.hidden = !text;
 }
 
+// Controlli sui dati: mostrano un avviso sotto il campo ma non bloccano mai il PDF.
+const CHECKS = [
+    { id: 'c-cf', hint: 'cf-hint', name: 'codice fiscale', check: checkFiscalCode },
+    { id: 'c-phone', hint: 'phone-hint', name: 'telefono', check: checkPhone },
+];
+
+// restituisce i nomi dei campi da controllare
+function validateCustomer() {
+    const problems = [];
+    for (const { id, hint, name, check } of CHECKS) {
+        const r = check($(id).value);
+        $(hint).hidden = r.ok;
+        $(hint).textContent = r.ok ? '' : r.error;
+        if (!r.ok) problems.push(name);
+    }
+    return problems;
+}
+
+// mentre si scrive l'avviso sparisce; a campo finito il valore viene sistemato e ricontrollato
+for (const { id, hint } of CHECKS) $(id).addEventListener('input', () => ($(hint).hidden = true));
+$('c-cf').addEventListener('change', () => {
+    $('c-cf').value = checkFiscalCode($('c-cf').value).value; // maiuscolo, senza spazi
+    validateCustomer();
+});
+$('c-phone').addEventListener('change', () => {
+    const r = checkPhone($('c-phone').value);
+    if (r.ok) $('c-phone').value = r.value; // 123 456 7890
+    validateCustomer();
+});
+
 function canShareFiles() {
     try {
         return typeof navigator.share === 'function' && !!navigator.canShare?.({ files: [new File(['%PDF'], 'a.pdf', { type: 'application/pdf' })] });
@@ -512,6 +543,7 @@ function openReportForm() {
     for (const [key, id] of Object.entries(FIELDS)) $(id).value = customer[key] || '';
     showBoxMsg('geo-msg', '');
     showBoxMsg('report-msg', '');
+    validateCustomer();
     $('rp-summary').textContent = [currentReport.title, currentReport.start && formatDate(currentReport.start)].filter(Boolean).join(' · ');
     const share = canShareFiles();
     $('btn-pdf-share').hidden = !share;
@@ -591,12 +623,16 @@ async function runPdf(button, action) {
 }
 
 $('btn-pdf-save').addEventListener('click', () => runPdf($('btn-pdf-save'), async () => {
+    const problems = validateCustomer();
     const file = await buildPdfFile();
     downloadFile(file);
-    showBoxMsg('report-msg', `PDF salvato nei download: ${file.name}`, 'success');
+    if (problems.length) showBoxMsg('report-msg', `PDF salvato, ma controlla: ${problems.join(', ')}.`, 'warn');
+    else showBoxMsg('report-msg', `PDF salvato nei download: ${file.name}`, 'success');
 }));
 
 $('btn-pdf-share').addEventListener('click', () => runPdf($('btn-pdf-share'), async () => {
+    const problems = validateCustomer();
+    if (problems.length) showBoxMsg('report-msg', `Controlla: ${problems.join(', ')}. Il PDF viene creato lo stesso.`, 'warn');
     const file = await buildPdfFile();
     if (!navigator.canShare?.({ files: [file] })) {
         downloadFile(file);

@@ -72,6 +72,7 @@
         .msg { padding: 1rem; border-radius: 8px; line-height: 1.45; font-size: .95rem; }
         .success { background-color: #1b3320; color: #81c784; border: 1px solid #2e7d32; }
         .error { background-color: #331b1b; color: #e57373; border: 1px solid #c62828; }
+        .warn { background-color: #332b1b; color: #ffb74d; border: 1px solid #b26a00; }
         .info { background-color: #1b2733; color: #90caf9; border: 1px solid #1e5a8c; }
 
         /* Storico */
@@ -158,6 +159,7 @@
         input[type="date"] { color-scheme: dark; min-height: 54px; }
         input:focus, textarea:focus { border-color: #007bff; outline: none; }
         .small { font-size: .8rem; margin: 1rem 0 0; }
+        .hint { padding: 8px 12px; font-size: .85rem; line-height: 1.4; }
 
         .toast {
             position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%);
@@ -246,6 +248,7 @@
             </label>
             <label class="field"><span>Codice fiscale</span>
                 <input id="c-cf" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
+                <div id="cf-hint" class="msg warn hint" hidden></div>
             </label>
             <div class="field">
                 <label for="c-address">Indirizzo</label>
@@ -258,6 +261,7 @@
             </div>
             <label class="field"><span>Telefono</span>
                 <input id="c-phone" type="tel" inputmode="tel" autocomplete="off">
+                <div id="phone-hint" class="msg warn hint" hidden></div>
             </label>
             <label class="field"><span>Marca caldaia</span>
                 <input id="c-brand" type="text" autocomplete="off" autocapitalize="words">
