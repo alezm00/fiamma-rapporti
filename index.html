@@ -161,6 +161,17 @@
         .small { font-size: .8rem; margin: 1rem 0 0; }
         .hint { padding: 8px 12px; font-size: .85rem; line-height: 1.4; }
 
+        /* Foto del report */
+        .photo-actions { display: flex; gap: 10px; }
+        .photo-actions .button { padding: 12px 8px; font-size: .95rem; }
+        .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .photo-grid:empty { display: none; }
+        .photo { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #252525; border: 1px solid #333; }
+        .photo img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer; }
+        .photo .photo-del { position: absolute; top: 4px; right: 4px; width: 32px; height: 32px; padding: 0; border-radius: 50%; background: rgba(0,0,0,.7); border: none; font-size: 1rem; }
+        #photo-view { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.92); display: flex; align-items: center; justify-content: center; padding: 12px; }
+        #photo-view img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
         .toast {
             position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%);
             background: #1b3320; color: #81c784; border: 1px solid #2e7d32; padding: 10px 18px; border-radius: 8px; z-index: 20;
@@ -277,8 +288,25 @@
             <label class="field"><span>Note</span>
                 <textarea id="c-notes" rows="4" autocomplete="off" autocapitalize="sentences" placeholder="Interventi eseguiti, anomalie, materiale…"></textarea>
             </label>
+            <div class="field">
+                <span>Foto <span id="photo-count"></span></span>
+                <div class="photo-actions">
+                    <label class="button">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        Scatta foto
+                        <input type="file" id="in-shoot" accept="image/*" capture="environment" hidden>
+                    </label>
+                    <label class="button">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        Dalla galleria
+                        <input type="file" id="in-gallery" accept="image/*" multiple hidden>
+                    </label>
+                </div>
+                <div id="photo-grid" class="photo-grid"></div>
+                <div id="photo-msg" class="msg" hidden></div>
+            </div>
         </div>
-        <p class="muted small">I dati del cliente restano solo su questo telefono, insieme alla scansione salvata. L'indirizzo dalla posizione usa OpenStreetMap e richiede internet: invia solo le coordinate.</p>
+        <p class="muted small">I dati del cliente e le foto restano solo su questo telefono, insieme alla scansione salvata. L'indirizzo dalla posizione usa OpenStreetMap e richiede internet: invia solo le coordinate.</p>
     </div>
     <div id="report-msg" class="msg" hidden></div>
     <div class="actions">
@@ -287,6 +315,8 @@
     </div>
     <button id="btn-report-back">Indietro</button>
 </main>
+
+<div id="photo-view" hidden><img alt="Foto ingrandita"></div>
 
 <div id="toast" class="toast" hidden></div>
 

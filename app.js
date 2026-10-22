@@ -2,6 +2,7 @@ import { bytesToJson, buildReport, reportToText, formatDate } from './tjf.js';
 import { createReportPdf, preloadPdfLibs, reportFileName } from './report.js';
 import { getPosition, geoErrorMessage, reverseGeocode } from './geo.js';
 import { checkFiscalCode } from './validate.js';
+import { listPhotos, addPhoto, removePhoto, keepPhotosOf } from './photos.js';
 
 const $ = (id) => document.getElementById(id);
 const HISTORY_KEY = 'testoqr.history';
@@ -81,9 +82,17 @@ function saveHistory(list) {
 
 function addToHistory(json, report) {
     const id = report.uuid || hash(JSON.stringify(json));
-    const entry = { id, savedAt: Date.now(), json };
-    saveHistory([entry, ...loadHistory().filter((e) => e.id !== id)]);
+    const list = loadHistory();
+    // riscansionando lo stesso QR i dati del cliente restano
+    const entry = { id, savedAt: Date.now(), json, customer: list.find((e) => e.id === id)?.customer };
+    saveHistory([entry, ...list.filter((e) => e.id !== id)]);
+    cleanupPhotos();
     return entry;
+}
+
+// le foto restano solo per le scansioni ancora nello storico
+function cleanupPhotos() {
+    keepPhotosOf(loadHistory().map((e) => e.id)).catch(() => {});
 }
 
 function updateEntry(entry) {
@@ -118,6 +127,7 @@ function renderHistory() {
         del.addEventListener('click', () => {
             if (!confirm(`Eliminare "${report.title}"?`)) return;
             saveHistory(loadHistory().filter((e) => e.id !== entry.id));
+            cleanupPhotos();
             renderHistory();
         });
         li.append(open, del);
@@ -128,6 +138,7 @@ function renderHistory() {
 $('btn-clear').addEventListener('click', () => {
     if (!confirm('Cancellare tutte le scansioni salvate?')) return;
     saveHistory([]);
+    cleanupPhotos();
     renderHistory();
 });
 
@@ -138,6 +149,7 @@ $('btn-clear').addEventListener('click', () => {
 let current = 'home';
 
 function show(view) {
+    $('photo-view').hidden = true;
     if (current === 'scan' && view !== 'scan') stopScan();
     for (const v of ['home', 'scan', 'result', 'report']) $(`view-${v}`).hidden = v !== view;
     if (view !== 'home') {
@@ -537,7 +549,9 @@ function openReportForm() {
     for (const [key, id] of Object.entries(FIELDS)) $(id).value = customer[key] || '';
     showBoxMsg('geo-msg', '');
     showBoxMsg('report-msg', '');
+    showBoxMsg('photo-msg', '');
     validateCustomer();
+    renderPhotos();
     $('rp-summary').textContent = [currentReport.title, currentReport.start && formatDate(currentReport.start)].filter(Boolean).join(' · ');
     const share = canShareFiles();
     $('btn-pdf-share').hidden = !share;
@@ -586,10 +600,84 @@ $('btn-geo').addEventListener('click', async () => {
     }
 });
 
+// ---- foto -------------------------------------------------------------------
+
+const MAX_PHOTOS = 12;
+let photoUrls = [];
+
+async function renderPhotos() {
+    const entry = currentEntry;
+    const photos = await listPhotos(entry.id);
+    if (entry !== currentEntry) return; // nel frattempo si è aperta un'altra scansione
+    photoUrls.forEach((url) => URL.revokeObjectURL(url));
+    photoUrls = [];
+    const grid = $('photo-grid');
+    grid.replaceChildren();
+    for (const photo of photos) {
+        const url = URL.createObjectURL(photo.blob);
+        photoUrls.push(url);
+        const cell = el('div', 'photo');
+        const img = el('img');
+        img.src = url;
+        img.alt = 'Foto';
+        img.addEventListener('click', () => {
+            $('photo-view').querySelector('img').src = url;
+            $('photo-view').hidden = false;
+        });
+        const del = el('button', 'photo-del', '✕');
+        del.type = 'button';
+        del.setAttribute('aria-label', 'Elimina foto');
+        del.addEventListener('click', async () => {
+            if (!confirm('Eliminare questa foto?')) return;
+            await removePhoto(photo.id);
+            renderPhotos();
+        });
+        cell.append(img, del);
+        grid.append(cell);
+    }
+    $('photo-count').textContent = photos.length ? `(${photos.length} di ${MAX_PHOTOS})` : '';
+}
+
+async function addPhotoFiles(files) {
+    const entry = currentEntry;
+    const room = MAX_PHOTOS - (await listPhotos(entry.id)).length;
+    if (room <= 0) {
+        showBoxMsg('photo-msg', `Massimo ${MAX_PHOTOS} foto per report: elimina una foto per aggiungerne altre.`, 'warn');
+        return;
+    }
+    const batch = files.slice(0, room);
+    let error = '';
+    for (const [i, file] of batch.entries()) {
+        showBoxMsg('photo-msg', `Elaboro la foto ${i + 1} di ${batch.length}…`);
+        try {
+            await addPhoto(entry.id, file);
+            if (entry === currentEntry) await renderPhotos();
+        } catch (e) {
+            error = e.name === 'QuotaExceededError' ? 'Memoria del telefono piena: libera spazio e riprova.' : `Foto non aggiunta: ${e.message || e}`;
+            break;
+        }
+    }
+    if (error) showBoxMsg('photo-msg', error, 'error');
+    else if (files.length > batch.length) showBoxMsg('photo-msg', `Massimo ${MAX_PHOTOS} foto per report: ne ho aggiunte ${batch.length}.`, 'warn');
+    else showBoxMsg('photo-msg', '');
+}
+
+for (const id of ['in-shoot', 'in-gallery']) {
+    $(id).addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        e.target.value = '';
+        if (files.length) addPhotoFiles(files);
+    });
+}
+$('photo-view').addEventListener('click', () => ($('photo-view').hidden = true));
+
 async function buildPdfFile() {
     saveCustomer();
     const customer = readCustomer();
-    const bytes = await createReportPdf(currentReport, customer);
+    const photos = await Promise.all((await listPhotos(currentEntry.id)).map(async (p) => ({
+        bytes: new Uint8Array(await p.blob.arrayBuffer()), width: p.width, height: p.height,
+    })));
+    const bytes = await createReportPdf(currentReport, customer, new Date(), photos);
     return new File([bytes], reportFileName(currentReport, customer), { type: 'application/pdf' });
 }
 
@@ -646,3 +734,4 @@ $('btn-pdf-share').addEventListener('click', () => runPdf($('btn-pdf-share'), as
 }));
 
 renderHistory();
+cleanupPhotos();

@@ -7,7 +7,7 @@ Web app (PWA) per Android che legge il QR code mostrato dall'analizzatore di com
 - Il formato è letto in modo generico: analisi fumi (singola o media UNI 10389-1), tiraggio, pressione, prova di tenuta… Ogni canale viene mostrato con etichetta in italiano, valore e unità; i dati non riconosciuti finiscono in "Altri dati" e nel JSON grezzo.
 - Lo schermo resta acceso mentre guardi il risultato.
 - Le ultime 20 scansioni restano salvate sul telefono (solo in locale).
-- **Report PDF**: dal risultato, "Crea report PDF" apre il modulo con i dati del cliente (nome e cognome, codice fiscale, indirizzo, telefono), della caldaia (marca, matricola/codice, targa impianto, data di installazione) e un campo note libero. Il PDF A4 contiene cliente, caldaia, dati e risultati della prova e si può condividere (WhatsApp, email…) oppure salvare. I dati del cliente restano nella scansione salvata sul telefono. Il codice fiscale (16 caratteri, anche con omocodia, o 11 cifre per le aziende) è controllato: se qualcosa non torna compare un avviso sotto il campo, ma il PDF si crea lo stesso.
+- **Report PDF**: dal risultato, "Crea report PDF" apre il modulo con i dati del cliente (nome e cognome, codice fiscale, indirizzo, telefono), della caldaia (marca, matricola/codice, targa impianto, data di installazione) e un campo note libero. Si possono aggiungere fino a 12 **foto** (scattate al momento o prese dalla galleria): vengono ridimensionate (lato lungo 1280 px) per tenere il PDF leggero e finiscono in fondo al report, due per riga. Il PDF A4 contiene cliente, caldaia, dati e risultati della prova e si può condividere (WhatsApp, email…) oppure salvare. I dati del cliente e le foto restano sul telefono, insieme alla scansione salvata, e si cancellano con lei. Il codice fiscale (16 caratteri, anche con omocodia, o 11 cifre per le aziende) è controllato: se qualcosa non torna compare un avviso sotto il campo, ma il PDF si crea lo stesso.
 - **Indirizzo dalla posizione**: "Usa la mia posizione" legge il GPS e ricava l'indirizzo da OpenStreetMap ([Nominatim](https://nominatim.org/release-docs/latest/api/Reverse/)); serve internet e vengono inviate solo le coordinate. Il PDF invece si crea anche offline.
 - "Da foto" legge il QR da una foto, utile se il QR è molto denso o ci sono riflessi sul display.
 
@@ -25,6 +25,7 @@ I file sono salvati sul telefono dal service worker (`sw.js`). Dopo una modifica
 - `tjf.js`: decodifica del QR (gzip → JSON TJF) ed etichette dei canali
 - `report.js`: creazione del PDF (impaginazione A4, nome del file)
 - `geo.js`: posizione e indirizzo
+- `photos.js`: foto del report (ridimensionamento e archivio sul telefono)
 - `validate.js`: controllo del codice fiscale
 - `sw.js`, `manifest.json`, `img/`: PWA offline
 - `vendor/`: librerie incluse nell'app, con le rispettive licenze

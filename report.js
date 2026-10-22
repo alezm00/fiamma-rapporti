@@ -97,7 +97,8 @@ export function reportFileName(report, customer = {}, now = new Date()) {
 // Creazione del PDF
 // ---------------------------------------------------------------------------
 
-export async function createReportPdf(report, customer = {}, now = new Date()) {
+// photos: [{ bytes: Uint8Array JPEG, width, height }]
+export async function createReportPdf(report, customer = {}, now = new Date(), photos = []) {
     const { regular, bold } = await preloadPdfLibs();
     const { PDFDocument, rgb } = window.PDFLib;
     const c = normalizeCustomer(customer);
@@ -350,6 +351,37 @@ export async function createReportPdf(report, customer = {}, now = new Date()) {
             chunk.forEach((l, j) => text(l, MARGIN + PAD, y - TITLE_H - j * 13, 10.5));
             y -= h + GAP;
             i += chunk.length;
+        }
+    }
+
+    // --- foto: griglia a 2 colonne, continua sulle pagine successive ---------
+
+    if (photos.length) {
+        const PHOTO_GAP = 10;
+        const CAPTION_H = 14;
+        const MAX_H = 200;
+        const cellW = (CONTENT_W - PHOTO_GAP) / 2;
+        const images = [];
+        for (const ph of photos) {
+            const image = await doc.embedJpg(ph.bytes);
+            const k = Math.min(cellW / image.width, MAX_H / image.height);
+            images.push({ image, w: image.width * k, h: image.height * k });
+        }
+        for (let i = 0; i < images.length; i += 2) {
+            const row = images.slice(i, i + 2);
+            const rowH = Math.max(...row.map((p) => p.h)) + CAPTION_H;
+            ensure((i === 0 ? 20 : 0) + rowH);
+            if (i === 0) {
+                text('FOTO', MARGIN, y, 8.5, { f: fontB, color: ACCENT });
+                y -= 18;
+            }
+            row.forEach((p, j) => {
+                const x = MARGIN + j * (cellW + PHOTO_GAP);
+                page.drawImage(p.image, { x, y: y - p.h, width: p.w, height: p.h });
+                page.drawRectangle({ x, y: y - p.h, width: p.w, height: p.h, borderColor: LINE, borderWidth: 0.5 });
+                text(`Foto ${i + j + 1}`, x, y - p.h - 3, 8, { color: GREY });
+            });
+            y -= rowH + 6;
         }
     }
 
