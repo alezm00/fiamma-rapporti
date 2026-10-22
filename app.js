@@ -1,4 +1,6 @@
 import { bytesToJson, buildReport, reportToText, formatDate } from './tjf.js';
+import { createReportPdf, preloadPdfLibs, reportFileName } from './report.js';
+import { getPosition, geoErrorMessage, reverseGeocode } from './geo.js';
 
 const $ = (id) => document.getElementById(id);
 const HISTORY_KEY = 'testoqr.history';
@@ -83,6 +85,10 @@ function addToHistory(json, report) {
     return entry;
 }
 
+function updateEntry(entry) {
+    saveHistory(loadHistory().map((e) => (e.id === entry.id ? entry : e)));
+}
+
 function renderHistory() {
     const list = loadHistory();
     const ul = $('history');
@@ -100,7 +106,7 @@ function renderHistory() {
         const open = el('button', 'hitem');
         open.append(el('span', 'h-title', report.title));
         const fuel = report.header.find((h) => h.label === 'Combustibile');
-        open.append(el('span', 'h-meta', [formatDate(report.start || new Date(entry.savedAt)), fuel?.value].filter(Boolean).join(' · ')));
+        open.append(el('span', 'h-meta', [formatDate(report.start || new Date(entry.savedAt)), fuel?.value, entry.customer?.name].filter(Boolean).join(' · ')));
         const first = report.columns[0];
         const vals = report.rows.slice(0, 4).map((r) => `${r.short || r.label} ${r.cells[first] ?? ''}`).join(' · ');
         if (vals) open.append(el('span', 'h-vals', vals));
@@ -132,9 +138,10 @@ let current = 'home';
 
 function show(view) {
     if (current === 'scan' && view !== 'scan') stopScan();
-    for (const v of ['home', 'scan', 'result']) $(`view-${v}`).hidden = v !== view;
+    for (const v of ['home', 'scan', 'result', 'report']) $(`view-${v}`).hidden = v !== view;
     if (view !== 'home') {
-        if (current === 'home') history.pushState({ view }, '');
+        // il report è un livello in più: "indietro" torna al risultato
+        if (current === 'home' || (view === 'report' && current === 'result')) history.pushState({ view }, '');
         else history.replaceState({ view }, '');
     }
     current = view;
@@ -150,7 +157,8 @@ function goHome() {
 }
 
 window.addEventListener('popstate', () => {
-    if (current !== 'home') show('home');
+    if (current === 'report') show('result');
+    else if (current !== 'home') show('home');
 });
 
 // ---------------------------------------------------------------------------
@@ -394,6 +402,8 @@ function openEntry(entry) {
 }
 
 function renderReport(r, entry) {
+    currentReport = r;
+    currentEntry = entry;
     $('r-title').textContent = r.title;
     const dates = [];
     if (r.start) dates.push(formatDate(r.start));
@@ -458,5 +468,148 @@ function renderReport(r, entry) {
         }
     };
 }
+
+// ---------------------------------------------------------------------------
+// Report PDF con i dati del cliente
+// ---------------------------------------------------------------------------
+
+let currentReport = null;
+let currentEntry = null;
+
+const FIELDS = { name: 'c-name', address: 'c-address', phone: 'c-phone', brand: 'c-brand', serial: 'c-serial', installDate: 'c-date' };
+
+function readCustomer() {
+    return Object.fromEntries(Object.entries(FIELDS).map(([key, id]) => [key, $(id).value]));
+}
+
+// i dati del cliente restano nella scansione salvata sul telefono
+function saveCustomer() {
+    if (!currentEntry) return;
+    currentEntry.customer = readCustomer();
+    updateEntry(currentEntry);
+}
+
+function showBoxMsg(id, text, type = 'info') {
+    const box = $(id);
+    box.textContent = text;
+    box.className = `msg ${type}`;
+    box.hidden = !text;
+}
+
+function canShareFiles() {
+    try {
+        return typeof navigator.share === 'function' && !!navigator.canShare?.({ files: [new File(['%PDF'], 'a.pdf', { type: 'application/pdf' })] });
+    } catch {
+        return false;
+    }
+}
+
+function openReportForm() {
+    const customer = currentEntry.customer || {};
+    for (const [key, id] of Object.entries(FIELDS)) $(id).value = customer[key] || '';
+    showBoxMsg('geo-msg', '');
+    showBoxMsg('report-msg', '');
+    $('rp-summary').textContent = [currentReport.title, currentReport.start && formatDate(currentReport.start)].filter(Boolean).join(' · ');
+    const share = canShareFiles();
+    $('btn-pdf-share').hidden = !share;
+    $('btn-pdf-save').classList.toggle('primary', !share);
+    preloadPdfLibs().catch(() => {}); // pronte quando si preme "Condividi", altrimenti il telefono può negare la condivisione
+    show('report');
+}
+
+$('btn-report').addEventListener('click', openReportForm);
+$('btn-report-back').addEventListener('click', () => {
+    saveCustomer();
+    if (history.state?.view === 'report') history.back();
+    else show('result');
+});
+
+let customerTimer;
+$('view-report').addEventListener('input', () => {
+    clearTimeout(customerTimer);
+    customerTimer = setTimeout(saveCustomer, 300);
+});
+
+// indirizzo dalla posizione del telefono
+$('btn-geo').addEventListener('click', async () => {
+    const btn = $('btn-geo');
+    btn.disabled = true;
+    try {
+        showBoxMsg('geo-msg', 'Rilevo la posizione…');
+        let pos;
+        try {
+            pos = await getPosition();
+        } catch (e) {
+            showBoxMsg('geo-msg', geoErrorMessage(e), 'error');
+            return;
+        }
+        const { latitude, longitude, accuracy } = pos.coords;
+        showBoxMsg('geo-msg', 'Cerco l\'indirizzo…');
+        try {
+            $('c-address').value = await reverseGeocode(latitude.toFixed(6), longitude.toFixed(6));
+            saveCustomer();
+            showBoxMsg('geo-msg', `Indirizzo trovato (precisione circa ${Math.round(accuracy)} m). Controllalo prima di creare il PDF.`, 'success');
+        } catch {
+            showBoxMsg('geo-msg', `Posizione trovata (${latitude.toFixed(5)}, ${longitude.toFixed(5)}) ma non riesco a ricavare l'indirizzo (serve internet). Inseriscilo a mano.`, 'error');
+        }
+    } finally {
+        btn.disabled = false;
+    }
+});
+
+async function buildPdfFile() {
+    saveCustomer();
+    const customer = readCustomer();
+    const bytes = await createReportPdf(currentReport, customer);
+    return new File([bytes], reportFileName(currentReport, customer), { type: 'application/pdf' });
+}
+
+function downloadFile(file) {
+    const url = URL.createObjectURL(file);
+    const a = el('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+async function runPdf(button, action) {
+    button.disabled = true;
+    showBoxMsg('report-msg', '');
+    try {
+        await action();
+    } catch (e) {
+        showBoxMsg('report-msg', `Impossibile creare il PDF: ${e.message || e}`, 'error');
+    } finally {
+        button.disabled = false;
+    }
+}
+
+$('btn-pdf-save').addEventListener('click', () => runPdf($('btn-pdf-save'), async () => {
+    const file = await buildPdfFile();
+    downloadFile(file);
+    showBoxMsg('report-msg', `PDF salvato nei download: ${file.name}`, 'success');
+}));
+
+$('btn-pdf-share').addEventListener('click', () => runPdf($('btn-pdf-share'), async () => {
+    const file = await buildPdfFile();
+    if (!navigator.canShare?.({ files: [file] })) {
+        downloadFile(file);
+        showBoxMsg('report-msg', `Condivisione non disponibile: PDF salvato nei download (${file.name})`, 'info');
+        return;
+    }
+    try {
+        await navigator.share({ files: [file], title: file.name });
+    } catch (e) {
+        if (e.name === 'AbortError') return; // annullato dall'utente
+        if (e.name === 'NotAllowedError') {
+            showBoxMsg('report-msg', 'La condivisione non è partita: premi di nuovo "Condividi PDF".', 'error');
+            return;
+        }
+        throw e;
+    }
+}));
 
 renderHistory();
