@@ -21,7 +21,8 @@ const combustion = (tf, o2, co) => tjf('val_10389_1', 'Media (UNI 10389-1)', [
 ]);
 
 test('nuovo rapporto: bozza con i dati predefiniti', () => {
-    const r = newReport({ now: at(2026, 10, 22), id: 'a', defaults: { name: 'Condominio Rossi', brand: 'Beretta', notes: 'Manutenzione ordinaria.' } });
+    const r = newReport({ now: at(2026, 10, 22), id: 'a', defaults: { name: 'Condominio Rossi', brand: 'Beretta', notes: 'Manutenzione ordinaria.', model: 'Ciao 24', fuel: 'metano', chamber: 'forzata', nominalPower: '24' } });
+    assert.deepEqual([r.plant.model, r.plant.fuel, r.plant.chamber, r.plant.technology, r.plant.nominalPower, r.plant.actualPower], ['Ciao 24', 'metano', 'forzata', '', '24', '']);
     assert.equal(r.status, 'draft');
     assert.equal(r.number, null);
     assert.equal(r.date, '2026-10-22');
@@ -260,4 +261,21 @@ test('percorso nella cartella: anno, numero, cliente e id', async () => {
     assert.deepEqual(folderPath(doc), { year: '2025', dir: '2025-012_Anna-Verdi_ab12cd34' });
     doc.customer.name = '';
     assert.equal(folderPath(doc).dir, '2025-012_ab12cd34');
+});
+
+test('caldaia: etichette e rapporti salvati prima dei campi nuovi', async () => {
+    const { chamberLabel, technologyLabel, fuelLabel, isBlank, newReport, normalizeReport, searchText } = await import('../model.js');
+    assert.equal(chamberLabel('aperta'), 'Aperta');
+    assert.equal(chamberLabel('forzata'), 'Forzata');
+    assert.equal(technologyLabel('condensazione'), 'A condensazione');
+    assert.equal(technologyLabel('tradizionale'), 'Tradizionale');
+    assert.deepEqual(['metano', 'gpl', 'gasolio'].map(fuelLabel), ['Metano', 'GPL', 'Gasolio']);
+    assert.equal(fuelLabel('carbone'), '');
+    // un rapporto senza i campi nuovi dell'impianto vale ancora come bozza vuota
+    const old = newReport({ id: 'old' });
+    for (const k of ['model', 'chamber', 'technology', 'fuel', 'nominalPower', 'actualPower']) delete old.plant[k];
+    assert.equal(isBlank(old), true);
+    const doc = normalizeReport({ id: 'abcd1234', plant: { brand: 'Beretta', model: 'Ciao', fuel: 'gpl', nominalPower: 24, actualPower: '22,5' } });
+    assert.deepEqual(doc.plant, { brand: 'Beretta', model: 'Ciao', serial: '', plateCode: '', installDate: '', chamber: '', technology: '', fuel: 'gpl', nominalPower: '', actualPower: '22,5' });
+    assert.match(searchText(doc), /ciao/);
 });

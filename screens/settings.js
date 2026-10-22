@@ -2,7 +2,7 @@
 
 import * as nav from '../nav.js';
 import { loadSettings, updateSettings } from '../settings.js';
-import { formatNumber, nextNumber, setNextNumber } from '../model.js';
+import { formatNumber, nextNumber, setNextNumber, CHAMBERS, TECHNOLOGIES, FUELS } from '../model.js';
 import { checkRecipients } from '../mail.js';
 import { getLogo, setLogo, removeLogo } from '../photos.js';
 import * as folder from '../folder.js';
@@ -26,9 +26,15 @@ const DEFAULT_DEFS = [
     { key: 'address', label: 'Indirizzo', rows: 2, capitalize: 'words' },
     { key: 'phone', label: 'Telefono', type: 'tel' },
     { key: 'brand', label: 'Marca caldaia', capitalize: 'words' },
+    { key: 'model', label: 'Modello', capitalize: 'characters' },
     { key: 'serial', label: 'Matricola / codice caldaia', capitalize: 'characters' },
     { key: 'plateCode', label: 'Targa impianto', capitalize: 'characters' },
     { key: 'installDate', label: 'Data di installazione', type: 'date' },
+    { key: 'chamber', label: 'Camera di combustione', options: CHAMBERS },
+    { key: 'technology', label: 'Tipo di caldaia', options: TECHNOLOGIES },
+    { key: 'fuel', label: 'Combustibile', options: FUELS },
+    { key: 'nominalPower', label: 'Potenza termica nominale (kW)', inputmode: 'decimal' },
+    { key: 'actualPower', label: 'Potenza termica reale (kW)', inputmode: 'decimal' },
     { key: 'notes', label: 'Note', rows: 4, capitalize: 'sentences' },
 ];
 
@@ -37,10 +43,16 @@ function buildFields(boxId, prefix, defs) {
     for (const def of defs) {
         const label = el('label', CLS.field);
         label.append(el('span', CLS.fieldLabel, def.label));
-        const input = def.rows ? el('textarea', CLS.textarea) : el('input', def.type === 'date' ? CLS.dateInput : CLS.input);
+        let input;
+        if (def.options) {
+            input = el('select', CLS.select);
+            input.append(new Option('Non indicato', ''), ...def.options.map((o) => new Option(o.label, o.id)));
+        } else {
+            input = def.rows ? el('textarea', CLS.textarea) : el('input', def.type === 'date' ? CLS.dateInput : CLS.input);
+            if (def.rows) input.rows = def.rows;
+            else input.type = def.type || 'text';
+        }
         input.id = `${prefix}${def.key}`;
-        if (def.rows) input.rows = def.rows;
-        else input.type = def.type || 'text';
         if (def.inputmode) input.inputMode = def.inputmode;
         input.autocomplete = 'off';
         if (def.capitalize) input.setAttribute('autocapitalize', def.capitalize);

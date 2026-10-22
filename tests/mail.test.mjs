@@ -48,6 +48,9 @@ test('testo: dati del rapporto e firma', () => {
         'Bianchi Srl',
     ].join('\n'));
     assert.match(buildBody(newReport({ id: 'b' })), /la bozza del rapporto/);
+    const withModel = closed();
+    withModel.plant.model = 'Ciao 24';
+    assert.match(buildBody(withModel), /Impianto: Beretta Ciao 24, matricola SN1, targa impianto AB12/);
 });
 
 test('mailto: destinatari, oggetto e testo codificati', () => {

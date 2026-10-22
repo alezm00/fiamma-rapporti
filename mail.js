@@ -29,7 +29,7 @@ export function buildSubject(doc) {
 export function buildBody(doc, company = {}) {
     const c = doc.customer || {};
     const p = doc.plant || {};
-    const boiler = [p.brand, p.serial && `matricola ${p.serial}`, p.plateCode && `targa impianto ${p.plateCode}`].filter(Boolean).join(', ');
+    const boiler = [[p.brand, p.model].filter(Boolean).join(' '), p.serial && `matricola ${p.serial}`, p.plateCode && `targa impianto ${p.plateCode}`].filter(Boolean).join(', ');
     const what = [typeLabel(doc.intervention?.type), outcomeLabel(doc.intervention?.outcome)].filter(Boolean).join(' - ');
     const details = [
         c.name && `Cliente: ${c.name}`,

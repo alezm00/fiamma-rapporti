@@ -3,6 +3,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const [SP, FX, BASE = 'http://localhost:8801/'] = process.argv.slice(2);
 const log = (...a) => console.log('•', ...a);
+const ISO_TODAY = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' }); // aaaa-mm-gg
 const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now() - t < ms) { if (await fn()) return; await new Promise((r) => setTimeout(r, 300)); } throw new Error('timeout in attesa'); };
 const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
 fs.mkdirSync(`${SP}/dl`, { recursive: true });
@@ -62,7 +63,7 @@ fs.mkdirSync(`${SP}/dl`, { recursive: true });
   let files = strip(await tree());
   log('dopo la pausa ->', JSON.stringify(files));
   const draftDir = files.find((f) => f.endsWith('rapporto.json')).replace('/rapporto.json', '');
-  assert(/^TestoQR\/rapporti\/2026\/BOZZA_2026-10-22_Mario-Rossi_[0-9a-f]{8}$/.test(draftDir), 'cartella della bozza');
+  assert(new RegExp(`^TestoQR/rapporti/${ISO_TODAY.slice(0, 4)}/BOZZA_${ISO_TODAY}_Mario-Rossi_[0-9a-f]{8}$`).test(draftDir), 'cartella della bozza');
   assert(files.includes(`${draftDir}/foto/01.jpg`) && files.includes(`${draftDir}/foto/02.jpg`) && !files.some((f) => f.endsWith('.pdf')), 'foto sì, PDF no per la bozza');
   const json = JSON.parse(new TextDecoder().decode(await page.evaluate(async (p) => Array.from(await window.T.read(p)), `${draftDir}/rapporto.json`).then((a) => Uint8Array.from(a))));
   assert(json.customer.name === 'Mario Rossi' && json.measures.length === 1 && json.photos.length === 2 && json.photos[0].file === 'foto/01.jpg', 'contenuto del json');

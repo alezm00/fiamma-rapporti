@@ -2,6 +2,7 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const [SP, FX, BASE = 'http://localhost:8801/'] = process.argv.slice(2);
 const log = (...a) => console.log('•', ...a);
+const TODAY = new Date().toLocaleDateString('it-IT', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', year: 'numeric' }); // gg/mm/aaaa, come nel browser di prova
 const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
 const CAPTURE_MAILTO = () => document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a'); if (a && a.href.startsWith('mailto:')) { window.__mailto = a.href; e.preventDefault(); } }, true);
 const STUB_SHARE = () => {
@@ -41,6 +42,9 @@ const STUB_SHARE = () => {
   await page.fill('#s-d-name', 'Condominio Rossi');
   await page.fill('#s-d-address', 'Via Roma 1, 33100 Udine (UD)');
   await page.fill('#s-d-brand', 'Beretta');
+  await page.fill('#s-d-model', 'Ciao 24');
+  await page.selectOption('#s-d-fuel', 'gpl');
+  await page.selectOption('#s-d-chamber', 'aperta');
   await page.fill('#s-d-notes', 'Manutenzione ordinaria.');
   await page.press('#s-d-notes', 'Tab');
   await page.goBack();
@@ -59,6 +63,9 @@ const STUB_SHARE = () => {
   await page.waitForSelector('#view-editor:not([hidden])');
   const form = await page.evaluate(() => ['c-name', 'c-address', 'c-brand', 'c-notes', 'c-phone'].map((id) => document.getElementById(id).value));
   log('modulo precompilato:', JSON.stringify(form));
+  const boiler = await page.evaluate(() => ['c-model', 'c-fuel', 'c-chamber', 'c-technology'].map((id) => document.getElementById(id).value));
+  log('caldaia precompilata:', JSON.stringify(boiler));
+  assert(boiler.join() === 'Ciao 24,gpl,aperta,', 'dati caldaia predefiniti');
   assert(form[0] === 'Condominio Rossi' && form[2] === 'Beretta' && form[3] === 'Manutenzione ordinaria.' && form[4] === '', 'dati predefiniti applicati');
   log('riga destinatario:', await page.textContent('#mail-info'));
   await page.fill('#c-name', 'Mario Rossi');
@@ -72,7 +79,7 @@ const STUB_SHARE = () => {
   await page.waitForFunction(() => window.__shared);
   let sh = await page.evaluate(() => window.__shared);
   log('bozza -> oggetto:', JSON.stringify(sh.title), '| file:', sh.name);
-  assert(sh.title === 'Rapporto di intervento (bozza) - Mario Rossi - targa 06BD529A822E2B20 - 22/10/2026', 'oggetto bozza');
+  assert(sh.title === `Rapporto di intervento (bozza) - Mario Rossi - targa 06BD529A822E2B20 - ${TODAY}`, 'oggetto bozza');
   assert(sh.type === 'application/pdf' && /^Bozza_/.test(sh.name), 'file bozza');
   assert((await badge(page)) === 'Bozza', 'una bozza inviata resta bozza');
   const clip = await page.evaluate(() => navigator.clipboard.readText());
@@ -89,7 +96,7 @@ const STUB_SHARE = () => {
   const lines = sh.text.split('\n');
   log('chiuso -> oggetto:', JSON.stringify(sh.title), '| file:', sh.name);
   console.log(sh.text.split('\n').map((l) => '    ' + l).join('\n'));
-  assert(sh.title === `Rapporto di intervento n. ${(await page.textContent('#e-title')).slice(12)} - Mario Rossi - targa 06BD529A822E2B20 - 22/10/2026`, 'oggetto chiuso');
+  assert(sh.title === `Rapporto di intervento n. ${(await page.textContent('#e-title')).slice(12)} - Mario Rossi - targa 06BD529A822E2B20 - ${TODAY}`, 'oggetto chiuso');
   assert(sh.text.includes('Intervento: Riparazione / guasto - Funzionante con anomalie') && lines.at(-2) === 'Luca Bianchi' && lines.at(-1) === 'Termoidraulica Bianchi', 'testo con intervento e firma');
   await page.waitForFunction(() => document.getElementById('e-badge').textContent === 'Inviato');
   log('stato dopo invio ->', await badge(page));

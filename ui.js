@@ -82,6 +82,7 @@ export const CLS = {
     fieldLabel: 'text-[.85rem] text-muted',
     input: 'input',
     textarea: 'input min-h-[4.2em] resize-y',
+    select: 'input [color-scheme:dark]',
     dateInput: 'input min-h-[54px] [color-scheme:dark]',
 };
 

@@ -177,6 +177,9 @@
             <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Marca caldaia</span>
                 <input id="c-brand" class="input" type="text" autocomplete="off" autocapitalize="words">
             </label>
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Modello</span>
+                <input id="c-model" class="input" type="text" autocomplete="off" autocapitalize="characters">
+            </label>
             <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Matricola / codice caldaia</span>
                 <input id="c-serial" class="input" type="text" autocomplete="off" autocapitalize="characters">
             </label>
@@ -186,6 +189,23 @@
             <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Data di installazione</span>
                 <input id="c-date" class="input min-h-[54px] [color-scheme:dark]" type="date">
             </label>
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Camera di combustione</span>
+                <select id="c-chamber" class="input [color-scheme:dark]"></select>
+            </label>
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Tipo di caldaia</span>
+                <select id="c-technology" class="input [color-scheme:dark]"></select>
+            </label>
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Combustibile</span>
+                <select id="c-fuel" class="input [color-scheme:dark]"></select>
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+                <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Potenza termica nominale (kW)</span>
+                    <input id="c-power-nom" class="input" type="text" inputmode="decimal" autocomplete="off">
+                </label>
+                <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Potenza termica reale (kW)</span>
+                    <input id="c-power-real" class="input" type="text" inputmode="decimal" autocomplete="off">
+                </label>
+            </div>
         </div>
     </div>
 

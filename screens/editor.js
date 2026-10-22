@@ -4,7 +4,7 @@
 import * as nav from '../nav.js';
 import * as store from '../store.js';
 import {
-    INTERVENTION_TYPES, OUTCOMES, durationMinutes, formatDuration, formatNumber, nextNumber, reportYear,
+    INTERVENTION_TYPES, OUTCOMES, CHAMBERS, TECHNOLOGIES, FUELS, durationMinutes, formatDuration, formatNumber, nextNumber, reportYear,
     timeString, reportFileName,
 } from '../model.js';
 import { buildReport, formatDate } from '../tjf.js';
@@ -31,9 +31,15 @@ const FIELDS = {
     'c-address': 'customer.address',
     'c-phone': 'customer.phone',
     'c-brand': 'plant.brand',
+    'c-model': 'plant.model',
     'c-serial': 'plant.serial',
     'c-plate': 'plant.plateCode',
     'c-date': 'plant.installDate',
+    'c-chamber': 'plant.chamber',
+    'c-technology': 'plant.technology',
+    'c-fuel': 'plant.fuel',
+    'c-power-nom': 'plant.nominalPower',
+    'c-power-real': 'plant.actualPower',
     'e-type': 'intervention.type',
     'e-outcome': 'intervention.outcome',
     'e-work': 'intervention.work',
@@ -429,6 +435,9 @@ export function init() {
     };
     fillSelect('e-type', INTERVENTION_TYPES, 'Seleziona…');
     fillSelect('e-outcome', OUTCOMES, 'Seleziona…');
+    fillSelect('c-chamber', CHAMBERS, 'Non indicata');
+    fillSelect('c-technology', TECHNOLOGIES, 'Non indicato');
+    fillSelect('c-fuel', FUELS, 'Non indicato');
 
     for (const event of ['input', 'change']) {
         $('view-editor').addEventListener(event, (e) => {

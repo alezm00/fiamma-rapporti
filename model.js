@@ -21,6 +21,28 @@ export const OUTCOMES = [
     { id: 'ko', label: 'Non funzionante' },
 ];
 
+// dati della caldaia (impianto)
+export const CHAMBERS = [
+    { id: 'aperta', label: 'Aperta' },
+    { id: 'forzata', label: 'Forzata' },
+];
+
+export const TECHNOLOGIES = [
+    { id: 'condensazione', label: 'A condensazione' },
+    { id: 'tradizionale', label: 'Tradizionale' },
+];
+
+export const FUELS = [
+    { id: 'metano', label: 'Metano' },
+    { id: 'gpl', label: 'GPL' },
+    { id: 'gasolio', label: 'Gasolio' },
+];
+
+const labelIn = (list, id) => list.find((i) => i.id === id)?.label ?? '';
+export const chamberLabel = (id) => labelIn(CHAMBERS, id);
+export const technologyLabel = (id) => labelIn(TECHNOLOGIES, id);
+export const fuelLabel = (id) => labelIn(FUELS, id);
+
 export const typeLabel = (id) => INTERVENTION_TYPES.find((t) => t.id === id)?.label ?? '';
 export const outcomeLabel = (id) => OUTCOMES.find((o) => o.id === id)?.label ?? '';
 
@@ -55,7 +77,10 @@ export function newReport({ now = new Date(), defaults = {}, id = newId() } = {}
         closedAt: null,
         sentAt: null,
         customer: { name: d.name || '', fiscalCode: d.fiscalCode || '', address: d.address || '', phone: d.phone || '' },
-        plant: { brand: d.brand || '', serial: d.serial || '', plateCode: d.plateCode || '', installDate: d.installDate || '' },
+        plant: {
+            brand: d.brand || '', model: d.model || '', serial: d.serial || '', plateCode: d.plateCode || '', installDate: d.installDate || '',
+            chamber: d.chamber || '', technology: d.technology || '', fuel: d.fuel || '', nominalPower: d.nominalPower || '', actualPower: d.actualPower || '',
+        },
         intervention: { type: '', outcome: '', work: '', materials: [], startTime: '', endTime: '', notes: d.notes || '' },
         measures: [],
         photoCount: 0,
@@ -73,7 +98,8 @@ export function applyEdit(doc, now = new Date()) {
 export function isBlank(doc, defaults = {}) {
     if (doc.status !== 'draft' || doc.number || doc.measures.length || doc.photoCount) return false;
     const fresh = newReport({ defaults, id: doc.id });
-    const form = (d) => JSON.stringify([d.customer, d.plant, { ...d.intervention, startTime: '', endTime: '' }]);
+    // i rapporti salvati prima dei campi nuovi dell'impianto non li hanno: si confronta con i valori vuoti
+    const form = (d) => JSON.stringify([{ ...fresh.customer, ...d.customer }, { ...fresh.plant, ...d.plant }, { ...fresh.intervention, ...d.intervention, startTime: '', endTime: '' }]);
     return form(doc) === form(fresh);
 }
 
@@ -169,7 +195,7 @@ export function formatDuration(min) {
 export const normalizeText = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 export const searchText = (doc) => normalizeText([
-    doc.number, doc.customer?.name, doc.customer?.address, doc.customer?.phone, doc.plant?.plateCode, doc.plant?.serial, doc.plant?.brand,
+    doc.number, doc.customer?.name, doc.customer?.address, doc.customer?.phone, doc.plant?.plateCode, doc.plant?.serial, doc.plant?.brand, doc.plant?.model,
 ].filter(Boolean).join(' '));
 
 // query: parole separate da spazio, tutte da trovare; status: 'all' | 'draft' | 'done' | 'sent'

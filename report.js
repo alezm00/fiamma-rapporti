@@ -1,7 +1,9 @@
 // Rapporto di intervento in PDF (pdf-lib + font Liberation Sans): tutto in locale, funziona anche offline.
 // Le librerie e i font si caricano solo quando serve il PDF.
 import { formatDate } from './tjf.js';
-import { groupMeasures, formatDay, typeLabel, outcomeLabel, durationMinutes, formatDuration } from './model.js';
+import {
+    groupMeasures, formatDay, typeLabel, outcomeLabel, chamberLabel, technologyLabel, fuelLabel, durationMinutes, formatDuration,
+} from './model.js';
 
 const PAGE_W = 595.28; // A4
 const PAGE_H = 841.89;
@@ -255,26 +257,26 @@ export async function createReportPdf(r, settings = {}, { photos = [], logo = nu
 
     // --- cliente e impianto ---------------------------------------------------
 
-    const gap = 14;
-    const halfW = (CONTENT_W - gap) / 2;
     const installDate = /^\d{4}-\d{2}-\d{2}$/.test(plant.installDate || '') ? formatDay(plant.installDate) : clean(plant.installDate);
-    const clientRows = layoutRows([
+    const kw = (v) => (/^[\d.,\s]+$/.test(clean(v)) && clean(v) ? `${clean(v)} kW` : clean(v)); // "24" -> "24 kW"
+    fieldsBox('Cliente', [
         { label: 'Nome e cognome', value: customer.name },
         { label: 'Codice fiscale', value: code(customer.fiscalCode) },
         { label: 'Indirizzo', value: oneLine(customer.address) },
         { label: 'Telefono', value: customer.phone },
-    ], 1, halfW - PAD * 2);
-    const plantRows = layoutRows([
+    ], 2);
+    fieldsBox('Impianto', [
         { label: 'Marca', value: plant.brand },
-        { label: 'Matricola / codice caldaia', value: plant.serial },
+        { label: 'Modello', value: plant.model },
+        { label: 'Matricola / codice', value: plant.serial },
         { label: 'Targa impianto', value: code(plant.plateCode) },
         { label: 'Data di installazione', value: installDate },
-    ], 1, halfW - PAD * 2);
-    const h1 = Math.max(boxHeight(clientRows), boxHeight(plantRows));
-    ensure(h1);
-    drawBox('Cliente', clientRows, MARGIN, halfW, h1);
-    drawBox('Impianto', plantRows, MARGIN + halfW + gap, halfW, h1);
-    y -= h1 + GAP;
+        { label: 'Combustibile', value: fuelLabel(plant.fuel) },
+        { label: 'Camera di combustione', value: chamberLabel(plant.chamber) },
+        { label: 'Tipo di caldaia', value: technologyLabel(plant.technology) },
+        { label: 'Potenza termica nominale', value: kw(plant.nominalPower) },
+        { label: 'Potenza termica reale', value: kw(plant.actualPower) },
+    ], 4);
 
     // --- intervento: tipo, esito, orari e durata -------------------------------
 
