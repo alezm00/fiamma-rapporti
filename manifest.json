@@ -1,7 +1,7 @@
 {
   "short_name": "Testo QR",
   "name": "Testo QR",
-  "description": "Legge il QR code dell'analizzatore Testo 330 e mostra i risultati della prova",
+  "description": "Rapporti di intervento con le misure dell'analizzatore di combustione Testo 330",
   "icons": [
     {
       "src": "img/icon-192.png",
