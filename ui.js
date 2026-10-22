@@ -39,8 +39,6 @@ export const CLS = {
     unitDel: 'btn size-8 min-h-0 w-8 flex-none bg-field px-0 text-[.85rem] text-err-fg',
     unitGrid: 'grid grid-cols-2 items-end gap-2',
 
-    defaultsUnit: 'col-span-2 grid grid-cols-2 items-end gap-2',
-
     // intestazioni dei mesi nell'elenco e righe del cestino
     monthHead: 'mt-1.5 flex items-center gap-2 font-mono text-[.66rem] font-bold tracking-[.12em] text-muted uppercase first:mt-0 after:h-px after:flex-1 after:bg-line',
     trashRow: 'rounded border border-edge bg-field p-2',

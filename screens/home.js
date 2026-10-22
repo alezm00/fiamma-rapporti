@@ -108,10 +108,9 @@ async function renderReminder() {
 
 export async function enter() {
     await store.purgeExpired(); // dal cestino va via quello che ci sta da più di 30 giorni
-    // le bozze mai compilate (solo i dati predefiniti) non servono: si scartano
-    const defaults = loadSettings().defaults;
+    // le bozze mai compilate non servono: si scartano
     for (const doc of await store.listReports()) {
-        if (isBlank(doc, defaults)) await store.purgeReport(doc.id);
+        if (isBlank(doc)) await store.purgeReport(doc.id);
     }
     reports = await store.listReports();
     trashCount = (await store.listTrash()).length;

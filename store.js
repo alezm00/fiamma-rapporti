@@ -27,10 +27,10 @@ export async function listTrash() {
 
 export const getReport = (id) => db.get(db.REPORTS, id);
 
-// nuova bozza, con i dati predefiniti delle impostazioni
+// nuova bozza vuota
 export async function createReport() {
     askPersistence();
-    const doc = model.newReport({ defaults: loadSettings().defaults });
+    const doc = model.newReport();
     await db.put(db.REPORTS, doc);
     emit('save', doc.id);
     return doc;

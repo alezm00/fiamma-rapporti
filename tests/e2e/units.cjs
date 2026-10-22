@@ -17,13 +17,17 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   const stored = () => page.evaluate(async () => { const s = await import('/store.js'); const l = await s.listReports(); return l[0]?.plant; });
   const wait = (ms) => page.waitForTimeout(ms);
 
-  // 1) un rapporto nuovo parte con una caldaia (come prima)
+  // 1) un rapporto nuovo parte senza apparecchi: messaggio e tre tasti per aggiungerli
   await page.click('#btn-new'); await editor();
-  assert((await titles()).join() === 'Caldaia', 'una caldaia di partenza: ' + (await titles()));
+  assert((await titles()).length === 0, 'nessun apparecchio di partenza: ' + (await titles()));
+  assert(await page.isVisible('#e-units-empty'), 'messaggio di elenco vuoto');
+  for (const k of ['caldaia', 'pompa', 'condizionatore']) assert(await page.isVisible(`#e-add-${k}`), 'tasto per aggiungere ' + k);
+  await page.screenshot({ path: `${SP}/shots5/20a-units-empty.png`, fullPage: true });
+  await page.click('#e-add-caldaia');
+  assert((await titles()).join() === 'Caldaia' && !(await page.isVisible('#e-units-empty')), 'caldaia aggiunta, messaggio sparito');
   const caldaiaFields = await page.$$eval('#e-units > section:first-child input, #e-units > section:first-child select', (e) => e.map((x) => x.id.replace(/^u0-/, '')));
   log('campi della caldaia ->', caldaiaFields.join(', '));
   assert(caldaiaFields.join() === 'brand,model,serial,installDate,fuel,chamber,technology,nominalPower,actualPower', 'campi della caldaia');
-  assert(!(await page.isVisible('#e-units-empty')), 'niente messaggio di elenco vuoto');
 
   // 2) pompa di calore, condizionatori, seconda caldaia: campi e numerazione dei titoli
   await page.click('#e-add-pompa');
@@ -100,8 +104,9 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   assert(both.join() === 'Altherma 3,Altherma 4', 'copie indipendenti: ' + both);
   await page.click('#e-back'); await home();
 
-  // 7) nessun apparecchio: messaggio e di nuovo aggiungibili
+  // 7) tolti tutti gli apparecchi: messaggio e di nuovo aggiungibili
   await page.click('#btn-new'); await editor();
+  await page.click('#e-add-caldaia');
   await page.click('#u0-del');
   assert((await titles()).length === 0 && (await page.isVisible('#e-units-empty')), 'elenco vuoto con messaggio');
   await page.click('#e-add-condizionatore');
@@ -117,44 +122,22 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   assert(before === after, 'apparecchi uguali dopo il ripristino');
   log('backup -> apparecchi conservati');
 
-  // 9) impostazioni: apparecchio dei nuovi rapporti
-  await page.click('#btn-settings');
-  await page.waitForSelector('#view-settings:not([hidden])');
-  assert((await page.inputValue('#s-d-unitkind')) === 'caldaia', 'predefinito: caldaia');
-  await page.selectOption('#s-d-unitkind', 'pompa');
-  const defFields = await page.$$eval('#s-d-unit input, #s-d-unit select', (e) => e.map((x) => x.id.replace('s-d-u-', '')));
-  assert(defFields.join() === 'brand,model,serial,installDate,hpType,nominalPower,coolingPower,refrigerant,charge', 'campi predefiniti della pompa: ' + defFields);
-  await page.fill('#s-d-u-brand', 'Daikin');
-  await page.selectOption('#s-d-u-refrigerant', 'r32');
-  await page.selectOption('#s-d-unitkind', 'caldaia');
-  await page.fill('#s-d-u-fuel', '').catch(() => {});
-  await page.selectOption('#s-d-u-fuel', 'metano');
-  await page.selectOption('#s-d-unitkind', 'pompa');
-  assert((await page.inputValue('#s-d-u-brand')) === 'Daikin' && (await page.inputValue('#s-d-u-refrigerant')) === 'r32', 'cambiando tipo i valori comuni restano');
-  await page.selectOption('#s-d-unitkind', 'caldaia');
-  assert((await page.inputValue('#s-d-u-fuel')) === 'metano', 'e quelli dell\'altro tipo si ritrovano');
-  await page.selectOption('#s-d-unitkind', 'pompa');
-  await page.screenshot({ path: `${SP}/shots5/21-settings-units.png`, fullPage: true });
-  await page.click('#btn-settings-back'); await home();
+  // 9) un rapporto nuovo e vuoto (senza apparecchi) si scarta; con un apparecchio aggiunto resta
+  const count = () => page.$$eval('#report-list > li:not([data-month])', (l) => l.length);
+  const n0 = await count();
   await page.click('#btn-new'); await editor();
-  assert((await titles()).join() === 'Pompa di calore' && (await page.inputValue('#u0-brand')) === 'Daikin' && (await page.inputValue('#u0-refrigerant')) === 'r32', 'nuovo rapporto con la pompa predefinita');
   await page.click('#e-back'); await home();
-  // nessun apparecchio
-  await page.click('#btn-settings'); await page.waitForSelector('#view-settings:not([hidden])');
-  await page.selectOption('#s-d-unitkind', 'none');
-  assert((await page.$$('#s-d-unit > *')).length === 0, 'nessun campo con "Nessuno"');
-  await page.click('#btn-settings-back'); await home();
+  assert((await count()) === n0, 'bozza vuota scartata');
   await page.click('#btn-new'); await editor();
-  assert((await titles()).length === 0 && (await page.isVisible('#e-units-empty')), 'nuovo rapporto senza apparecchi');
-  // aggiungere un apparecchio lo rende "compilato": la bozza non si scarta
   await page.click('#e-add-caldaia');
   await page.click('#e-back'); await home();
-  await page.fill('#h-search', '');
-  assert((await page.$$('#report-list > li:not([data-month])')).length >= 3, 'la bozza con un apparecchio resta');
-  // svuota i dati predefiniti: torna la caldaia
+  assert((await count()) === n0 + 1, 'la bozza con un apparecchio resta');
+
+  // 10) impostazioni: niente "Dati predefiniti"
   await page.click('#btn-settings'); await page.waitForSelector('#view-settings:not([hidden])');
-  await page.click('#btn-defaults-clear');
-  assert((await page.inputValue('#s-d-unitkind')) === 'caldaia' && (await page.inputValue('#s-d-u-brand')) === '', 'svuotati: di nuovo caldaia');
+  assert((await page.$('#s-defaults')) === null && (await page.$('#btn-defaults-clear')) === null, 'nessun riquadro Dati predefiniti');
+  assert(!/predefinit/i.test(await page.innerText('#view-settings')), 'nessun riferimento ai dati predefiniti');
+  await page.screenshot({ path: `${SP}/shots5/21-settings.png`, fullPage: true });
   assert(errors.length === 0, 'errori: ' + errors.join(' // '));
   await browser.close();
   log('ok');

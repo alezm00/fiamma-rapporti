@@ -118,8 +118,7 @@ fs.mkdirSync(`${SP}/dl`, { recursive: true });
   await page.click('#btn-settings');
   await page.waitForSelector('#view-settings:not([hidden])');
   await page.fill('#s-co-name', 'Termoidraulica Bianchi');
-  await page.fill('#s-d-name', 'Condominio Rossi');
-  await page.press('#s-d-name', 'Tab');
+  await page.press('#s-co-name', 'Tab');
   log('impostazioni -> stato:', await page.textContent('#s-folder-status'));
   assert(/Collegata: «SD-card»/.test(await page.textContent('#s-folder-status')) && !(await page.isVisible('#s-folder-link')) && (await page.isVisible('#s-folder-tools')), 'stato collegata');
   await page.click('#s-folder-test');
@@ -156,7 +155,7 @@ fs.mkdirSync(`${SP}/dl`, { recursive: true });
   assert(res.reports === 1 && res.photos === 2 && photosAfter === photosBefore, 'conteggi del ripristino');
   assert(after === snapshot, 'rapporto identico dopo il ripristino');
   const restored = await page.evaluate(() => JSON.parse(localStorage.getItem('testoqr.config')));
-  assert(restored.company.name === 'Termoidraulica Bianchi' && restored.counters['2026'] === 1 && restored.defaults.name === 'Condominio Rossi', 'impostazioni ripristinate');
+  assert(restored.company.name === 'Termoidraulica Bianchi' && restored.counters['2026'] === 1, 'impostazioni ripristinate');
   st = await page.evaluate(async () => (await import('/folder.js')).status());
   assert(st.pending === 0, 'il ripristino non rimette nulla in coda: ' + st.pending);
   // le foto ripristinate dalla cartella si possono riscrivere nella stessa cartella (non dipendono più dal suo file)

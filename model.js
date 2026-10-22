@@ -145,12 +145,6 @@ function normalizePlant(plant) {
     };
 }
 
-// gli apparecchi di un rapporto nuovo: uno del tipo scelto nei dati predefiniti (di solito una caldaia)
-function defaultUnits(d) {
-    const kind = d.unitKind ?? 'caldaia';
-    return unitKind(kind) ? [newUnit(kind, d)] : [];
-}
-
 const labelIn = (list, id) => list.find((i) => i.id === id)?.label ?? '';
 
 export const typeLabel = (id) => INTERVENTION_TYPES.find((t) => t.id === id)?.label ?? '';
@@ -174,9 +168,8 @@ export function newId() {
 // Creazione e modifica
 // ---------------------------------------------------------------------------
 
-// defaults: i dati predefiniti delle impostazioni
-export function newReport({ now = new Date(), defaults = {}, id = newId() } = {}) {
-    const d = defaults;
+// Un rapporto nuovo è una bozza vuota: senza apparecchi (si aggiungono dalla scheda Impianto).
+export function newReport({ now = new Date(), id = newId() } = {}) {
     return {
         id,
         number: null,
@@ -187,9 +180,9 @@ export function newReport({ now = new Date(), defaults = {}, id = newId() } = {}
         closedAt: null,
         sentAt: null,
         deletedAt: null, // nel cestino da questo momento (si elimina per sempre dopo TRASH_DAYS giorni)
-        customer: { name: d.name || '', fiscalCode: d.fiscalCode || '', address: d.address || '', phone: d.phone || '' },
-        plant: { plateCode: d.plateCode || '', units: defaultUnits(d) },
-        intervention: { type: '', outcome: '', work: '', materials: [], startTime: '', endTime: '', notes: d.notes || '' },
+        customer: { name: '', fiscalCode: '', address: '', phone: '' },
+        plant: { plateCode: '', units: [] },
+        intervention: { type: '', outcome: '', work: '', materials: [], startTime: '', endTime: '', notes: '' },
         measures: [],
         photoCount: 0,
     };
@@ -202,10 +195,10 @@ export function applyEdit(doc, now = new Date()) {
     return doc;
 }
 
-// Bozza mai compilata (solo i dati predefiniti): si scarta da sola, per non lasciare righe vuote in elenco
-export function isBlank(doc, defaults = {}) {
+// Bozza mai compilata: si scarta da sola, per non lasciare righe vuote in elenco
+export function isBlank(doc) {
     if (doc.status !== 'draft' || doc.number || doc.measures.length || doc.photoCount) return false;
-    const fresh = newReport({ defaults, id: doc.id });
+    const fresh = newReport({ id: doc.id });
     // gli apparecchi si confrontano senza identificativo (cambia a ogni rapporto nuovo)
     const plant = (p) => ({ plateCode: p?.plateCode ?? '', units: (p?.units ?? []).map(({ id: _id, ...u }) => u) });
     const form = (d) => JSON.stringify([{ ...fresh.customer, ...d.customer }, plant(d.plant), { ...fresh.intervention, ...d.intervention, startTime: '', endTime: '' }]);

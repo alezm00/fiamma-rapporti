@@ -24,6 +24,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await page.fill('#c-name', 'Mario Rossi');
   await page.fill('#c-address', 'Via Roma 1\n33170 Pordenone PN');
   await page.fill('#c-plate', 'ab12');
+  await page.click('#e-add-caldaia');
   await page.fill('#u0-brand', 'Beretta');
   await page.selectOption('#e-type', 'ordinaria');
   await page.selectOption('#e-outcome', 'anomalie');

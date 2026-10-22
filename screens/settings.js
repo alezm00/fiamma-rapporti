@@ -1,8 +1,8 @@
-// Impostazioni: ditta e tecnico, logo, numerazione, email, dati predefiniti dei nuovi rapporti.
+// Impostazioni: ditta e tecnico, logo, numerazione, email, cartella di salvataggio, backup.
 
 import * as nav from '../nav.js';
 import { loadSettings, updateSettings } from '../settings.js';
-import { formatNumber, nextNumber, setNextNumber, UNIT_KINDS, unitKind } from '../model.js';
+import { formatNumber, nextNumber, setNextNumber } from '../model.js';
 import { checkRecipients } from '../mail.js';
 import { getLogo, setLogo, removeLogo } from '../photos.js';
 import * as folder from '../folder.js';
@@ -19,31 +19,6 @@ const COMPANY_DEFS = [
     { key: 'email', label: 'Email', type: 'email', capitalize: 'none', wide: true },
     { key: 'technician', label: 'Nome del tecnico', capitalize: 'words', wide: true },
 ];
-
-// campi del cliente e dell'impianto che si possono precompilare nei nuovi rapporti
-const DEFAULT_DEFS = [
-    { key: 'name', label: 'Nome e cognome', capitalize: 'words', wide: true },
-    { key: 'fiscalCode', label: 'Codice fiscale', capitalize: 'characters' },
-    { key: 'phone', label: 'Telefono', type: 'tel' },
-    { key: 'address', label: 'Indirizzo', rows: 2, capitalize: 'words', wide: true },
-    { key: 'plateCode', label: 'Targa impianto', capitalize: 'characters', wide: true },
-];
-const NOTES_DEF = { key: 'notes', label: 'Note', rows: 3, capitalize: 'sentences', wide: true };
-
-// il primo apparecchio dei nuovi rapporti: del tipo scelto qui, con i suoi dati
-const KIND_OPTIONS = [{ id: 'none', label: 'Nessuno' }, ...UNIT_KINDS.map((k) => ({ id: k.id, label: k.label }))];
-const UNIT_CAPS = { brand: 'words', model: 'characters', serial: 'characters' };
-const unitDefs = (kindId) => (unitKind(kindId)?.fields ?? []).map((f) => ({
-    key: f.key,
-    label: f.unit ? `${f.label} (${f.unit})` : f.label,
-    options: f.options,
-    type: f.date ? 'date' : 'text',
-    inputmode: f.decimal ? 'decimal' : undefined,
-    capitalize: UNIT_CAPS[f.key],
-}));
-const currentKind = () => $('s-d-unitkind').value;
-let shownKind = 'caldaia'; // di che tipo sono i campi dell'apparecchio mostrati ora
-let rendering = false; // mentre i campi si ricostruiscono, il browser può lanciare eventi di chi sta sparendo: si ignorano
 
 // un campo con la sua etichetta (testo, data, menu o area di testo)
 function fieldElement(def, id) {
@@ -70,22 +45,6 @@ function buildFields(boxId, prefix, defs) {
     $(boxId).append(...defs.map((def) => fieldElement(def, `${prefix}${def.key}`)));
 }
 
-// i campi dell'apparecchio predefinito cambiano col tipo scelto
-function renderUnitDefaults(kindId, values) {
-    const fields = unitDefs(kindId).map((def) => {
-        const field = fieldElement(def, `s-d-u-${def.key}`);
-        field.querySelector('input, select').value = values[def.key] || '';
-        return field;
-    });
-    rendering = true;
-    try {
-        $('s-d-unit').replaceChildren(...fields);
-        shownKind = kindId;
-    } finally {
-        rendering = false;
-    }
-}
-
 const year = () => new Date().getFullYear();
 
 function fillNumbering(counters) {
@@ -109,30 +68,17 @@ function fill() {
     const s = loadSettings();
     $('s-email').value = s.email;
     for (const radio of document.querySelectorAll('input[name="s-method"]')) radio.checked = radio.value === s.method;
-    for (const def of [...DEFAULT_DEFS, NOTES_DEF]) $(`s-d-${def.key}`).value = s.defaults[def.key] || '';
-    $('s-d-unitkind').value = s.defaults.unitKind ?? 'caldaia'; // come prima: una caldaia
-    renderUnitDefaults(currentKind(), s.defaults);
     for (const def of COMPANY_DEFS) $(`s-co-${def.key}`).value = s.company[def.key] || '';
     $('s-email-hint').hidden = true;
     fillNumbering(s.counters);
 }
 
 function persist() {
-    if (rendering) return;
-    // si parte da quelli già salvati: i campi di un altro tipo di apparecchio non si perdono cambiando tipo
-    const defaults = { ...loadSettings().defaults, unitKind: currentKind() };
-    const inputs = [...DEFAULT_DEFS, NOTES_DEF].map((def) => [def.key, $(`s-d-${def.key}`)]);
-    inputs.push(...unitDefs(shownKind).map((def) => [def.key, $(`s-d-u-${def.key}`)]));
-    for (const [key, input] of inputs) {
-        if (input.value.trim()) defaults[key] = input.value;
-        else delete defaults[key];
-    }
     const company = {};
     for (const def of COMPANY_DEFS) company[def.key] = $(`s-co-${def.key}`).value.trim();
     updateSettings({
         email: $('s-email').value.trim(),
         method: document.querySelector('input[name="s-method"]:checked')?.value === 'mailto' ? 'mailto' : 'share',
-        defaults,
         company,
     });
 }
@@ -180,7 +126,7 @@ async function runFolder(button, action) {
 // la domanda quando la cartella scelta contiene già delle impostazioni
 function askSettings(handle, { settings, modified }) {
     const who = [settings.company.name, settings.email].filter(Boolean).join(', ');
-    return `Nella cartella «${handle.name}» ci sono impostazioni salvate${modified ? ` il ${when(modified)}` : ''}${who ? ` (${who})` : ''}.\n\nCaricarle al posto di quelle di questo telefono? Valgono ditta, email, dati predefiniti e logo; il numero progressivo dei rapporti non torna mai indietro.`;
+    return `Nella cartella «${handle.name}» ci sono impostazioni salvate${modified ? ` il ${when(modified)}` : ''}${who ? ` (${who})` : ''}.\n\nCaricarle al posto di quelle di questo telefono? Valgono ditta, email, logo e numerazione; il numero progressivo dei rapporti non torna mai indietro.`;
 }
 
 function initFolder() {
@@ -266,20 +212,6 @@ export function leave() {
 
 export function init() {
     buildFields('s-company', 's-co-', COMPANY_DEFS);
-    buildFields('s-defaults', 's-d-', DEFAULT_DEFS);
-    // apparecchio dei nuovi rapporti: tipo e dati; poi le note
-    const kindField = fieldElement({ key: 'unitkind', label: 'Apparecchio dei nuovi rapporti', options: KIND_OPTIONS, wide: true }, 's-d-unitkind');
-    const kindSelect = kindField.querySelector('select');
-    kindSelect.firstElementChild.remove(); // niente voce vuota: "Nessuno" è una scelta
-    $('s-defaults').append(kindField);
-    const unitBox = el('div', CLS.defaultsUnit);
-    unitBox.id = 's-d-unit';
-    $('s-defaults').append(unitBox);
-    buildFields('s-defaults', 's-d-', [NOTES_DEF]);
-    kindSelect.addEventListener('change', () => {
-        persist(); // salva i valori del tipo di prima, poi mostra quelli del nuovo tipo
-        renderUnitDefaults(currentKind(), loadSettings().defaults);
-    });
 
     $('btn-settings-back').addEventListener('click', () => nav.back());
     initFolder();
@@ -320,12 +252,6 @@ export function init() {
     $('s-logo-del').addEventListener('click', async () => {
         await removeLogo();
         await showLogo();
-    });
-
-    $('btn-defaults-clear').addEventListener('click', () => {
-        if (!confirm('Svuotare tutti i dati predefiniti?')) return;
-        updateSettings({ defaults: {} });
-        fill();
     });
 
     document.addEventListener('visibilitychange', () => {

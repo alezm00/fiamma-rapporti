@@ -1,4 +1,4 @@
-// Impostazioni dell'app (restano sul telefono): ditta e tecnico, numerazione, email, dati predefiniti.
+// Impostazioni dell'app (restano sul telefono): ditta e tecnico, numerazione, email.
 // Chiave nuova: non legge le impostazioni delle versioni precedenti.
 
 const KEY = 'testoqr.config';
@@ -11,10 +11,6 @@ const text = (v) => (typeof v === 'string' ? v : '');
 export function normalizeSettings(s) {
     const company = { ...EMPTY_COMPANY };
     for (const k of Object.keys(EMPTY_COMPANY)) company[k] = text(s?.company?.[k]);
-    const defaults = {};
-    for (const [k, v] of Object.entries(s?.defaults && typeof s.defaults === 'object' ? s.defaults : {})) {
-        if (typeof v === 'string') defaults[k] = v;
-    }
     const counters = {}; // anno -> ultimo numero usato
     for (const [year, n] of Object.entries(s?.counters && typeof s.counters === 'object' ? s.counters : {})) {
         if (/^\d{4}$/.test(year) && Number.isFinite(n) && n >= 0) counters[year] = Math.floor(n);
@@ -22,7 +18,6 @@ export function normalizeSettings(s) {
     return {
         email: text(s?.email),
         method: s?.method === 'mailto' ? 'mailto' : 'share',
-        defaults,
         company,
         counters,
         lastBackup: Number(s?.lastBackup) || 0,
@@ -61,7 +56,6 @@ export function mergeSettings(local, incoming) {
     return {
         ...local,
         email: local.email || inc.email,
-        defaults: Object.keys(local.defaults).length ? local.defaults : inc.defaults,
         company,
         counters,
     };

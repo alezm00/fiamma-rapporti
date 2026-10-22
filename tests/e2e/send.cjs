@@ -39,34 +39,26 @@ const STUB_SHARE = () => {
   assert(!(await vis(page, '#s-email-hint')), 'avviso sparito');
   await page.fill('#s-co-name', 'Termoidraulica Bianchi');
   await page.fill('#s-co-technician', 'Luca Bianchi');
-  await page.fill('#s-d-name', 'Condominio Rossi');
-  await page.fill('#s-d-address', 'Via Roma 1, 33100 Udine (UD)');
-  await page.fill('#s-d-u-brand', 'Beretta');
-  await page.fill('#s-d-u-model', 'Ciao 24');
-  await page.selectOption('#s-d-u-fuel', 'gpl');
-  await page.selectOption('#s-d-u-chamber', 'aperta');
-  await page.fill('#s-d-notes', 'Manutenzione ordinaria.');
-  await page.press('#s-d-notes', 'Tab');
+  await page.press('#s-co-technician', 'Tab');
   await page.goBack();
   await page.waitForSelector('#view-home:not([hidden])');
   await page.reload();
   await page.waitForSelector('#view-home:not([hidden])');
   await page.click('#btn-settings');
-  const saved = await page.evaluate(() => ['s-email', 's-co-name', 's-co-technician', 's-d-name', 's-d-u-brand'].map((id) => document.getElementById(id).value));
+  const saved = await page.evaluate(() => ['s-email', 's-co-name', 's-co-technician'].map((id) => document.getElementById(id).value));
   log('dopo reload:', JSON.stringify(saved));
-  assert(saved[0] === 'ufficio@esempio.it, secondo@esempio.it' && saved[1] === 'Termoidraulica Bianchi' && saved[3] === 'Condominio Rossi', 'impostazioni salvate');
+  assert(saved[0] === 'ufficio@esempio.it, secondo@esempio.it' && saved[1] === 'Termoidraulica Bianchi' && saved[2] === 'Luca Bianchi', 'impostazioni salvate');
   await page.goBack();
   await page.waitForSelector('#view-home:not([hidden])');
 
-  // ============ nuovo rapporto: dati predefiniti ============
+  // ============ nuovo rapporto: vuoto, senza apparecchi ============
   await page.click('#btn-new');
   await page.waitForSelector('#view-editor:not([hidden])');
-  const form = await page.evaluate(() => ['c-name', 'c-address', 'u0-brand', 'c-notes', 'c-phone'].map((id) => document.getElementById(id).value));
-  log('modulo precompilato:', JSON.stringify(form));
-  const boiler = await page.evaluate(() => ['u0-model', 'u0-fuel', 'u0-chamber', 'u0-technology'].map((id) => document.getElementById(id).value));
-  log('caldaia precompilata:', JSON.stringify(boiler));
-  assert(boiler.join() === 'Ciao 24,gpl,aperta,', 'dati caldaia predefiniti');
-  assert(form[0] === 'Condominio Rossi' && form[2] === 'Beretta' && form[3] === 'Manutenzione ordinaria.' && form[4] === '', 'dati predefiniti applicati');
+  const form = await page.evaluate(() => ['c-name', 'c-address', 'c-plate', 'c-notes', 'c-phone'].map((id) => document.getElementById(id).value));
+  log('modulo:', JSON.stringify(form));
+  assert(form.every((v) => v === ''), 'nuovo rapporto vuoto');
+  assert((await page.$$('#e-units > section')).length === 0 && (await vis(page, '#e-units-empty')), 'nessun apparecchio');
+  await page.click('#e-add-caldaia');
   log('riga destinatario:', await page.textContent('#mail-info'));
   await page.fill('#c-name', 'Mario Rossi');
   await page.fill('#c-plate', '06BD529A822E2B20');

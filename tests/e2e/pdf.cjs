@@ -40,6 +40,7 @@ fs.mkdirSync(`${SP}/pdf5`, { recursive: true });
   await page.fill('#c-cf', 'RSSMRA80A01H501U');
   await page.fill('#c-address', 'Via Roma 1\n33170 Pordenone PN');
   await page.fill('#c-phone', '333 1234567');
+  await page.click('#e-add-caldaia');
   await page.fill('#u0-brand', 'Beretta');
   await page.fill('#u0-model', 'Luna Duo-Tec MP 24');
   await page.fill('#u0-serial', 'SN-778899');

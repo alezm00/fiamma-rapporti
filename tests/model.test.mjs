@@ -20,17 +20,14 @@ const combustion = (tf, o2, co) => tjf('val_10389_1', 'Media (UNI 10389-1)', [
     channel('FluegasTemperature', '°C', tf), channel('Oxygen', '%', o2), channel('CarbonMonoxide', 'ppm', co),
 ]);
 
-test('nuovo rapporto: bozza con i dati predefiniti', () => {
-    const r = newReport({ now: at(2026, 10, 22), id: 'a', defaults: { name: 'Condominio Rossi', brand: 'Beretta', notes: 'Manutenzione ordinaria.', model: 'Ciao 24', fuel: 'metano', chamber: 'forzata', nominalPower: '24' } });
-    // i dati dell'apparecchio predefinito diventano il primo apparecchio (una caldaia, se non si sceglie altro)
-    assert.equal(r.plant.units.length, 1);
-    assert.deepEqual([r.plant.units[0].kind, r.plant.units[0].model, r.plant.units[0].fuel, r.plant.units[0].chamber, r.plant.units[0].technology, r.plant.units[0].nominalPower, r.plant.units[0].actualPower], ['caldaia', 'Ciao 24', 'metano', 'forzata', '', '24', '']);
+test('nuovo rapporto: bozza vuota, senza apparecchi', () => {
+    const r = newReport({ now: at(2026, 10, 22), id: 'a' });
     assert.equal(r.status, 'draft');
     assert.equal(r.number, null);
     assert.equal(r.date, '2026-10-22');
-    assert.equal(r.customer.name, 'Condominio Rossi');
-    assert.equal(r.plant.units[0].brand, 'Beretta');
-    assert.equal(r.intervention.notes, 'Manutenzione ordinaria.');
+    assert.deepEqual(r.customer, { name: '', fiscalCode: '', address: '', phone: '' });
+    assert.deepEqual(r.plant, { plateCode: '', units: [] });
+    assert.equal(r.intervention.notes, '');
     assert.deepEqual(r.measures, []);
     assert.equal(reportLabel(r), 'Bozza');
 });
@@ -85,8 +82,7 @@ test('stati: modificare un rapporto inviato lo riporta a completato', () => {
 test('duplica: copia cliente e impianto, non il resto', () => {
     const r = newReport({ now: at(2026, 1, 1), id: 'a' });
     r.customer.name = 'Mario Rossi';
-    r.plant.units[0].serial = 'AB123';
-    r.plant.units.push(newUnit('pompa', { brand: 'Daikin' }));
+    r.plant.units.push(newUnit('caldaia', { serial: 'AB123' }), newUnit('pompa', { brand: 'Daikin' }));
     r.intervention.work = 'Pulizia';
     addMeasure(r, combustion(60, 4, 10));
     const copy = duplicateReport(r, { now: at(2026, 6, 1), id: 'b' });
@@ -118,7 +114,7 @@ test('elenco: ricerca senza accenti, più parole, stato, ordine', () => {
     const mk = (id, date, name, extra = {}) => {
         const r = newReport({ now: at(...date), id });
         r.customer.name = name;
-        if (extra.plant) Object.assign(r.plant, { plateCode: extra.plant.plateCode ?? '' }), Object.assign(r.plant.units[0], { serial: extra.plant.serial ?? '', brand: extra.plant.brand ?? '' });
+        if (extra.plant) Object.assign(r.plant, { plateCode: extra.plant.plateCode ?? '' }), r.plant.units.push(Object.assign(newUnit('caldaia'), { serial: extra.plant.serial ?? '', brand: extra.plant.brand ?? '' }));
         Object.assign(r.customer, extra.customer);
         if (extra.status) r.status = extra.status;
         if (extra.number) r.number = extra.number;
@@ -208,21 +204,26 @@ test('formatDay, slug e nome del file', async () => {
     assert.equal(reportFileName(doc), 'Rapporto_2026-012.pdf');
 });
 
-test('bozza vuota: solo i dati predefiniti, nessuna misura né foto', async () => {
-    const { isBlank, newReport, addMeasure } = await import('../model.js');
-    const defaults = { name: 'Condominio Rossi', brand: 'Beretta' };
-    const doc = newReport({ defaults, id: 'x' });
-    assert.equal(isBlank(doc, defaults), true);
+test('bozza vuota: nessun dato, nessuna misura né foto', async () => {
+    const { isBlank, newReport, newUnit, addMeasure } = await import('../model.js');
+    const doc = newReport({ id: 'x' });
+    assert.equal(isBlank(doc), true);
     doc.intervention.startTime = '09:00'; // gli orari da soli non contano
-    assert.equal(isBlank(doc, defaults), true);
+    assert.equal(isBlank(doc), true);
     doc.customer.address = 'Via Roma 1';
-    assert.equal(isBlank(doc, defaults), false);
+    assert.equal(isBlank(doc), false);
     doc.customer.address = '';
+    doc.plant.plateCode = 'T1';
+    assert.equal(isBlank(doc), false);
+    doc.plant.plateCode = '';
+    doc.plant.units.push(newUnit('pompa'));
+    assert.equal(isBlank(doc), false, 'un apparecchio aggiunto, anche senza dati');
+    doc.plant.units = [];
     doc.photoCount = 1;
-    assert.equal(isBlank(doc, defaults), false);
+    assert.equal(isBlank(doc), false);
     doc.photoCount = 0;
     addMeasure(doc, { type: { name: 'x' } });
-    assert.equal(isBlank(doc, defaults), false);
+    assert.equal(isBlank(doc), false);
     const done = newReport({ id: 'y' });
     done.status = 'done';
     assert.equal(isBlank(done), false);
@@ -294,19 +295,8 @@ test('apparecchi: tipi, campi, titoli e riepilogo', async () => {
     assert.equal(unitsSummary(undefined), '');
 });
 
-test('apparecchi predefiniti: tipo scelto nelle impostazioni', async () => {
-    const { newReport } = await import('../model.js');
-    const kinds = (defaults) => newReport({ id: 'abcd1234', defaults }).plant.units.map((u) => u.kind);
-    assert.deepEqual(kinds({}), ['caldaia'], 'come prima: una caldaia');
-    assert.deepEqual(kinds({ unitKind: 'pompa', brand: 'Daikin' }), ['pompa']);
-    assert.deepEqual(kinds({ unitKind: 'condizionatore' }), ['condizionatore']);
-    assert.deepEqual(kinds({ unitKind: 'none', brand: 'Beretta' }), [], 'nessun apparecchio');
-    assert.deepEqual(kinds({ unitKind: 'boh' }), []);
-    assert.equal(newReport({ id: 'abcd1234', defaults: { unitKind: 'pompa', brand: 'Daikin', fuel: 'gpl' } }).plant.units[0].brand, 'Daikin');
-});
-
 test('apparecchi: dati letti da fuori ripuliti, bozza vuota e ricerca', async () => {
-    const { normalizeReport, isBlank, newReport, searchText } = await import('../model.js');
+    const { normalizeReport, isBlank, newReport, newUnit, searchText } = await import('../model.js');
     // senza apparecchi: elenco vuoto
     assert.deepEqual(normalizeReport({ id: 'abcd1234' }).plant, { plateCode: '', units: [] });
     assert.deepEqual(normalizeReport({ id: 'abcd1234', plant: { plateCode: 'T1' } }).plant, { plateCode: 'T1', units: [] });
@@ -321,22 +311,16 @@ test('apparecchi: dati letti da fuori ripuliti, bozza vuota e ricerca', async ()
     assert.equal('fuel' in raw.plant.units[0], false);
     // un rapporto già pulito resta uguale
     const clean = newReport({ id: 'abcd1234' });
-    clean.plant.units[0].brand = 'Beretta';
+    clean.plant.units.push(Object.assign(newUnit('caldaia'), { brand: 'Beretta' }));
     assert.deepEqual(normalizeReport(JSON.parse(JSON.stringify(clean))).plant, clean.plant);
-    // bozza vuota: solo l'apparecchio predefinito, senza dati
+    // bozza vuota: senza apparecchi; con un apparecchio, anche senza dati, non lo è più
     assert.equal(isBlank(newReport({ id: 'abcd1234' })), true);
-    const filled = newReport({ id: 'abcd1234' });
-    filled.plant.units[0].brand = 'Beretta';
-    assert.equal(isBlank(filled), false);
-    const removed = newReport({ id: 'abcd1234' });
-    removed.plant.units = [];
-    assert.equal(isBlank(removed), false, 'apparecchio tolto: non è più quella di prima');
     const extra = newReport({ id: 'abcd1234' });
     extra.plant.units.push({ id: 'zzzzzzzz', kind: 'pompa' });
     assert.equal(isBlank(extra), false);
     // la ricerca trova marca, modello e matricola di tutti gli apparecchi
     const s = newReport({ id: 'abcd1234' });
-    s.plant.units[0].model = 'Ciao 24';
+    s.plant.units.push(Object.assign(newUnit('caldaia'), { model: 'Ciao 24' }));
     s.plant.units.push({ ...s.plant.units[0], id: 'qqqqqqqq', kind: 'pompa', brand: 'Daikin', serial: 'PDC-77' });
     assert.match(searchText(s), /ciao 24/);
     assert.match(searchText(s), /daikin/);

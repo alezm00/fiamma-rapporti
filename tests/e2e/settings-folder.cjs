@@ -22,7 +22,7 @@ const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now(
     window.showDirectoryPicker = (...a) => window.__pick(...a);
   });
   const target = (name) => page.evaluate((n) => { window.__target = n; }, name);
-  const peek = (name) => page.evaluate(async (n) => { const f = await import('/folder.js'); const root = await navigator.storage.getDirectory(); const r = await f.peekSettings(await root.getDirectoryHandle(n)); return r && { company: r.settings.company.name, email: r.settings.email, brand: r.settings.defaults.brand, counters: r.settings.counters, logo: r.logo }; }, name);
+  const peek = (name) => page.evaluate(async (n) => { const f = await import('/folder.js'); const root = await navigator.storage.getDirectory(); const r = await f.peekSettings(await root.getDirectoryHandle(n)); return r && { company: r.settings.company.name, email: r.settings.email, technician: r.settings.company.technician, counters: r.settings.counters, logo: r.logo }; }, name);
   const openSettings = async () => { await page.click('#btn-settings'); await page.waitForSelector('#view-settings:not([hidden])'); };
   const closeSettings = async () => { await page.click('#btn-settings-back'); await page.waitForSelector('#view-home:not([hidden])'); };
   await prepare();
@@ -32,12 +32,11 @@ const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now(
   await page.fill('#s-co-name', 'Ditta Uno Srl');
   await page.fill('#s-co-technician', 'Luca Bianchi');
   await page.fill('#s-email', 'ufficio@dittauno.it');
-  await page.fill('#s-d-u-brand', 'Beretta');
   await page.setInputFiles('#s-logo-in', `${SP}/img/logo.png`);
   await page.waitForSelector('#s-logo-img:not([hidden])');
   await page.fill('#s-next', '6');
   await page.dispatchEvent('#s-next', 'change');
-  await page.press('#s-d-u-brand', 'Tab');
+  await page.press('#s-email', 'Tab');
   await target('cartella-A');
   dialogs.length = 0;
   await page.click('#s-folder-link');
@@ -46,7 +45,7 @@ const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now(
   await page.evaluate(async () => (await import('/folder.js')).process());
   let a = await peek('cartella-A');
   log('nella cartella A ->', JSON.stringify(a));
-  assert(a.company === 'Ditta Uno Srl' && a.email === 'ufficio@dittauno.it' && a.brand === 'Beretta' && a.counters['2026'] === 5 && a.logo.width > 0, 'impostazioni scritte nella cartella');
+  assert(a.company === 'Ditta Uno Srl' && a.email === 'ufficio@dittauno.it' && a.technician === 'Luca Bianchi' && a.counters['2026'] === 5 && a.logo.width > 0, 'impostazioni scritte nella cartella');
 
   // 2) telefono nuovo (dati azzerati): "Scegli cartella" chiede se prendere le impostazioni; "No" non cambia nulla
   await closeSettings(); // uscendo dalle impostazioni si salvano: prima, poi si azzera
@@ -67,7 +66,7 @@ const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now(
   assert(/Collegata/.test(await page.textContent('#s-folder-status')), 'collegata comunque');
   await page.evaluate(async () => (await import('/folder.js')).process());
   a = await peek('cartella-A');
-  assert(a.company === 'Ditta Uno Srl' && a.brand === 'Beretta', 'No: le impostazioni nella cartella non si perdono');
+  assert(a.company === 'Ditta Uno Srl' && a.technician === 'Luca Bianchi', 'No: le impostazioni nella cartella non si perdono');
 
   // 3) "Sì": le impostazioni della cartella sostituiscono quelle del telefono
   answer = true;
@@ -78,7 +77,6 @@ const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now(
   await page.waitForFunction(() => /Impostazioni caricate/.test(document.getElementById('s-folder-msg').textContent));
   log('dopo "Sì" ->', await page.textContent('#s-folder-msg'));
   assert((await page.inputValue('#s-co-name')) === 'Ditta Uno Srl' && (await page.inputValue('#s-co-technician')) === 'Luca Bianchi' && (await page.inputValue('#s-email')) === 'ufficio@dittauno.it', 'ditta ed email caricate');
-  assert((await page.inputValue('#s-d-u-brand')) === 'Beretta' && (await page.inputValue('#s-d-unitkind')) === 'caldaia', 'dati predefiniti caricati');
   log('numero', await page.inputValue('#s-next'), '| logo visibile', await page.isVisible('#s-logo-img'), '| logo in archivio', await page.evaluate(async () => { const db = await import('/db.js'); return !!(await db.get(db.META, 'logo')); }));
   assert((await page.inputValue('#s-next')) === '6' && await page.isVisible('#s-logo-img'), 'numerazione e logo caricati');
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('testoqr.config')));

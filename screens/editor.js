@@ -490,7 +490,7 @@ async function onDuplicate() {
 
 async function onDelete() {
     const what = doc.number ? `Il rapporto n. ${doc.number}` : 'La bozza';
-    const blank = isBlank(doc, loadSettings().defaults); // bozza mai compilata: non serve il cestino
+    const blank = isBlank(doc); // bozza mai compilata: non serve il cestino
     if (!blank && !confirm(`${what} va nel cestino: si recupera entro ${TRASH_DAYS} giorni dalla schermata Cestino dell'elenco. Continuare?`)) return;
     if (!(await flush())) return; // le ultime modifiche non sono salvate: meglio non andare avanti
     const id = doc.id;

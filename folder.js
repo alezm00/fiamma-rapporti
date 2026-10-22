@@ -322,8 +322,8 @@ export async function peekSettings(handle) {
     }
 }
 
-// Prende le impostazioni dalla cartella al posto di quelle del telefono (ditta, email, numerazione, dati
-// predefiniti, logo). Il numero progressivo non torna mai indietro: per ogni anno vale il più alto.
+// Prende le impostazioni dalla cartella al posto di quelle del telefono (ditta, email, numerazione, logo).
+// Il numero progressivo non torna mai indietro: per ogni anno vale il più alto.
 async function takeSettingsFrom(handle) {
     const found = await peekSettings(handle);
     if (!found) return false;
