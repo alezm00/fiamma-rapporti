@@ -15,15 +15,17 @@ function askPersistence() {
     navigator.storage?.persist?.().catch(() => {}); // il telefono non deve cancellare i dati se manca spazio
 }
 
-// i rapporti nel cestino non compaiono nell'elenco
-export async function listReports() {
-    return model.sortReports((await db.getAll(db.REPORTS)).filter((r) => !r.deletedAt));
+// Tutti i rapporti in una lettura: quelli dell'elenco (i più recenti per primi) e quelli nel cestino
+export async function loadAll() {
+    const all = await db.getAll(db.REPORTS);
+    return {
+        reports: model.sortReports(all.filter((r) => !r.deletedAt)),
+        trash: all.filter((r) => r.deletedAt).sort((a, b) => b.deletedAt - a.deletedAt),
+    };
 }
 
-// nel cestino, dal più recente
-export async function listTrash() {
-    return (await db.getAll(db.REPORTS)).filter((r) => r.deletedAt).sort((a, b) => b.deletedAt - a.deletedAt);
-}
+export const listReports = async () => (await loadAll()).reports;
+export const listTrash = async () => (await loadAll()).trash;
 
 export const getReport = (id) => db.get(db.REPORTS, id);
 
@@ -51,27 +53,20 @@ export async function purgeReport(id) {
     emit('delete', id);
 }
 
-// Nel cestino per TRASH_DAYS giorni. Stato e numero non cambiano; updatedAt sì, così la mossa
-// vince su una copia più vecchia (ripristino da backup o cartella).
-export async function trashReport(id, now = Date.now()) {
+// Nel cestino (deletedAt = ora; per TRASH_DAYS giorni) o fuori (null). Stato e numero non cambiano; updatedAt sì,
+// così la mossa vince su una copia più vecchia (ripristino da backup o cartella).
+async function setDeleted(id, deletedAt, now) {
     const doc = await getReport(id);
     if (!doc) return null;
-    doc.deletedAt = now;
+    doc.deletedAt = deletedAt;
     doc.updatedAt = now;
     await db.put(db.REPORTS, doc);
     emit('save', id);
     return doc;
 }
 
-export async function restoreReport(id, now = Date.now()) {
-    const doc = await getReport(id);
-    if (!doc) return null;
-    doc.deletedAt = null;
-    doc.updatedAt = now;
-    await db.put(db.REPORTS, doc);
-    emit('save', id);
-    return doc;
-}
+export const trashReport = (id, now = Date.now()) => setDeleted(id, now, now);
+export const restoreReport = (id, now = Date.now()) => setDeleted(id, null, now);
 
 // toglie dal cestino, per sempre, quello che ci sta da più di TRASH_DAYS giorni
 export async function purgeExpired(now = Date.now()) {

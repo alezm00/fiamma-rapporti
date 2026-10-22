@@ -4,10 +4,11 @@
 import * as nav from '../nav.js';
 import * as store from '../store.js';
 import {
-    INTERVENTION_TYPES, OUTCOMES, UNIT_KINDS, newUnit, unitKind, unitTitle, durationMinutes, formatDuration, formatNumber, nextNumber, reportYear,
-    timeString, reportFileName, isBlank, TRASH_DAYS,
+    INTERVENTION_TYPES, OUTCOMES, UNIT_KINDS, newUnit, unitKind, unitTitle, durationMinutes, formatDuration, formatReportNumber, nextNumber, reportYear,
+    reportFileName, isBlank, TRASH_DAYS,
 } from '../model.js';
-import { buildReport, formatDate } from '../tjf.js';
+import { buildReport, topValues } from '../tjf.js';
+import { formatDate, formatTime } from '../dates.js';
 import { createReportPdf, preloadPdfLibs } from '../report.js';
 import { getPosition, geoErrorMessage, reverseGeocode } from '../geo.js';
 import { checkFiscalCode } from '../validate.js';
@@ -15,7 +16,7 @@ import { listPhotos, addPhoto, removePhoto, photosForPdf, logoForPdf } from '../
 import { buildBody, buildSubject, checkRecipients, mailtoUrl } from '../mail.js';
 import { loadSettings } from '../settings.js';
 import { CLS } from '../ui.js';
-import { $, el, showBoxMsg, toast, debounce, downloadFile, openMailto, canShareFiles, statusBadge, explainSaveError } from '../util.js';
+import { $, el, fieldElement, showBoxMsg, toast, debounce, downloadFile, openMailto, canShareFiles, statusBadge, explainSaveError } from '../util.js';
 
 const MAX_PHOTOS = 20;
 
@@ -81,7 +82,7 @@ function showSaveState(state, detail = '') {
     } else {
         saveError = '';
         box.className = CLS.saveIdle;
-        box.textContent = `Salvato ${timeString(new Date(doc?.updatedAt ?? Date.now()))}`;
+        box.textContent = `Salvato ${formatTime(new Date(doc?.updatedAt ?? Date.now()), false)}`;
     }
 }
 
@@ -120,13 +121,20 @@ function touch() {
 
 const flush = () => saveLater.flush();
 
-// operazioni che cambiano il rapporto o la sua posizione: un errore si vede, non resta silenzioso
-async function safely(action) {
+// Esegue un'azione del rapporto: un errore si vede, non resta silenzioso. Con un pulsante, questo resta
+// disattivato finché l'azione lavora (il PDF può richiedere qualche secondo).
+async function guarded(action, { button, error = (e) => `Operazione non riuscita: ${explainSaveError(e)}.` } = {}) {
+    if (button) {
+        button.disabled = true;
+        showBoxMsg('report-msg', '');
+    }
     try {
         await action();
     } catch (e) {
         console.error(e);
-        showBoxMsg('report-msg', `Operazione non riuscita: ${explainSaveError(e)}.`, 'error');
+        showBoxMsg('report-msg', error(e), 'error');
+    } finally {
+        if (button) button.disabled = false;
     }
 }
 
@@ -157,20 +165,8 @@ function updateDuration() {
 const UNIT_CAPS = { brand: 'words', model: 'characters', serial: 'characters' };
 
 function unitField(unit, i, f) {
-    const label = el('label', CLS.field);
-    label.append(el('span', CLS.fieldLabel, f.unit ? `${f.label} (${f.unit})` : f.label));
-    let input;
-    if (f.options) {
-        input = el('select', CLS.select);
-        input.append(new Option('Non indicato', ''), ...f.options.map((o) => new Option(o.label, o.id)));
-    } else {
-        input = el('input', f.date ? CLS.dateInput : CLS.input);
-        input.type = f.date ? 'date' : 'text';
-        if (f.decimal) input.inputMode = 'decimal';
-        input.autocomplete = 'off';
-        if (UNIT_CAPS[f.key]) input.setAttribute('autocapitalize', UNIT_CAPS[f.key]);
-    }
-    input.id = `u${i}-${f.key}`;
+    const label = fieldElement({ ...f, capitalize: UNIT_CAPS[f.key] }, `u${i}-${f.key}`);
+    const input = label.querySelector('select, input');
     input.value = unit[f.key] ?? '';
     const changed = () => {
         unit[f.key] = input.value;
@@ -178,7 +174,6 @@ function unitField(unit, i, f) {
     };
     input.addEventListener('input', changed);
     input.addEventListener('change', changed);
-    label.append(input);
     return label;
 }
 
@@ -281,8 +276,7 @@ function renderMeasures() {
         const open = el('button', CLS.historyOpen);
         open.append(el('span', CLS.historyTitle, m.label));
         open.append(el('span', CLS.historyMeta, [report.title, formatDate(report.start || new Date(m.addedAt))].filter(Boolean).join(' · ')));
-        const first = report.columns[0];
-        const vals = report.rows.slice(0, 4).map((r) => `${r.short || r.label} ${r.cells[first] ?? ''}`).join(' · ');
+        const vals = topValues(report);
         if (vals) open.append(el('span', CLS.historyVals, vals));
         open.addEventListener('click', () => nav.go('measure', { source: 'report', reportId: doc.id, measureId: m.id }));
         li.append(open);
@@ -380,37 +374,25 @@ async function buildPdfFile() {
     return new File([bytes], reportFileName(doc), { type: 'application/pdf' });
 }
 
-async function runPdf(button, action) {
-    button.disabled = true;
-    showBoxMsg('report-msg', '');
-    try {
-        await action();
-    } catch (e) {
-        showBoxMsg('report-msg', `Impossibile creare il PDF: ${e.message || e}`, 'error');
-    } finally {
-        button.disabled = false;
-    }
-}
-
 // dopo l'invio un rapporto chiuso passa a "inviato"
 async function markSent() {
     await store.markSent(doc);
     renderHeader();
 }
 
-// condivide il PDF con il menu di Android; false se l'utente ha annullato o non è partita
-async function shareFile(data) {
+// condivide il PDF con il menu di Android; se la condivisione parte, il rapporto risulta inviato
+async function sharePdf(data) {
     try {
         await navigator.share(data);
-        return true;
     } catch (e) {
-        if (e.name === 'AbortError') return false; // annullato dall'utente
+        if (e.name === 'AbortError') return; // annullato dall'utente
         if (e.name === 'NotAllowedError') {
             showBoxMsg('report-msg', 'La condivisione non è partita: premi di nuovo il pulsante.', 'error');
-            return false;
+            return;
         }
         throw e;
     }
+    await markSent();
 }
 
 async function onEmail() {
@@ -436,7 +418,7 @@ async function onEmail() {
 
     const file = await buildPdfFile();
     if (useShare && navigator.canShare?.({ files: [file] })) {
-        if (await shareFile({ files: [file], title: subject, text: body })) await markSent();
+        await sharePdf({ files: [file], title: subject, text: body });
         return;
     }
     // Gmail con destinatario, oggetto e testo già compilati; un PDF non si può allegare da una pagina web
@@ -463,7 +445,7 @@ async function onShare() {
         showBoxMsg('report-msg', `Condivisione non disponibile: PDF salvato nei download (${file.name})`, 'info');
         return;
     }
-    if (await shareFile({ files: [file], title: file.name })) await markSent();
+    await sharePdf({ files: [file], title: file.name });
 }
 
 // ---------------------------------------------------------------------------
@@ -473,7 +455,7 @@ async function onShare() {
 async function onClose() {
     await flush();
     const year = reportYear(doc);
-    const number = formatNumber(year, nextNumber(loadSettings().counters, year));
+    const number = formatReportNumber(year, nextNumber(loadSettings().counters, year));
     const missing = doc.customer.name.trim() ? '' : 'Manca il nome del cliente. ';
     if (!confirm(`${missing}Chiudere il rapporto? Prenderà il numero ${number}.`)) return;
     await store.close(doc);
@@ -567,7 +549,7 @@ export function init() {
 
     for (const which of ['start', 'end']) {
         $(`e-${which}-now`).addEventListener('click', () => {
-            $(`e-${which}`).value = timeString(new Date());
+            $(`e-${which}`).value = formatTime(new Date(), false);
             updateDuration();
             touch();
         });
@@ -618,12 +600,13 @@ export function init() {
     }
     $('photo-view').addEventListener('click', () => ($('photo-view').hidden = true));
 
-    $('btn-pdf-email').addEventListener('click', () => runPdf($('btn-pdf-email'), onEmail));
-    $('btn-pdf-save').addEventListener('click', () => runPdf($('btn-pdf-save'), onSave));
-    $('btn-pdf-share').addEventListener('click', () => runPdf($('btn-pdf-share'), onShare));
-    $('btn-close').addEventListener('click', () => safely(onClose));
-    $('btn-duplicate').addEventListener('click', () => safely(onDuplicate));
-    $('btn-delete').addEventListener('click', () => safely(onDelete));
+    const pdfError = (e) => `Impossibile creare il PDF: ${e.message || e}`;
+    for (const [id, action] of [['btn-pdf-email', onEmail], ['btn-pdf-save', onSave], ['btn-pdf-share', onShare]]) {
+        $(id).addEventListener('click', () => guarded(action, { button: $(id), error: pdfError }));
+    }
+    $('btn-close').addEventListener('click', () => guarded(onClose));
+    $('btn-duplicate').addEventListener('click', () => guarded(onDuplicate));
+    $('btn-delete').addEventListener('click', () => guarded(onDelete));
     $('e-save').addEventListener('click', () => {
         if (!saveError) return;
         dirty = true;

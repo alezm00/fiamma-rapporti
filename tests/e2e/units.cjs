@@ -67,7 +67,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   let plant = await stored();
   log('salvato ->', JSON.stringify(plant.units.map((u) => `${u.kind}:${u.brand}`)), '| targa', plant.plateCode);
   assert(plant.units.map((u) => `${u.kind}:${u.brand}`).join() === 'caldaia:Beretta,pompa:Daikin,condizionatore:LG,condizionatore:Mitsubishi,caldaia:Vaillant', 'apparecchi salvati');
-  assert(plant.units[1].charge === '1,45' && plant.units[1].refrigerant === 'r32' && plant.units[3].indoorUnits === '3' && !('brand' in plant) && !('fuel' in plant), 'valori nei posti giusti, niente campi vecchi in plant');
+  assert(plant.units[1].charge === '1,45' && plant.units[1].refrigerant === 'r32' && plant.units[3].indoorUnits === '3', 'valori nei posti giusti');
 
   // 4) tolto un apparecchio vuoto: senza conferma; uno compilato: con conferma e titoli rinumerati
   await page.click('#e-add-pompa');

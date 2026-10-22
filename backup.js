@@ -3,6 +3,7 @@
 
 import * as db from './db.js';
 import { normalizeReport } from './model.js';
+import { dayString } from './dates.js';
 import { importReport } from './store.js';
 import { loadSettings, saveSettings, mergeSettings, updateSettings } from './settings.js';
 import { getLogo, importPhoto, importLogo } from './photos.js';
@@ -43,8 +44,7 @@ export async function createBackup({ withPhotos = true, now = new Date() } = {})
     }
     const blob = await createZip(entries);
     updateSettings({ lastBackup: now.getTime() });
-    const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    return { blob, name: `Fiamma-backup-${stamp}.zip`, reports: reports.length, photos: photoCount };
+    return { blob, name: `Fiamma-backup-${dayString(now)}.zip`, reports: reports.length, photos: photoCount };
 }
 
 // Unisce il backup ai dati del telefono: a parità di rapporto vince la modifica più recente.

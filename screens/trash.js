@@ -2,7 +2,7 @@
 
 import * as nav from '../nav.js';
 import * as store from '../store.js';
-import { trashDaysLeft, typeLabel, formatDay } from '../model.js';
+import { trashDaysLeft, describeReport } from '../model.js';
 import { CLS } from '../ui.js';
 import { $, el, toast, explainSaveError } from '../util.js';
 
@@ -12,15 +12,14 @@ async function render() {
     ul.replaceChildren();
     for (const doc of list) {
         const li = el('li', CLS.trashRow);
+        const { number, customer, meta } = describeReport(doc);
         const head = el('div', CLS.reportHead);
         const days = trashDaysLeft(doc);
         head.append(
-            el('span', CLS.reportNum, doc.number ? `N. ${doc.number}` : 'Senza numero'),
+            el('span', CLS.reportNum, number),
             el('span', CLS.reportMeta, `${days} ${days === 1 ? 'giorno' : 'giorni'} rimasti`),
         );
-        li.append(head, el('div', CLS.reportName, doc.customer.name || 'Senza cliente'));
-        const meta = [formatDay(doc.date), typeLabel(doc.intervention.type), doc.measures.length && `${doc.measures.length} ${doc.measures.length === 1 ? 'misura' : 'misure'}`, doc.photoCount && `${doc.photoCount} foto`];
-        li.append(el('div', CLS.reportMeta, meta.filter(Boolean).join(' · ')));
+        li.append(head, el('div', CLS.reportName, customer), el('div', CLS.reportMeta, meta));
 
         const actions = el('div', CLS.trashActions);
         const restore = el('button', CLS.trashBtn, 'Ripristina');

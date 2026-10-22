@@ -15,17 +15,17 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
 
   // 120 rapporti in 36 mesi (novembre 2023 - ottobre 2026), creati direttamente nell'archivio
   const made = await page.evaluate(async () => {
-    const db = await import('/db.js'); const model = await import('/model.js');
+    const db = await import('/db.js'); const model = await import('/model.js'); const dates = await import('/dates.js');
     const per = {};
     for (let i = 0; i < 120; i++) {
       const back = i % 36;
       const d = new Date(2026, 9 - back, 5 + (i % 20));
       const doc = model.newReport({ now: d, id: `lungo${String(i).padStart(4, '0')}` });
-      doc.date = model.dayString(d);
+      doc.date = dates.dayString(d);
       doc.customer.name = `Cliente ${i}`;
       doc.customer.address = `Via Prova ${i}`;
       doc.status = i % 3 === 0 ? 'done' : 'draft';
-      if (doc.status === 'done') doc.number = model.formatNumber(d.getFullYear(), i + 1);
+      if (doc.status === 'done') doc.number = model.formatReportNumber(d.getFullYear(), i + 1);
       await db.put(db.REPORTS, doc);
       const key = doc.date.slice(0, 4); per[key] = (per[key] || 0) + 1;
     }

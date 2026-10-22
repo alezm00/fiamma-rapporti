@@ -1,8 +1,8 @@
 // Rapporto di intervento in PDF (pdf-lib + font Liberation Sans): tutto in locale, funziona anche offline.
 // Le librerie e i font si caricano solo quando serve il PDF.
-import { formatDate } from './tjf.js';
+import { formatDay, formatDate } from './dates.js';
 import {
-    groupMeasures, formatDay, typeLabel, outcomeLabel, unitsSummary, unitTitle, unitValues, durationMinutes, formatDuration,
+    groupMeasures, typeLabel, outcomeLabel, unitsSummary, unitTitle, unitValues, durationMinutes, formatDuration,
 } from './model.js';
 
 const PAGE_W = 595.28; // A4
@@ -14,11 +14,8 @@ const PAD = 10;
 const TITLE_H = 24;
 const GAP = 12; // spazio tra i blocchi
 
-// "19:10:24 → 19:11:24  (1 min 00 s)": la durata passa nell'etichetta
-function phaseItem({ label, value }) {
-    const [range, duration] = String(value).split(/\s{2,}/);
-    return { label: duration ? `${label} ${duration}` : label, value: range };
-}
+// la durata della fase passa nell'etichetta: "Fase 1 (1 min 00 s)" con valore "19:10:24 → 19:11:24"
+const phaseItem = ({ label, range, duration }) => ({ label: duration ? `${label} (${duration})` : label, value: range });
 
 // ---------------------------------------------------------------------------
 // Caricamento librerie e font

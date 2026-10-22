@@ -1,7 +1,8 @@
 // Scansioni rapide: le ultime 20 letture, solo per rivedere i valori.
 
 import * as nav from '../nav.js';
-import { buildReport, formatDate } from '../tjf.js';
+import { buildReport, topValues } from '../tjf.js';
+import { formatDate } from '../dates.js';
 import { loadScans, removeScan, clearScans } from '../quickscans.js';
 import { CLS } from '../ui.js';
 import { $, el } from '../util.js';
@@ -24,8 +25,7 @@ function render() {
         open.append(el('span', CLS.historyTitle, report.title));
         const fuel = report.header.find((h) => h.label === 'Combustibile');
         open.append(el('span', CLS.historyMeta, [formatDate(report.start || new Date(entry.savedAt)), fuel?.value].filter(Boolean).join(' · ')));
-        const first = report.columns[0];
-        const vals = report.rows.slice(0, 4).map((r) => `${r.short || r.label} ${r.cells[first] ?? ''}`).join(' · ');
+        const vals = topValues(report);
         if (vals) open.append(el('span', CLS.historyVals, vals));
         open.addEventListener('click', () => nav.go('measure', { source: 'quick', id: entry.id }));
 

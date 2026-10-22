@@ -1,5 +1,6 @@
-// Archivio del telefono (IndexedDB). Database nuovo, indipendente da quello delle versioni precedenti.
-// Se IndexedDB non è disponibile (es. navigazione privata) i dati durano finché l'app resta aperta.
+// Archivio del telefono (IndexedDB).
+// Se IndexedDB non è disponibile (es. navigazione privata) i dati durano finché l'app resta aperta:
+// la home lo segnala (usingMemory).
 
 const DB_NAME = 'testoqr-reports';
 const DB_VERSION = 1;

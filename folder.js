@@ -11,6 +11,7 @@
 import * as db from './db.js';
 import * as store from './store.js';
 import { folderPath, normalizeReport } from './model.js';
+import { pad } from './dates.js';
 import { listPhotos, photosForPdf, logoForPdf, getLogo, importPhoto, importLogo } from './photos.js';
 import { createReportPdf } from './report.js';
 import { loadSettings, saveSettings, updateSettings, mergeSettings, normalizeSettings } from './settings.js';
@@ -24,7 +25,6 @@ export const testing = { permission: null };
 const ROOT = 'Fiamma';
 const DELAY = 2000; // pausa dopo l'ultima modifica, prima di scrivere
 const MODE = { mode: 'readwrite' };
-const pad = (n) => String(n).padStart(2, '0');
 
 export const supported = () => typeof globalThis.showDirectoryPicker === 'function';
 
@@ -308,7 +308,7 @@ export async function pick() {
     }
 }
 
-// Le impostazioni già salvate in una cartella (da un altro telefono o da una installazione precedente):
+// Le impostazioni già salvate in una cartella (di solito da un altro telefono):
 // { settings, logo, modified } oppure null se non ce ne sono (o il file non si legge).
 export async function peekSettings(handle) {
     try {

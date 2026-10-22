@@ -2,6 +2,13 @@
 // Solo logica, senza accesso al database né al DOM (si prova anche in Node).
 
 import { buildReport } from './tjf.js';
+import { pad, dayString, formatDay } from './dates.js';
+
+// piccole funzioni di aiuto: leggere valori di tipo incerto (dati da fuori) e cercare un'etichetta
+const text = (v, max = 20000) => (typeof v === 'string' ? v.slice(0, max) : '');
+const time = (v, fallback) => (Number.isFinite(v) && v > 0 ? v : fallback);
+const isObject = (v) => v && typeof v === 'object' && !Array.isArray(v);
+const labelIn = (list, id) => list.find((i) => i.id === id)?.label ?? '';
 
 export const STATUSES = { draft: 'Bozza', done: 'Completato', sent: 'Inviato' };
 
@@ -145,19 +152,22 @@ function normalizePlant(plant) {
     };
 }
 
-const labelIn = (list, id) => list.find((i) => i.id === id)?.label ?? '';
-
 export const typeLabel = (id) => INTERVENTION_TYPES.find((t) => t.id === id)?.label ?? '';
 export const outcomeLabel = (id) => OUTCOMES.find((o) => o.id === id)?.label ?? '';
 
-const pad = (n) => String(n).padStart(2, '0');
-export const dayString = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-export const timeString = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-
-// "2026-10-22" -> "22/10/2026"
-export function formatDay(iso) {
-    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
-    return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
+// Le righe dell'elenco e del cestino: numero, cliente e "data · tipo · 2 misure · 3 foto"
+export function describeReport(doc) {
+    const measures = doc.measures.length;
+    return {
+        number: doc.number ? `N. ${doc.number}` : 'Senza numero',
+        customer: doc.customer.name || 'Senza cliente',
+        meta: [
+            formatDay(doc.date),
+            typeLabel(doc.intervention.type),
+            measures && `${measures} ${measures === 1 ? 'misura' : 'misure'}`,
+            doc.photoCount && `${doc.photoCount} foto`,
+        ].filter(Boolean).join(' · '),
+    };
 }
 
 export function newId() {
@@ -220,7 +230,7 @@ export function duplicateReport(doc, { now = new Date(), id = newId() } = {}) {
 // Numerazione e stati
 // ---------------------------------------------------------------------------
 
-export const formatNumber = (year, n) => `${year}/${String(n).padStart(3, '0')}`;
+export const formatReportNumber = (year, n) => `${year}/${String(n).padStart(3, '0')}`;
 
 export const reportYear = (doc, now = new Date()) => Number(String(doc.date || dayString(now)).slice(0, 4));
 
@@ -240,7 +250,7 @@ export function closeReport(doc, counters = {}, now = new Date()) {
     if (!doc.number) {
         const year = reportYear(doc, now);
         next[year] = nextNumber(counters, year);
-        doc.number = formatNumber(year, next[year]);
+        doc.number = formatReportNumber(year, next[year]);
     }
     doc.status = 'done';
     doc.closedAt = now.getTime();
@@ -256,8 +266,6 @@ export function markSent(doc, now = new Date()) {
     doc.updatedAt = now.getTime();
     return true;
 }
-
-export const reportLabel = (doc) => (doc.number ? `n. ${doc.number}` : 'Bozza');
 
 // per i nomi di file e cartelle: senza accenti né caratteri speciali ("Mario Rossi" -> "Mario-Rossi")
 export const slug = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -419,10 +427,6 @@ export function groupMeasures(measures) {
 // ---------------------------------------------------------------------------
 // Dati letti da fuori (cartella di salvataggio, backup): si rifà un rapporto pulito
 // ---------------------------------------------------------------------------
-
-const text = (v, max = 20000) => (typeof v === 'string' ? v.slice(0, max) : '');
-const time = (v, fallback) => (Number.isFinite(v) && v > 0 ? v : fallback);
-const isObject = (v) => v && typeof v === 'object' && !Array.isArray(v);
 
 // Restituisce un rapporto con tutti i campi del tipo giusto, oppure null se non è un rapporto.
 export function normalizeReport(raw) {

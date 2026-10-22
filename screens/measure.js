@@ -3,7 +3,8 @@
 
 import * as nav from '../nav.js';
 import * as store from '../store.js';
-import { buildReport, reportToText, formatDate } from '../tjf.js';
+import { buildReport, reportToText } from '../tjf.js';
+import { formatDate } from '../dates.js';
 import { getScan } from '../quickscans.js';
 import { CLS } from '../ui.js';
 import { $, el, toast, debounce, keepAwake, releaseAwake, explainSaveError } from '../util.js';

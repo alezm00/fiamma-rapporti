@@ -11,6 +11,31 @@ export function el(tag, className, text) {
     return e;
 }
 
+// Un campo con la sua etichetta (testo, data, menu o area di testo) da una definizione:
+// { label, unit, options, date, decimal, rows, type, inputmode, capitalize, wide }
+export function fieldElement(def, id) {
+    const label = el('label', def.wide ? CLS.fieldWide : CLS.field);
+    label.append(el('span', CLS.fieldLabel, def.unit ? `${def.label} (${def.unit})` : def.label));
+    let input;
+    if (def.options) {
+        input = el('select', CLS.select);
+        input.append(new Option('Non indicato', ''), ...def.options.map((o) => new Option(o.label, o.id)));
+    } else if (def.rows) {
+        input = el('textarea', CLS.textarea);
+        input.rows = def.rows;
+    } else {
+        input = el('input', def.date ? CLS.dateInput : CLS.input);
+        input.type = def.date ? 'date' : def.type || 'text';
+    }
+    input.id = id;
+    if (def.decimal) input.inputMode = 'decimal';
+    else if (def.inputmode) input.inputMode = def.inputmode;
+    input.autocomplete = 'off';
+    if (def.capitalize) input.setAttribute('autocapitalize', def.capitalize);
+    label.append(input);
+    return label;
+}
+
 // messaggio in un riquadro colorato: type = success | error | warn | info
 export function showBoxMsg(id, text, type = 'info') {
     const box = $(id);
@@ -59,24 +84,23 @@ export function debounce(fn, ms) {
     return wrapped;
 }
 
-export function downloadFile(file) {
-    const url = URL.createObjectURL(file);
+// tocca un collegamento invisibile: scarica un file (download) o apre un'altra app (mailto:)
+function clickLink(href, download) {
     const a = el('a');
-    a.href = url;
-    a.download = file.name;
+    a.href = href;
+    if (download) a.download = download;
     document.body.append(a);
     a.click();
     a.remove();
+}
+
+export function downloadFile(file) {
+    const url = URL.createObjectURL(file);
+    clickLink(url, file.name);
     setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
-export function openMailto(url) {
-    const a = el('a');
-    a.href = url;
-    document.body.append(a);
-    a.click();
-    a.remove();
-}
+export const openMailto = (url) => clickLink(url);
 
 export function canShareFiles() {
     try {

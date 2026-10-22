@@ -2,8 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    newReport, applyEdit, duplicateReport, closeReport, markSent, setNextNumber, nextNumber, formatNumber,
-    durationMinutes, formatDuration, filterReports, sortReports, nextMeasureLabel, addMeasure, groupMeasures, reportLabel, newUnit,
+    newReport, applyEdit, duplicateReport, closeReport, markSent, setNextNumber, nextNumber, formatReportNumber,
+    durationMinutes, formatDuration, filterReports, sortReports, nextMeasureLabel, addMeasure, groupMeasures, newUnit,
 } from '../model.js';
 
 const at = (y, m, d, h = 10, min = 0) => new Date(y, m - 1, d, h, min);
@@ -29,7 +29,20 @@ test('nuovo rapporto: bozza vuota, senza apparecchi', () => {
     assert.deepEqual(r.plant, { plateCode: '', units: [] });
     assert.equal(r.intervention.notes, '');
     assert.deepEqual(r.measures, []);
-    assert.equal(reportLabel(r), 'Bozza');
+});
+
+test('riga dell\'elenco: numero, cliente, data · tipo · misure · foto', async () => {
+    const { describeReport } = await import('../model.js');
+    const doc = newReport({ now: at(2026, 10, 22), id: 'a' });
+    assert.deepEqual(describeReport(doc), { number: 'Senza numero', customer: 'Senza cliente', meta: '22/10/2026' });
+    doc.number = '2026/012';
+    doc.customer.name = 'Mario Rossi';
+    doc.intervention.type = 'riparazione';
+    addMeasure(doc, combustion(60, 4, 10));
+    doc.photoCount = 3;
+    assert.deepEqual(describeReport(doc), { number: 'N. 2026/012', customer: 'Mario Rossi', meta: '22/10/2026 · Riparazione / guasto · 1 misura · 3 foto' });
+    addMeasure(doc, combustion(70, 5, 11));
+    assert.match(describeReport(doc).meta, /2 misure/);
 });
 
 test('chiusura: numero progressivo per anno, assegnato una sola volta', () => {
@@ -50,7 +63,6 @@ test('chiusura: numero progressivo per anno, assegnato una sola volta', () => {
     const again = closeReport(a, counters, at(2026, 4, 1));
     assert.equal(again, counters);
     assert.equal(a.number, '2026/001');
-    assert.equal(reportLabel(a), 'n. 2026/001');
 });
 
 test('prossimo numero modificabile', () => {
@@ -59,7 +71,7 @@ test('prossimo numero modificabile', () => {
     const r = newReport({ now: at(2026, 5, 5), id: 'a' });
     counters = closeReport(r, counters, at(2026, 5, 5));
     assert.equal(r.number, '2026/045');
-    assert.equal(formatNumber(2026, 7), '2026/007');
+    assert.equal(formatReportNumber(2026, 7), '2026/007');
     assert.equal(setNextNumber({}, 2026, 'x')[2026], 0); // valore non valido: riparte da 1
 });
 
@@ -189,10 +201,8 @@ test('nessuna misura', () => {
     assert.deepEqual(groupMeasures([]), []);
 });
 
-test('formatDay, slug e nome del file', async () => {
-    const { formatDay, slug, reportFileName, newReport } = await import('../model.js');
-    assert.equal(formatDay('2026-10-22'), '22/10/2026');
-    assert.equal(formatDay(''), '');
+test('slug e nome del file', async () => {
+    const { slug, reportFileName, newReport } = await import('../model.js');
     assert.equal(slug('  Mario D\'Èrrico & Figli  '), 'Mario-D-Errico-Figli');
     const doc = newReport({ now: new Date(2026, 9, 22), id: 'x' });
     doc.customer.name = 'Mario Rossi';

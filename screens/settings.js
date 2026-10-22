@@ -2,13 +2,12 @@
 
 import * as nav from '../nav.js';
 import { loadSettings, updateSettings } from '../settings.js';
-import { formatNumber, nextNumber, setNextNumber } from '../model.js';
+import { formatReportNumber, nextNumber, setNextNumber } from '../model.js';
 import { checkRecipients } from '../mail.js';
 import { getLogo, setLogo, removeLogo } from '../photos.js';
 import * as folder from '../folder.js';
 import { createBackup, restoreBackup } from '../backup.js';
-import { CLS } from '../ui.js';
-import { $, el, showBoxMsg, debounce, downloadFile } from '../util.js';
+import { $, fieldElement, showBoxMsg, debounce, downloadFile } from '../util.js';
 
 // wide = il campo occupa tutta la riga, gli altri stanno in due colonne
 const COMPANY_DEFS = [
@@ -20,27 +19,6 @@ const COMPANY_DEFS = [
     { key: 'technician', label: 'Nome del tecnico', capitalize: 'words', wide: true },
 ];
 
-// un campo con la sua etichetta (testo, data, menu o area di testo)
-function fieldElement(def, id) {
-    const label = el('label', def.wide ? CLS.fieldWide : CLS.field);
-    label.append(el('span', CLS.fieldLabel, def.label));
-    let input;
-    if (def.options) {
-        input = el('select', CLS.select);
-        input.append(new Option(def.noneLabel ?? 'Non indicato', ''), ...def.options.map((o) => new Option(o.label, o.id)));
-    } else {
-        input = def.rows ? el('textarea', CLS.textarea) : el('input', def.type === 'date' ? CLS.dateInput : CLS.input);
-        if (def.rows) input.rows = def.rows;
-        else input.type = def.type || 'text';
-    }
-    input.id = id;
-    if (def.inputmode) input.inputMode = def.inputmode;
-    input.autocomplete = 'off';
-    if (def.capitalize) input.setAttribute('autocapitalize', def.capitalize);
-    label.append(input);
-    return label;
-}
-
 function buildFields(boxId, prefix, defs) {
     $(boxId).append(...defs.map((def) => fieldElement(def, `${prefix}${def.key}`)));
 }
@@ -51,7 +29,7 @@ function fillNumbering(counters) {
     const y = year();
     $('s-next-label').textContent = `Prossimo numero del ${y}`;
     $('s-next').value = nextNumber(counters, y);
-    $('s-next-hint').textContent = `Il prossimo rapporto chiuso con data nel ${y} sarà il n. ${formatNumber(y, nextNumber(counters, y))}.`;
+    $('s-next-hint').textContent = `Il prossimo rapporto chiuso con data nel ${y} sarà il n. ${formatReportNumber(y, nextNumber(counters, y))}.`;
 }
 
 let logoUrl = null;

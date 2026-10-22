@@ -1,5 +1,4 @@
 // Impostazioni dell'app (restano sul telefono): ditta e tecnico, numerazione, email.
-// Chiave nuova: non legge le impostazioni delle versioni precedenti.
 
 const KEY = 'testoqr.config';
 

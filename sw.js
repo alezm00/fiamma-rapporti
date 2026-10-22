@@ -22,6 +22,7 @@ const FILES = [
     './screens/quick.js',
     './screens/trash.js',
     './screens/settings.js',
+    './dates.js',
     './tjf.js',
     './report.js',
     './geo.js',

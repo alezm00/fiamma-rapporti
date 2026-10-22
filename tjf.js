@@ -2,6 +2,8 @@
 // e preparazione di un "report" generico da mostrare a schermo.
 // Schema di riferimento: https://github.com/testo/tjf (slim-schema)
 
+import { pad, formatDate, formatTime } from './dates.js';
+
 const INVALID = 4294967295; // valore usato da Testo per "----" (nessuna misura)
 
 // ---------------------------------------------------------------------------
@@ -116,16 +118,6 @@ export function formatNumber(n, dec) {
     }
     const s = n.toLocaleString('it-IT', { minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: false });
     return /^-0(,0*)?$/.test(s) ? s.slice(1) : s; // niente "-0,0"
-}
-
-const pad = (n) => String(n).padStart(2, '0');
-
-export function formatDate(d, withSeconds = false) {
-    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${formatTime(d, withSeconds)}`;
-}
-
-export function formatTime(d, withSeconds = true) {
-    return `${pad(d.getHours())}:${pad(d.getMinutes())}` + (withSeconds ? `:${pad(d.getSeconds())}` : '');
 }
 
 function formatDuration(ms) {
@@ -346,9 +338,9 @@ function phaseItems(items) {
     }
     return Object.keys(phases).sort((a, b) => a - b).map((n) => {
         const { start, end } = phases[n];
-        let value = [start && formatTime(start), end && formatTime(end)].filter(Boolean).join(' → ');
-        if (start && end) value += `  (${formatDuration(end - start)})`;
-        return { key: `phase${n}`, label: `Fase ${n}`, value };
+        const range = [start && formatTime(start), end && formatTime(end)].filter(Boolean).join(' → ');
+        const duration = start && end ? formatDuration(end - start) : '';
+        return { key: `phase${n}`, label: `Fase ${n}`, value: duration ? `${range}  (${duration})` : range, range, duration };
     });
 }
 
@@ -427,4 +419,10 @@ export function reportToText(r) {
         lines.push(`${row.short ? row.short + ' ' : ''}${row.short === row.label ? '' : row.label}: ${vals} ${row.unit}`.replace(/\s+$/, '').replace(/ {2,}/g, ' '));
     }
     return lines.join('\n');
+}
+
+// I primi valori di una misura, per le anteprime negli elenchi: "TF 120,5 · O₂ 4,1"
+export function topValues(report, n = 4) {
+    const column = report.columns[0];
+    return report.rows.slice(0, n).map((r) => `${r.short || r.label} ${r.cells[column] ?? ''}`).join(' · ');
 }

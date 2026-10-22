@@ -1,5 +1,6 @@
 // Email del rapporto: destinatari, oggetto e testo creati in automatico.
-import { formatDay, typeLabel, outcomeLabel, unitKind, unitName } from './model.js';
+import { formatDay } from './dates.js';
+import { typeLabel, outcomeLabel, unitKind, unitName } from './model.js';
 
 // "a@x.it, b@y.it" -> ['a@x.it', 'b@y.it'] (separati da virgola, punto e virgola o spazio)
 export function parseRecipients(text) {

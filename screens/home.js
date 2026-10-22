@@ -3,7 +3,7 @@
 import * as nav from '../nav.js';
 import * as store from '../store.js';
 import { usingMemory } from '../db.js';
-import { filterReports, groupByMonth, yearsOf, typeLabel, formatDay, isBlank } from '../model.js';
+import { filterReports, groupByMonth, yearsOf, describeReport, isBlank } from '../model.js';
 import { loadSettings } from '../settings.js';
 import * as folder from '../folder.js';
 import { CLS, MSG_TYPES } from '../ui.js';
@@ -20,16 +20,11 @@ function row(doc) {
     const open = el('button', CLS.reportOpen);
     open.dataset.id = doc.id;
 
+    const { number, customer, meta } = describeReport(doc);
     const head = el('div', CLS.reportHead);
-    head.append(el('span', CLS.reportNum, doc.number ? `N. ${doc.number}` : 'Senza numero'), statusBadge(doc.status));
-    open.append(head, el('span', CLS.reportName, doc.customer.name || 'Senza cliente'));
+    head.append(el('span', CLS.reportNum, number), statusBadge(doc.status));
+    open.append(head, el('span', CLS.reportName, customer));
     if (doc.customer.address) open.append(el('span', CLS.reportAddr, doc.customer.address.replace(/\s*\n\s*/g, ', ')));
-    const meta = [
-        formatDay(doc.date),
-        typeLabel(doc.intervention.type),
-        doc.measures.length && `${doc.measures.length} ${doc.measures.length === 1 ? 'misura' : 'misure'}`,
-        doc.photoCount && `${doc.photoCount} foto`,
-    ].filter(Boolean).join(' · ');
     open.append(el('span', CLS.reportMeta, meta));
     open.addEventListener('click', () => nav.go('editor', { id: doc.id }));
     li.append(open);
@@ -113,12 +108,12 @@ async function renderReminder() {
 
 export async function enter() {
     await store.purgeExpired(); // dal cestino va via quello che ci sta da più di 30 giorni
+    const all = await store.loadAll();
     // le bozze mai compilate non servono: si scartano
-    for (const doc of await store.listReports()) {
-        if (isBlank(doc)) await store.purgeReport(doc.id);
-    }
-    reports = await store.listReports();
-    trashCount = (await store.listTrash()).length;
+    const blank = all.reports.filter(isBlank);
+    for (const doc of blank) await store.purgeReport(doc.id);
+    reports = all.reports.filter((doc) => !blank.includes(doc));
+    trashCount = all.trash.length;
     limit = PAGE;
     $('h-search').value = filter.query;
     render();
