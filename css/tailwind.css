@@ -4,6 +4,8 @@
 
 @theme {
     --font-sans: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    /* numeri, codici e date: a larghezza fissa, come sul display di uno strumento */
+    --font-mono: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 
     /* sfondi, bordi e testi (tema scuro) */
     --color-page: #121212;
@@ -39,26 +41,49 @@
     --color-info-edge: #1e5a8c;
 }
 
-/* gli elementi che si ripetono ovunque, definiti una volta sola */
+/* gli elementi che si ripetono ovunque, definiti una volta sola (interfaccia compatta, da strumento) */
 @layer components {
     .btn {
-        @apply flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-btn-edge bg-btn p-3.5 font-bold text-white transition active:scale-[.98] disabled:cursor-default disabled:opacity-60;
+        @apply flex min-h-[38px] w-full cursor-pointer items-center justify-center gap-1.5 rounded border border-btn-edge bg-btn px-3 py-1.5 text-[.85rem] font-semibold text-white transition active:scale-[.98] disabled:cursor-default disabled:opacity-60;
+    }
+
+    /* azione principale e azione "in evidenza" */
+    .btn-primary {
+        @apply min-h-[44px] border-brand bg-brand text-[.95rem] hover:bg-brand-dark;
+    }
+
+    .btn-outline {
+        @apply border-brand bg-transparent;
     }
 
     .card {
-        @apply rounded-2xl border border-edge bg-card p-5 shadow-[0_10px_30px_rgba(0,0,0,.5)];
+        @apply rounded-md border border-edge bg-card p-3;
     }
 
     .input {
-        @apply w-full rounded-lg border-2 border-edge bg-field p-3.5 text-[1.05rem] text-white transition-colors focus:border-brand focus:outline-none;
+        @apply min-h-[38px] w-full rounded border border-edge bg-field px-2.5 py-1.5 text-[.9rem] text-white transition-colors focus:border-brand focus:outline-none;
     }
 
     .icon {
-        @apply size-[22px] shrink-0;
+        @apply size-[18px] shrink-0;
     }
 
-    /* filtri e suggerimenti: pulsanti a pillola, "premuti" quando attivi */
+    /* campo di un modulo: etichetta piccola in maiuscolo sopra il valore */
+    .fld {
+        @apply flex min-w-0 flex-col gap-1;
+    }
+
+    .lbl {
+        @apply text-[.66rem] leading-tight font-semibold tracking-[.07em] text-muted uppercase;
+    }
+
+    /* titolo di sezione: maiuscolo, con una linea che prosegue */
+    .sect {
+        @apply mb-2.5 flex items-center gap-2 text-[.68rem] font-bold tracking-[.14em] text-accent uppercase after:h-px after:flex-1 after:bg-line;
+    }
+
+    /* filtri e suggerimenti: pulsanti piccoli, "premuti" quando attivi */
     .chip {
-        @apply cursor-pointer rounded-full border border-edge bg-field px-3.5 py-1.5 text-[.9rem] whitespace-nowrap text-ink transition aria-pressed:border-brand aria-pressed:bg-brand aria-pressed:text-white;
+        @apply cursor-pointer rounded border border-edge bg-field px-2.5 py-1 text-[.78rem] whitespace-nowrap text-ink transition aria-pressed:border-brand aria-pressed:bg-brand aria-pressed:text-white;
     }
 }

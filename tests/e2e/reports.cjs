@@ -79,7 +79,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await page.waitForSelector('#view-home:not([hidden])');
   const items = await page.$$eval('#report-list > li', (l) => l.map((x) => x.innerText.replace(/\n/g, ' | ')));
   log('elenco ->', JSON.stringify(items));
-  assert(items.length === 1 && items[0].includes('Bozza') && items[0].includes('Mario Rossi') && items[0].includes('2 misure'), 'riga elenco');
+  assert(items.length === 1 && /bozza/i.test(items[0]) && items[0].includes('Mario Rossi') && items[0].includes('2 misure'), 'riga elenco');
   await shot('5-home-1');
 
   await page.click('#btn-quick-scan');

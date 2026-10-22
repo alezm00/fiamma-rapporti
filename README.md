@@ -65,7 +65,7 @@ L'indirizzo dalla posizione usa OpenStreetMap ([Nominatim](https://nominatim.org
 
 ### Stile (Tailwind)
 Lo stile usa [Tailwind CSS 4](https://tailwindcss.com) nella versione "browser" (`vendor/tailwindcss-browser.js`).
-- `css/tailwind.css`: colori e font (`@theme`) e i componenti ricorrenti (`btn`, `card`, `input`, `icon`, `chip`).
+- `css/tailwind.css`: colori e font (`@theme`) e i componenti ricorrenti (`btn`, `btn-primary`, `card`, `input`, `fld`, `lbl`, `sect`, `icon`, `chip`). L'interfaccia è compatta e "da strumento": etichette piccole in maiuscolo, titoli di sezione con linea, numeri, date e codici in carattere a larghezza fissa (`font-mono`), valori misurati in carattere normale a cifre tabulari.
 - `css/load-tailwind.js`: legge quel file e avvia Tailwind; la pagina resta nascosta finché gli stili non sono pronti.
 - Le classi create dal JavaScript vanno scritte in `ui.js`: vengono registrate all'avvio, così il loro stile è già pronto quando servono.
 - Per aggiornare Tailwind: sostituire `vendor/tailwindcss-browser.js` con `dist/index.global.js` del pacchetto npm `@tailwindcss/browser` e alzare la versione in `sw.js`.

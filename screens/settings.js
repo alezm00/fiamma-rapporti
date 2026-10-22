@@ -10,38 +10,39 @@ import { createBackup, restoreBackup } from '../backup.js';
 import { CLS } from '../ui.js';
 import { $, el, showBoxMsg, debounce, downloadFile } from '../util.js';
 
+// wide = il campo occupa tutta la riga, gli altri stanno in due colonne
 const COMPANY_DEFS = [
-    { key: 'name', label: 'Ragione sociale', capitalize: 'words' },
+    { key: 'name', label: 'Ragione sociale', capitalize: 'words', wide: true },
     { key: 'vat', label: 'Partita IVA', inputmode: 'numeric' },
-    { key: 'address', label: 'Indirizzo', rows: 2, capitalize: 'words' },
     { key: 'phone', label: 'Telefono', type: 'tel' },
-    { key: 'email', label: 'Email', type: 'email', capitalize: 'none' },
-    { key: 'technician', label: 'Nome del tecnico', capitalize: 'words' },
+    { key: 'address', label: 'Indirizzo', rows: 2, capitalize: 'words', wide: true },
+    { key: 'email', label: 'Email', type: 'email', capitalize: 'none', wide: true },
+    { key: 'technician', label: 'Nome del tecnico', capitalize: 'words', wide: true },
 ];
 
 // campi che si possono precompilare nei nuovi rapporti
 const DEFAULT_DEFS = [
-    { key: 'name', label: 'Nome e cognome', capitalize: 'words' },
+    { key: 'name', label: 'Nome e cognome', capitalize: 'words', wide: true },
     { key: 'fiscalCode', label: 'Codice fiscale', capitalize: 'characters' },
-    { key: 'address', label: 'Indirizzo', rows: 2, capitalize: 'words' },
     { key: 'phone', label: 'Telefono', type: 'tel' },
+    { key: 'address', label: 'Indirizzo', rows: 2, capitalize: 'words', wide: true },
     { key: 'brand', label: 'Marca caldaia', capitalize: 'words' },
     { key: 'model', label: 'Modello', capitalize: 'characters' },
-    { key: 'serial', label: 'Matricola / codice caldaia', capitalize: 'characters' },
+    { key: 'serial', label: 'Matricola / codice', capitalize: 'characters' },
     { key: 'plateCode', label: 'Targa impianto', capitalize: 'characters' },
     { key: 'installDate', label: 'Data di installazione', type: 'date' },
+    { key: 'fuel', label: 'Combustibile', options: FUELS },
     { key: 'chamber', label: 'Camera di combustione', options: CHAMBERS },
     { key: 'technology', label: 'Tipo di caldaia', options: TECHNOLOGIES },
-    { key: 'fuel', label: 'Combustibile', options: FUELS },
     { key: 'nominalPower', label: 'Potenza termica nominale (kW)', inputmode: 'decimal' },
     { key: 'actualPower', label: 'Potenza termica reale (kW)', inputmode: 'decimal' },
-    { key: 'notes', label: 'Note', rows: 4, capitalize: 'sentences' },
+    { key: 'notes', label: 'Note', rows: 3, capitalize: 'sentences', wide: true },
 ];
 
 function buildFields(boxId, prefix, defs) {
     const box = $(boxId);
     for (const def of defs) {
-        const label = el('label', CLS.field);
+        const label = el('label', def.wide ? CLS.fieldWide : CLS.field);
         label.append(el('span', CLS.fieldLabel, def.label));
         let input;
         if (def.options) {

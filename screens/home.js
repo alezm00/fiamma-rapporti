@@ -21,7 +21,7 @@ function render() {
         open.dataset.id = doc.id;
 
         const head = el('div', CLS.reportHead);
-        head.append(el('span', CLS.reportNum, doc.number ? `Rapporto n. ${doc.number}` : 'Rapporto'), statusBadge(doc.status));
+        head.append(el('span', CLS.reportNum, doc.number ? `N. ${doc.number}` : 'Senza numero'), statusBadge(doc.status));
         open.append(head, el('span', CLS.reportName, doc.customer.name || 'Senza cliente'));
         if (doc.customer.address) open.append(el('span', CLS.reportAddr, doc.customer.address.replace(/\s*\n\s*/g, ', ')));
         const meta = [

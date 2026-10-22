@@ -3,7 +3,7 @@
 // crea lo stile solo per le classi presenti nella pagina, e così quello degli elementi
 // creati dopo è già pronto (nessun lampo senza stile).
 
-export const MSG = 'rounded-lg border p-4 text-[.95rem] leading-[1.45]';
+export const MSG = 'rounded border px-3 py-2 text-[.82rem] leading-[1.35]';
 
 export const MSG_TYPES = {
     success: 'border-ok-edge bg-ok-bg text-ok-fg',
@@ -20,70 +20,71 @@ export const BADGES = {
 };
 
 export const CLS = {
-    // elenco dei rapporti
-    reportOpen: 'btn flex-col items-stretch gap-1 bg-card p-4 text-left font-normal',
+    // elenco dei rapporti: righe fitte, numeri e date a larghezza fissa
+    reportOpen: 'btn flex-col items-stretch gap-0.5 bg-field px-2.5 py-1.5 text-left font-normal',
     reportHead: 'flex items-center justify-between gap-2',
-    reportNum: 'font-bold text-white',
-    reportName: 'text-[1.05rem] text-white',
-    reportAddr: 'truncate text-[.9rem] text-soft',
-    reportMeta: 'text-[.85rem] text-muted',
-    badge: 'rounded-full border px-2.5 py-0.5 text-[.75rem] font-bold whitespace-nowrap',
+    reportNum: 'font-mono text-[.82rem] font-bold text-white',
+    reportName: 'truncate text-[.9rem] text-white',
+    reportAddr: 'truncate text-[.78rem] text-soft',
+    reportMeta: 'font-mono text-[.7rem] text-muted',
+    badge: 'rounded-sm border px-1.5 py-px font-mono text-[.62rem] font-bold tracking-[.06em] whitespace-nowrap uppercase',
 
     // promemoria nella home (copia di sicurezza)
-    reminder: `${MSG} mb-4 block w-full cursor-pointer text-left`,
+    reminder: `${MSG} mb-2.5 block w-full cursor-pointer text-left`,
 
     // materiali del rapporto
-    matRow: 'flex gap-2',
+    matRow: 'flex gap-1.5',
     matText: 'input min-w-0 flex-1',
-    matQty: 'input w-24 flex-none',
-    matDel: 'btn w-12 flex-none bg-field text-[1.1rem] text-err-fg',
+    matQty: 'input w-20 flex-none',
+    matDel: 'btn w-9 flex-none bg-field px-0 text-[.95rem] text-err-fg',
 
     // storico delle scansioni (e misure di un rapporto)
     historyRow: 'flex gap-1.5',
-    historyOpen: 'btn min-w-0 flex-1 flex-col items-start gap-0.5 bg-field text-left font-normal',
-    historyTitle: 'font-bold text-white',
-    historyMeta: 'text-[.85rem] text-muted',
-    historyVals: 'max-w-full overflow-hidden text-[.9rem] text-ellipsis whitespace-nowrap text-accent tabular-nums',
-    historyDel: 'btn w-12 flex-none bg-field text-[1.1rem] text-err-fg',
+    historyOpen: 'btn min-w-0 flex-1 flex-col items-start gap-0.5 bg-field px-2.5 py-1.5 text-left font-normal',
+    historyTitle: 'text-[.88rem] font-bold text-white',
+    historyMeta: 'font-mono text-[.7rem] text-muted',
+    historyVals: 'max-w-full overflow-hidden font-mono text-[.76rem] text-ellipsis whitespace-nowrap text-accent tabular-nums',
+    historyDel: 'btn w-9 flex-none bg-field px-0 text-[.95rem] text-err-fg',
 
     // intestazione del risultato
     headTerm: 'text-muted',
-    headDef: 'font-bold text-white',
+    headDef: 'font-mono font-bold text-white',
 
     // tabella dei valori: una colonna di valori oppure più colonne (Media, Min, Max…)
     tableSingle: 'grid grid-cols-[1fr_auto_auto]',
     tableMulti: 'grid grid-cols-[repeat(var(--cols),1fr)_auto]',
     tableHead: 'contents',
-    tableHeadCell: 'pt-1 pl-2 text-right text-[.8rem] text-muted',
+    tableHeadCell: 'pl-2 text-right font-mono text-[.66rem] tracking-[.06em] text-muted uppercase',
     row: 'contents',
-    cell: 'flex flex-col justify-center py-3',
+    cell: 'flex flex-col justify-center py-1.5',
     cellLine: 'border-b border-line',
     labelMulti: 'col-span-full flex-row items-baseline justify-start gap-2 pb-0',
-    code: 'text-[1.2rem] font-bold text-white',
-    name: 'text-[.8rem] text-muted',
-    num: 'items-end pl-3 text-[2rem] font-bold whitespace-nowrap text-accent tabular-nums',
-    numMulti: 'items-end pl-2 text-[1.45rem] font-bold whitespace-nowrap text-accent tabular-nums',
-    unit: 'min-w-[2.6em] pl-1.5 text-[.95rem] text-soft',
+    code: 'text-[1rem] font-bold text-white',
+    name: 'text-[.7rem] leading-tight text-muted',
+    num: 'items-end pl-2 text-[1.65rem] leading-none font-bold whitespace-nowrap text-accent tabular-nums',
+    numMulti: 'items-end pl-2 text-[1.2rem] leading-none font-bold whitespace-nowrap text-accent tabular-nums',
+    unit: 'min-w-[2.6em] pl-1.5 font-mono text-[.78rem] text-soft',
 
     // sezioni apribili (Fasi, Strumento…)
     section: 'card group p-0',
-    summary: "cursor-pointer list-none px-5 py-4 font-bold text-white after:float-right after:text-muted after:content-['▾'] group-open:after:content-['▴'] [&::-webkit-details-marker]:hidden",
-    sectionList: 'px-5 pb-2',
-    term: 'border-t border-line pt-2.5 text-[.8rem] text-muted first:border-t-0 first:pt-0',
-    def: 'mt-0.5 mb-2.5 text-[1.05rem] wrap-anywhere',
+    summary: "cursor-pointer list-none px-3 py-2.5 text-[.72rem] font-bold tracking-[.12em] text-white uppercase after:float-right after:text-muted after:content-['▾'] group-open:after:content-['▴'] [&::-webkit-details-marker]:hidden",
+    sectionList: 'px-3 pb-1.5',
+    term: 'border-t border-line pt-1.5 text-[.68rem] tracking-[.05em] text-muted uppercase first:border-t-0 first:pt-0',
+    def: 'mt-0.5 mb-1.5 font-mono text-[.85rem] wrap-anywhere',
 
     // foto del report
-    photo: 'relative aspect-square overflow-hidden rounded-lg border border-edge bg-field',
+    photo: 'relative aspect-square overflow-hidden rounded border border-edge bg-field',
     photoImg: 'block size-full cursor-pointer object-cover',
-    photoDel: 'absolute top-1 right-1 flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/70 text-[1rem] text-white',
+    photoDel: 'absolute top-0.5 right-0.5 flex size-6 cursor-pointer items-center justify-center rounded-full bg-black/70 text-[.8rem] text-white',
 
-    // campi generati dal JS (dati predefiniti nelle impostazioni)
-    field: 'flex flex-col gap-1.5',
-    fieldLabel: 'text-[.85rem] text-muted',
+    // campi generati dal JS (impostazioni)
+    field: 'fld',
+    fieldWide: 'fld col-span-2',
+    fieldLabel: 'lbl',
     input: 'input',
-    textarea: 'input min-h-[4.2em] resize-y',
+    textarea: 'input min-h-[3.4em] resize-y',
     select: 'input [color-scheme:dark]',
-    dateInput: 'input min-h-[54px] [color-scheme:dark]',
+    dateInput: 'input [color-scheme:dark]',
 };
 
 // mette nella pagina, nascosto, un elemento con tutte le classi sopra

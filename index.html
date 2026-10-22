@@ -26,56 +26,50 @@
     <!-- Stile: Tailwind (build "browser" in vendor/, avviato da load-tailwind.js). Tema e componenti sono in css/tailwind.css -->
     <script src="css/load-tailwind.js"></script>
 </head>
-<body class="bg-page p-4 pb-[calc(24px+env(safe-area-inset-bottom))] font-sans leading-[normal] text-ink [-webkit-tap-highlight-color:transparent]">
+<body class="bg-page p-2 pb-[calc(16px+env(safe-area-inset-bottom))] font-sans text-[.875rem] leading-[normal] text-ink [-webkit-tap-highlight-color:transparent]">
 
 <!-- ============ Elenco dei rapporti ============ -->
-<main id="view-home" class="mx-auto flex max-w-[640px] flex-col gap-4">
+<main id="view-home" class="mx-auto flex max-w-[640px] flex-col gap-2">
     <div class="card">
-        <div class="flex items-center justify-between">
-            <h1 class="text-[1.1rem] font-bold tracking-[.02em] text-white">Fiamma</h1>
-            <button id="btn-settings" class="grid size-11 cursor-pointer place-items-center text-muted" aria-label="Impostazioni"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+        <div class="mb-2.5 flex items-center justify-between">
+            <h1 class="flex items-center gap-2 text-[.95rem] font-bold tracking-[.14em] text-white uppercase"><img src="img/icon.svg" alt="" class="size-6 rounded">Fiamma</h1>
+            <button id="btn-settings" class="grid size-9 cursor-pointer place-items-center text-muted" aria-label="Impostazioni"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
         </div>
-        <p class="mt-1 mb-4 text-[.9rem] text-soft">Rapporti di intervento con le misure dell'analizzatore Testo 330.</p>
         <div id="home-reminder" hidden></div>
-        <div class="flex flex-col gap-2.5">
-            <button id="btn-new" class="btn border-brand bg-brand hover:bg-brand-dark p-5 text-[1.15rem]">
-                <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                Nuovo rapporto
-            </button>
-            <div class="flex gap-2.5">
-                <button id="btn-quick-scan" class="btn px-2 py-3 text-[.95rem]">Scansione rapida</button>
-                <button id="btn-quick-list" class="btn px-2 py-3 text-[.95rem]">Scansioni rapide</button>
-            </div>
+        <button id="btn-new" class="btn btn-primary"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Nuovo rapporto</button>
+        <div class="mt-1.5 grid grid-cols-2 gap-1.5">
+            <button id="btn-quick-scan" class="btn"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg> Scansione rapida</button>
+            <button id="btn-quick-list" class="btn">Scansioni rapide</button>
         </div>
         <div id="home-msg" hidden></div>
     </div>
 
     <div class="card">
-        <h2 class="mb-3 text-[1.3rem] font-bold text-white">Rapporti</h2>
+        <h2 class="sect">Rapporti</h2>
         <input id="h-search" class="input" type="search" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Cerca cliente, targa, numero…" aria-label="Cerca nei rapporti">
-        <div id="h-status" class="mt-3 mb-3 flex flex-wrap gap-2" role="group" aria-label="Filtra per stato">
+        <div id="h-status" class="mt-2 mb-2 flex flex-wrap gap-1.5" role="group" aria-label="Filtra per stato">
             <button class="chip" data-status="all" aria-pressed="true">Tutti</button>
             <button class="chip" data-status="draft" aria-pressed="false">Bozze</button>
             <button class="chip" data-status="done" aria-pressed="false">Completati</button>
             <button class="chip" data-status="sent" aria-pressed="false">Inviati</button>
         </div>
-        <ul id="report-list" class="flex flex-col gap-2"></ul>
-        <p id="report-empty" class="text-[.85rem] text-muted"></p>
+        <ul id="report-list" class="flex flex-col gap-1.5"></ul>
+        <p id="report-empty" class="text-[.8rem] text-muted"></p>
     </div>
 </main>
 
 <!-- ============ Fotocamera ============ -->
 <section id="view-scan" class="fixed inset-0 z-10 bg-black" hidden>
     <video id="video" class="absolute inset-0 size-full object-cover" playsinline muted></video>
-    <div class="absolute top-[45%] left-1/2 aspect-square w-[min(80vw,60vh)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border-[3px] border-accent shadow-[0_0_0_100vmax_rgba(0,0,0,.45)]"></div>
-    <div id="scan-status" class="absolute inset-x-4 top-[calc(16px+env(safe-area-inset-top))] rounded-lg bg-black/55 p-2.5 text-center font-bold text-white">Inquadra il QR code</div>
-    <div id="scan-msg" class="absolute inset-x-4 top-[calc(76px+env(safe-area-inset-top))]" hidden></div>
-    <div class="absolute inset-x-4 bottom-[calc(24px+env(safe-area-inset-bottom))] flex flex-col gap-2.5">
-        <label class="cursor-pointer self-center rounded-lg bg-black/55 px-3 py-1.5 text-[.9rem] text-link">Importa file (.gz / .json)<input type="file" id="in-file" accept=".gz,.json,.tjf,application/json,application/gzip" hidden></label>
-        <div class="flex gap-2.5">
+    <div class="absolute top-[45%] left-1/2 aspect-square w-[min(80vw,60vh)] -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-accent shadow-[0_0_0_100vmax_rgba(0,0,0,.45)]"></div>
+    <div id="scan-status" class="absolute inset-x-2 top-[calc(8px+env(safe-area-inset-top))] rounded bg-black/60 px-2.5 py-1.5 text-center font-mono text-[.8rem] font-bold text-white">Inquadra il QR code</div>
+    <div id="scan-msg" class="absolute inset-x-2 top-[calc(48px+env(safe-area-inset-top))]" hidden></div>
+    <div class="absolute inset-x-2 bottom-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-1.5">
+        <label class="cursor-pointer self-center rounded bg-black/60 px-2.5 py-1 text-[.78rem] text-link">Importa file (.gz / .json)<input type="file" id="in-file" accept=".gz,.json,.tjf,application/json,application/gzip" hidden></label>
+        <div class="flex gap-1.5">
             <button id="btn-torch" class="btn bg-[rgba(30,30,30,.85)] aria-pressed:bg-note aria-pressed:text-page" aria-pressed="false" hidden>Torcia</button>
             <label class="btn bg-[rgba(30,30,30,.85)]">
-                <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 Da foto
                 <input type="file" id="in-photo" accept="image/*" hidden>
             </label>
@@ -85,299 +79,250 @@
 </section>
 
 <!-- ============ Valori di una misura ============ -->
-<main id="view-measure" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
+<main id="view-measure" class="mx-auto flex max-w-[640px] flex-col gap-2" hidden>
     <div id="m-label-card" class="card" hidden>
-        <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Etichetta della misura</span>
-            <input id="m-label" class="input" type="text" autocomplete="off" autocapitalize="sentences" enterkeyhint="done" placeholder="Prima, Dopo…">
-        </label>
-        <div id="m-chips" class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Etichette suggerite">
-            <button class="chip" data-label="Prima" aria-pressed="false">Prima</button>
-            <button class="chip" data-label="Dopo" aria-pressed="false">Dopo</button>
+        <div class="fld"><label for="m-label" class="lbl">Etichetta della misura</label>
+            <div class="flex gap-1.5">
+                <input id="m-label" class="input min-w-0 flex-1" type="text" autocomplete="off" autocapitalize="sentences" enterkeyhint="done" placeholder="Prima, Dopo…">
+                <div id="m-chips" class="flex gap-1.5" role="group" aria-label="Etichette suggerite">
+                    <button class="chip" data-label="Prima" aria-pressed="false">Prima</button>
+                    <button class="chip" data-label="Dopo" aria-pressed="false">Dopo</button>
+                </div>
+            </div>
         </div>
     </div>
     <div class="card">
-        <h2 id="r-title" class="mb-2 text-[1.35rem] font-bold text-white"></h2>
-        <div id="r-date" class="text-[.85rem] text-muted"></div>
-        <dl id="r-header" class="mt-2.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1"></dl>
-        <div id="r-note" class="mt-2.5 text-note" hidden></div>
+        <h2 id="r-title" class="text-[1.05rem] leading-tight font-bold text-white"></h2>
+        <div id="r-date" class="mt-0.5 font-mono text-[.72rem] text-muted"></div>
+        <dl id="r-header" class="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[.8rem] empty:hidden"></dl>
+        <div id="r-note" class="mt-2 text-[.8rem] text-note" hidden></div>
     </div>
-    <div id="r-errors" class="rounded-lg border border-err-edge bg-err-bg p-4 text-[.95rem] leading-[1.45] text-err-fg" hidden></div>
-    <div id="r-values" class="card">
+    <div id="r-errors" class="rounded border border-err-edge bg-err-bg px-3 py-2 text-[.82rem] leading-[1.35] text-err-fg" hidden></div>
+    <div id="r-values" class="card py-1.5">
         <div id="r-table"></div>
     </div>
-    <div id="r-sections" class="flex flex-col gap-2.5"></div>
+    <div id="r-sections" class="flex flex-col gap-1.5"></div>
     <details class="card group p-0">
-        <summary class="cursor-pointer list-none px-5 py-4 font-bold text-white after:float-right after:text-muted after:content-['▾'] group-open:after:content-['▴'] [&::-webkit-details-marker]:hidden">Dati grezzi (JSON)</summary>
-        <pre id="r-json" class="px-5 pb-5 text-[.75rem] whitespace-pre-wrap text-soft wrap-anywhere"></pre>
+        <summary class="cursor-pointer list-none px-3 py-2.5 text-[.72rem] font-bold tracking-[.12em] text-white uppercase after:float-right after:text-muted after:content-['▾'] group-open:after:content-['▴'] [&::-webkit-details-marker]:hidden">Dati grezzi (JSON)</summary>
+        <pre id="r-json" class="px-3 pb-3 font-mono text-[.68rem] whitespace-pre-wrap text-soft wrap-anywhere"></pre>
     </details>
-    <div class="flex gap-2.5">
+    <div class="grid grid-cols-2 gap-1.5">
         <button id="btn-copy" class="btn">Copia testo</button>
         <button id="m-remove" class="btn text-err-fg" hidden>Rimuovi misura</button>
     </div>
-    <button id="m-add" class="btn border-brand bg-brand hover:bg-brand-dark p-5 text-[1.15rem]" hidden>Aggiungi un'altra misura</button>
-    <button id="m-again" class="btn border-brand bg-brand hover:bg-brand-dark p-5 text-[1.15rem]" hidden>Nuova scansione</button>
+    <button id="m-add" class="btn btn-primary" hidden><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg> Aggiungi un'altra misura</button>
+    <button id="m-again" class="btn btn-primary" hidden><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg> Nuova scansione</button>
     <button id="m-back" class="btn">Indietro</button>
 </main>
 
 <!-- ============ Scansioni rapide ============ -->
-<main id="view-quick" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
+<main id="view-quick" class="mx-auto flex max-w-[640px] flex-col gap-2" hidden>
     <div class="card">
-        <div class="flex items-baseline justify-between">
-            <h2 class="mb-2 text-[1.3rem] font-bold text-white">Scansioni rapide</h2>
-            <button id="btn-clear" class="cursor-pointer p-1 text-[.9rem] text-link" hidden>Cancella tutto</button>
+        <div class="mb-0.5 flex items-center justify-between">
+            <h2 class="sect mb-0 flex-1">Scansioni rapide</h2>
+            <button id="btn-clear" class="cursor-pointer pl-2 text-[.78rem] text-link" hidden>Cancella tutto</button>
         </div>
-        <p class="mb-3 text-[.85rem] text-muted">Le ultime 20 letture, solo per rivedere i valori. Non fanno parte di nessun rapporto.</p>
-        <ul id="history" class="flex flex-col gap-2"></ul>
-        <p id="history-empty" class="text-[.85rem] text-muted">Nessuna scansione salvata.</p>
+        <p class="mt-2 mb-2.5 text-[.75rem] text-muted">Le ultime 20 letture, solo per rivedere i valori. Non fanno parte di nessun rapporto.</p>
+        <ul id="history" class="flex flex-col gap-1.5"></ul>
+        <p id="history-empty" class="text-[.8rem] text-muted">Nessuna scansione salvata.</p>
     </div>
-    <button id="q-scan" class="btn border-brand bg-brand hover:bg-brand-dark p-5 text-[1.15rem]">Scansione rapida</button>
+    <button id="q-scan" class="btn btn-primary"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg> Scansione rapida</button>
     <button id="q-back" class="btn">Indietro</button>
 </main>
 
 <!-- ============ Rapporto ============ -->
-<main id="view-editor" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
+<main id="view-editor" class="mx-auto flex max-w-[640px] flex-col gap-2" hidden>
     <div class="card">
-        <div class="flex items-center gap-2">
-            <button id="e-back" class="grid size-11 flex-none cursor-pointer place-items-center text-muted" aria-label="Torna all'elenco"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-            <h2 id="e-title" class="min-w-0 flex-1 text-[1.3rem] font-bold text-white"></h2>
+        <div class="flex items-center gap-1.5">
+            <button id="e-back" class="grid size-9 flex-none cursor-pointer place-items-center text-muted" aria-label="Torna all'elenco"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+            <h2 id="e-title" class="min-w-0 flex-1 font-mono text-[1rem] font-bold text-white"></h2>
             <span id="e-badge"></span>
         </div>
-        <label class="mt-4 flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Data dell'intervento</span>
-            <input id="e-date" class="input min-h-[54px] [color-scheme:dark]" type="date">
-        </label>
+        <div class="mt-2"><label class="fld"><span class="lbl">Data dell'intervento</span><input id="e-date" class="input font-mono [color-scheme:dark]" type="date"></label></div>
     </div>
 
     <div class="card">
-        <h3 class="mb-3 text-[1.1rem] font-bold text-white">Cliente</h3>
-        <div class="flex flex-col gap-3.5">
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Nome e cognome</span>
-                <input id="c-name" class="input" type="text" autocomplete="off" autocapitalize="words" enterkeyhint="next">
-            </label>
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Codice fiscale</span>
-                <input id="c-cf" class="input uppercase" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
-                <div id="cf-hint" class="rounded-lg border border-warn-edge bg-warn-bg px-3 py-2 text-[.85rem] leading-[1.4] text-warn-fg" hidden></div>
-            </label>
-            <div class="flex flex-col gap-1.5">
-                <label for="c-address" class="text-[.85rem] text-muted">Indirizzo</label>
-                <textarea id="c-address" class="input min-h-[4.2em] resize-y" rows="2" autocomplete="off" autocapitalize="words"></textarea>
-                <button type="button" id="btn-geo" class="btn">
-                    <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    Usa la mia posizione
-                </button>
+        <h3 class="sect">Cliente</h3>
+        <div class="grid grid-cols-2 gap-2">
+            <label class="fld col-span-2"><span class="lbl">Nome e cognome</span><input id="c-name" class="input" type="text" autocomplete="off" autocapitalize="words" enterkeyhint="next"></label>
+            <label class="fld"><span class="lbl">Codice fiscale</span><input id="c-cf" class="input font-mono uppercase" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false"></label>
+            <label class="fld"><span class="lbl">Telefono</span><input id="c-phone" class="input font-mono" type="tel" inputmode="tel" autocomplete="off"></label>
+            <div id="cf-hint" class="col-span-2 rounded border border-warn-edge bg-warn-bg px-2.5 py-1.5 text-[.78rem] leading-[1.35] text-warn-fg" hidden></div>
+            <div class="fld col-span-2">
+                <label for="c-address" class="lbl">Indirizzo</label>
+                <textarea id="c-address" class="input min-h-[3.4em] resize-y" rows="2" autocomplete="off" autocapitalize="words"></textarea>
+                <button type="button" id="btn-geo" class="btn"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Usa la mia posizione</button>
                 <div id="geo-msg" hidden></div>
             </div>
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Telefono</span>
-                <input id="c-phone" class="input" type="tel" inputmode="tel" autocomplete="off">
-            </label>
         </div>
     </div>
 
     <div class="card">
-        <h3 class="mb-3 text-[1.1rem] font-bold text-white">Impianto</h3>
-        <div class="flex flex-col gap-3.5">
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Marca caldaia</span>
-                <input id="c-brand" class="input" type="text" autocomplete="off" autocapitalize="words">
-            </label>
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Modello</span>
-                <input id="c-model" class="input" type="text" autocomplete="off" autocapitalize="characters">
-            </label>
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Matricola / codice caldaia</span>
-                <input id="c-serial" class="input" type="text" autocomplete="off" autocapitalize="characters">
-            </label>
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Targa impianto</span>
-                <input id="c-plate" class="input uppercase" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
-            </label>
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Data di installazione</span>
-                <input id="c-date" class="input min-h-[54px] [color-scheme:dark]" type="date">
-            </label>
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Camera di combustione</span>
-                <select id="c-chamber" class="input [color-scheme:dark]"></select>
-            </label>
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Tipo di caldaia</span>
-                <select id="c-technology" class="input [color-scheme:dark]"></select>
-            </label>
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Combustibile</span>
-                <select id="c-fuel" class="input [color-scheme:dark]"></select>
-            </label>
-            <div class="grid grid-cols-2 gap-3">
-                <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Potenza termica nominale (kW)</span>
-                    <input id="c-power-nom" class="input" type="text" inputmode="decimal" autocomplete="off">
-                </label>
-                <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Potenza termica reale (kW)</span>
-                    <input id="c-power-real" class="input" type="text" inputmode="decimal" autocomplete="off">
-                </label>
-            </div>
+        <h3 class="sect">Impianto</h3>
+        <div class="grid grid-cols-2 gap-2">
+            <label class="fld"><span class="lbl">Marca caldaia</span><input id="c-brand" class="input" type="text" autocomplete="off" autocapitalize="words"></label>
+            <label class="fld"><span class="lbl">Modello</span><input id="c-model" class="input" type="text" autocomplete="off" autocapitalize="characters"></label>
+            <label class="fld"><span class="lbl">Matricola / codice</span><input id="c-serial" class="input font-mono" type="text" autocomplete="off" autocapitalize="characters"></label>
+            <label class="fld"><span class="lbl">Targa impianto</span><input id="c-plate" class="input font-mono uppercase" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false"></label>
+            <label class="fld"><span class="lbl">Data di installazione</span><input id="c-date" class="input font-mono [color-scheme:dark]" type="date"></label>
+            <label class="fld"><span class="lbl">Combustibile</span><select id="c-fuel" class="input [color-scheme:dark]"></select></label>
+            <label class="fld"><span class="lbl">Camera di combustione</span><select id="c-chamber" class="input [color-scheme:dark]"></select></label>
+            <label class="fld"><span class="lbl">Tipo di caldaia</span><select id="c-technology" class="input [color-scheme:dark]"></select></label>
+            <label class="fld"><span class="lbl">Potenza termica nominale (kW)</span><input id="c-power-nom" class="input font-mono" type="text" inputmode="decimal" autocomplete="off"></label>
+            <label class="fld"><span class="lbl">Potenza termica reale (kW)</span><input id="c-power-real" class="input font-mono" type="text" inputmode="decimal" autocomplete="off"></label>
         </div>
     </div>
 
     <div class="card">
-        <h3 class="mb-3 text-[1.1rem] font-bold text-white">Intervento</h3>
-        <div class="flex flex-col gap-3.5">
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Tipo di intervento</span>
-                <select id="e-type" class="input [color-scheme:dark]"></select>
-            </label>
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Esito</span>
-                <select id="e-outcome" class="input [color-scheme:dark]"></select>
-            </label>
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Lavori eseguiti</span>
-                <textarea id="e-work" class="input min-h-[4.2em] resize-y" rows="4" autocomplete="off" autocapitalize="sentences" placeholder="Pulizia bruciatore, controllo valvole…"></textarea>
-            </label>
-            <div class="flex flex-col gap-1.5">
-                <span class="text-[.85rem] text-muted">Materiali</span>
-                <div id="e-materials" class="flex flex-col gap-2 empty:hidden"></div>
-                <button type="button" id="e-mat-add" class="btn">Aggiungi materiale</button>
+        <h3 class="sect">Intervento</h3>
+        <div class="grid grid-cols-2 gap-2">
+            <label class="fld col-span-2"><span class="lbl">Tipo di intervento</span><select id="e-type" class="input [color-scheme:dark]"></select></label>
+            <label class="fld col-span-2"><span class="lbl">Esito</span><select id="e-outcome" class="input [color-scheme:dark]"></select></label>
+            <label class="fld col-span-2"><span class="lbl">Lavori eseguiti</span><textarea id="e-work" class="input min-h-[4.6em] resize-y" rows="3" autocomplete="off" autocapitalize="sentences" placeholder="Pulizia bruciatore, controllo valvole…"></textarea></label>
+            <div class="fld col-span-2">
+                <span class="lbl">Materiali (descrizione, quantità)</span>
+                <div id="e-materials" class="flex flex-col gap-1.5 empty:hidden"></div>
+                <button type="button" id="e-mat-add" class="btn min-h-[34px]"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Aggiungi materiale</button>
             </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div class="flex flex-col gap-1.5">
-                    <label for="e-start" class="text-[.85rem] text-muted">Arrivo</label>
-                    <input id="e-start" class="input min-h-[54px] [color-scheme:dark]" type="time">
-                    <button type="button" id="e-start-now" class="btn p-2.5 text-[.9rem]">Adesso</button>
-                </div>
-                <div class="flex flex-col gap-1.5">
-                    <label for="e-end" class="text-[.85rem] text-muted">Partenza</label>
-                    <input id="e-end" class="input min-h-[54px] [color-scheme:dark]" type="time">
-                    <button type="button" id="e-end-now" class="btn p-2.5 text-[.9rem]">Adesso</button>
+            <div class="fld">
+                <label for="e-start" class="lbl">Arrivo</label>
+                <div class="flex gap-1">
+                    <input id="e-start" class="input min-w-0 flex-1 px-1.5 [color-scheme:dark]" type="time">
+                    <button type="button" id="e-start-now" class="btn w-auto px-2 text-[.72rem]">Adesso</button>
                 </div>
             </div>
-            <p id="e-duration" class="text-[.9rem] text-soft empty:hidden"></p>
+            <div class="fld">
+                <label for="e-end" class="lbl">Partenza</label>
+                <div class="flex gap-1">
+                    <input id="e-end" class="input min-w-0 flex-1 px-1.5 [color-scheme:dark]" type="time">
+                    <button type="button" id="e-end-now" class="btn w-auto px-2 text-[.72rem]">Adesso</button>
+                </div>
+            </div>
+            <p id="e-duration" class="col-span-2 font-mono text-[.78rem] text-soft empty:hidden"></p>
         </div>
     </div>
 
     <div class="card">
-        <h3 class="mb-3 text-[1.1rem] font-bold text-white">Misure Testo</h3>
-        <ul id="e-measures" class="mb-3 flex flex-col gap-2 empty:hidden"></ul>
-        <p id="e-measures-empty" class="mb-3 text-[.85rem] text-muted">Nessuna misura: scansiona il QR dell'analizzatore (per esempio una prima e una dopo l'intervento).</p>
-        <button type="button" id="e-measure-add" class="btn">
-            <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg>
-            Aggiungi misura
-        </button>
+        <h3 class="sect">Misure Testo</h3>
+        <ul id="e-measures" class="mb-2 flex flex-col gap-1.5 empty:hidden"></ul>
+        <p id="e-measures-empty" class="mb-2 text-[.78rem] text-muted">Nessuna misura: scansiona il QR dell'analizzatore (per esempio una prima e una dopo l'intervento).</p>
+        <button type="button" id="e-measure-add" class="btn"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg> Aggiungi misura</button>
     </div>
 
     <div class="card">
-        <h3 class="mb-3 text-[1.1rem] font-bold text-white">Foto <span id="photo-count" class="text-[.85rem] font-normal text-muted"></span></h3>
+        <h3 class="sect">Foto <span id="photo-count" class="font-mono font-normal tracking-normal text-muted normal-case"></span></h3>
         <div class="flex flex-col gap-1.5">
-            <div class="flex gap-2.5">
-                <label class="btn px-2 py-3 text-[.95rem]">
-                    <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    Scatta foto
-                    <input type="file" id="in-shoot" accept="image/*" capture="environment" hidden>
-                </label>
-                <label class="btn px-2 py-3 text-[.95rem]">
-                    <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                    Dalla galleria
-                    <input type="file" id="in-gallery" accept="image/*" multiple hidden>
-                </label>
+            <div class="grid grid-cols-2 gap-1.5">
+                <label class="btn"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Scatta foto<input type="file" id="in-shoot" accept="image/*" capture="environment" hidden></label>
+                <label class="btn"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> Dalla galleria<input type="file" id="in-gallery" accept="image/*" multiple hidden></label>
             </div>
-            <div id="photo-grid" class="mt-1 grid grid-cols-3 gap-2 empty:hidden"></div>
+            <div id="photo-grid" class="grid grid-cols-4 gap-1.5 empty:hidden"></div>
             <div id="photo-msg" hidden></div>
         </div>
     </div>
 
     <div class="card">
-        <label class="flex flex-col gap-1.5"><span class="text-[1.1rem] font-bold text-white">Note</span>
-            <textarea id="c-notes" class="input min-h-[4.2em] resize-y" rows="4" autocomplete="off" autocapitalize="sentences" placeholder="Anomalie, consigli, appuntamenti…"></textarea>
+        <label class="fld"><span class="sect mb-0">Note</span>
+            <textarea id="c-notes" class="input min-h-[4.6em] resize-y" rows="3" autocomplete="off" autocapitalize="sentences" placeholder="Anomalie, consigli, appuntamenti…"></textarea>
         </label>
-        <p class="mt-4 text-[.8rem] text-muted">I dati restano su questo telefono. L'indirizzo dalla posizione usa OpenStreetMap e richiede internet: invia solo le coordinate.</p>
+        <p class="mt-2 text-[.72rem] text-muted">I dati restano su questo telefono. L'indirizzo dalla posizione usa OpenStreetMap e richiede internet: invia solo le coordinate.</p>
     </div>
 
     <div id="report-msg" hidden></div>
-    <button id="btn-close" class="btn border-2 border-brand bg-transparent p-[18px] text-[1.05rem]" hidden>Chiudi rapporto</button>
-    <div class="flex gap-2.5">
-        <button id="btn-pdf-email" class="btn flex-[1.35] border-brand bg-brand hover:bg-brand-dark px-2.5 py-[18px] text-[1.05rem] whitespace-nowrap"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg> Invia email</button>
-        <button id="btn-pdf-save" class="btn flex-1 px-2.5 py-[18px] text-[1.05rem] whitespace-nowrap">Salva PDF</button>
-        <button id="btn-pdf-share" class="btn w-16 flex-none p-0" aria-label="Condividi PDF"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
+    <button id="btn-close" class="btn btn-outline min-h-[44px] text-[.95rem]" hidden>Chiudi rapporto</button>
+    <div class="flex gap-1.5">
+        <button id="btn-pdf-email" class="btn btn-primary flex-[1.5] whitespace-nowrap"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg> Invia email</button>
+        <button id="btn-pdf-save" class="btn min-h-[44px] flex-1 whitespace-nowrap">Salva PDF</button>
+        <button id="btn-pdf-share" class="btn min-h-[44px] w-12 flex-none px-0" aria-label="Condividi PDF"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
     </div>
-    <div id="mail-info" class="text-[.8rem] text-muted wrap-anywhere"></div>
-    <div class="flex gap-2.5">
+    <div id="mail-info" class="text-[.72rem] text-muted wrap-anywhere"></div>
+    <div class="grid grid-cols-2 gap-1.5">
         <button id="btn-duplicate" class="btn">Duplica</button>
         <button id="btn-delete" class="btn text-err-fg">Elimina</button>
     </div>
-    <button id="btn-editor-back" class="btn">Torna all'elenco</button>
 </main>
 
 <!-- ============ Impostazioni ============ -->
-<main id="view-settings" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
+<main id="view-settings" class="mx-auto flex max-w-[640px] flex-col gap-2" hidden>
+    <div class="flex items-center gap-1.5 px-0.5">
+        <button id="btn-settings-back" class="grid size-9 flex-none cursor-pointer place-items-center text-muted" aria-label="Indietro"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+        <h2 class="text-[.95rem] font-bold tracking-[.14em] text-white uppercase">Impostazioni</h2>
+    </div>
     <div class="card">
-        <h2 class="mb-2 text-[1.3rem] font-bold text-white">Impostazioni</h2>
-        <h3 class="mt-[1.2rem] mb-[.2rem] text-[1rem] font-bold text-white">Ditta e tecnico</h3>
-        <p class="mt-[.4rem] text-[.8rem] text-muted">Compaiono nell'intestazione del PDF.</p>
-        <div id="s-company" class="mt-4 flex flex-col gap-3.5"></div>
-        <div class="mt-3.5 flex flex-col gap-1.5">
-            <span class="text-[.85rem] text-muted">Logo (facoltativo)</span>
-            <div class="flex items-center gap-2.5">
-                <img id="s-logo-img" class="h-14 max-w-[40%] rounded border border-edge bg-white object-contain" alt="Logo della ditta" hidden>
+        <h3 class="sect">Ditta e tecnico</h3>
+        <p class="mb-2.5 text-[.75rem] text-muted">Compaiono nell'intestazione del PDF.</p>
+        <div id="s-company" class="grid grid-cols-2 gap-2"></div>
+        <div class="fld mt-2">
+            <span class="lbl">Logo (facoltativo)</span>
+            <div class="flex items-center gap-1.5">
+                <img id="s-logo-img" class="h-10 max-w-[40%] rounded border border-edge bg-white object-contain" alt="Logo della ditta" hidden>
                 <label class="btn flex-1">Scegli logo<input type="file" id="s-logo-in" accept="image/*" hidden></label>
-                <button type="button" id="s-logo-del" class="btn w-auto flex-none px-4" hidden>Rimuovi</button>
+                <button type="button" id="s-logo-del" class="btn w-auto flex-none px-3" hidden>Rimuovi</button>
             </div>
             <div id="s-logo-msg" hidden></div>
         </div>
     </div>
     <div class="card">
-        <h3 class="mb-[.2rem] text-[1rem] font-bold text-white">Numerazione</h3>
-        <p class="mt-[.4rem] text-[.8rem] text-muted">Il rapporto prende il numero quando lo chiudi, in ordine per anno (anno della data dell'intervento). Puoi cambiare il prossimo numero per allinearti a un registro cartaceo.</p>
-        <label class="mt-4 flex flex-col gap-1.5"><span id="s-next-label" class="text-[.85rem] text-muted"></span>
-            <input id="s-next" class="input" type="number" inputmode="numeric" min="1" step="1" autocomplete="off">
+        <h3 class="sect">Numerazione</h3>
+        <p class="mb-2.5 text-[.75rem] text-muted">Il rapporto prende il numero quando lo chiudi, in ordine per anno (anno della data dell'intervento). Puoi cambiare il prossimo numero per allinearti a un registro cartaceo.</p>
+        <label class="fld"><span id="s-next-label" class="lbl"></span>
+            <input id="s-next" class="input font-mono" type="number" inputmode="numeric" min="1" step="1" autocomplete="off">
         </label>
-        <p id="s-next-hint" class="mt-[.6rem] text-[.8rem] text-muted"></p>
+        <p id="s-next-hint" class="mt-1.5 font-mono text-[.72rem] text-muted"></p>
     </div>
     <div class="card">
-        <h3 class="mt-[0] mb-[.2rem] text-[1rem] font-bold text-white">Email</h3>
-        <label class="mt-3 flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Destinatario</span>
+        <h3 class="sect">Email</h3>
+        <label class="fld"><span class="lbl">Destinatario</span>
             <input id="s-email" class="input" type="email" inputmode="email" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ufficio@esempio.it">
-            <div id="s-email-hint" class="rounded-lg border border-warn-edge bg-warn-bg px-3 py-2 text-[.85rem] leading-[1.4] text-warn-fg" hidden></div>
         </label>
-        <p class="mt-[.6rem] text-[.8rem] text-muted">Più indirizzi si separano con una virgola. L'oggetto è creato in automatico: «Rapporto di intervento n. 2026/012 - Cliente - targa - data».</p>
-        <div class="mt-[.8rem] flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Il tasto "Invia email"</span>
-            <label class="flex items-start gap-3 py-2 text-[.85rem] leading-[1.4] text-muted"><input type="radio" name="s-method" value="share" class="mt-0.5 size-5 shrink-0 accent-brand">
-                <span>Apre il menu di Android: scegli Gmail e la mail si apre con il PDF già allegato, oggetto e testo pronti.<small class="mt-0.5 block text-[.8rem] text-muted">Il destinatario viene copiato negli appunti: toccalo sopra la tastiera nel campo "A".</small></span></label>
-            <label class="flex items-start gap-3 py-2 text-[.85rem] leading-[1.4] text-muted"><input type="radio" name="s-method" value="mailto" class="mt-0.5 size-5 shrink-0 accent-brand">
-                <span>Apre subito Gmail con destinatario, oggetto e testo già compilati.<small class="mt-0.5 block text-[.8rem] text-muted">Il PDF si salva nei download e va allegato con la graffetta.</small></span></label>
+        <div id="s-email-hint" class="mt-1.5 rounded border border-warn-edge bg-warn-bg px-2.5 py-1.5 text-[.78rem] leading-[1.35] text-warn-fg" hidden></div>
+        <p class="mt-1.5 text-[.72rem] text-muted">Più indirizzi si separano con una virgola. L'oggetto è creato in automatico: «Rapporto di intervento n. 2026/012 - Cliente - targa - data».</p>
+        <div class="mt-2.5 flex flex-col gap-0.5"><span class="lbl">Il tasto "Invia email"</span>
+            <label class="flex items-start gap-2.5 py-1.5 text-[.78rem] leading-[1.35] text-soft"><input type="radio" name="s-method" value="share" class="mt-0.5 size-4 shrink-0 accent-brand">
+                <span>Apre il menu di Android: scegli Gmail e la mail si apre con il PDF già allegato, oggetto e testo pronti.<small class="mt-0.5 block text-[.72rem] text-muted">Il destinatario viene copiato negli appunti: toccalo sopra la tastiera nel campo "A".</small></span></label>
+            <label class="flex items-start gap-2.5 py-1.5 text-[.78rem] leading-[1.35] text-soft"><input type="radio" name="s-method" value="mailto" class="mt-0.5 size-4 shrink-0 accent-brand">
+                <span>Apre subito Gmail con destinatario, oggetto e testo già compilati.<small class="mt-0.5 block text-[.72rem] text-muted">Il PDF si salva nei download e va allegato con la graffetta.</small></span></label>
         </div>
     </div>
     <div class="card">
-        <h3 class="mb-[.2rem] text-[1rem] font-bold text-white">Cartella di salvataggio</h3>
-        <p class="mt-[.4rem] text-[.8rem] text-muted">Ogni modifica viene copiata in una cartella a tua scelta: rapporti (ripristinabili), foto e PDF. Sincronizzala con Drive, Syncthing o altro per avere una copia di sicurezza e far leggere i PDF all'ufficio. I rapporti si modificano solo su questo telefono.</p>
-        <div id="s-folder-status" class="mt-3 text-[.95rem] leading-[1.45] text-ink"></div>
-        <div id="s-folder-msg" class="mt-3" hidden></div>
-        <div class="mt-4 flex flex-col gap-2.5">
-            <button type="button" id="s-folder-link" class="btn border-brand bg-brand hover:bg-brand-dark">Scegli cartella</button>
-            <button type="button" id="s-folder-reactivate" class="btn border-brand bg-brand hover:bg-brand-dark" hidden>Riattiva la cartella</button>
-            <div id="s-folder-tools" class="flex flex-col gap-2.5" hidden>
-                <div class="flex gap-2.5">
-                    <button type="button" id="s-folder-sync" class="btn px-2 py-3 text-[.95rem]">Sincronizza ora</button>
-                    <button type="button" id="s-folder-test" class="btn px-2 py-3 text-[.95rem]">Prova cartella</button>
-                </div>
-                <div class="flex gap-2.5">
-                    <button type="button" id="s-folder-restore" class="btn px-2 py-3 text-[.95rem]">Ripristina dalla cartella</button>
-                    <button type="button" id="s-folder-unlink" class="btn px-2 py-3 text-[.95rem] text-err-fg">Scollega</button>
-                </div>
+        <h3 class="sect">Cartella di salvataggio</h3>
+        <p class="text-[.75rem] text-muted">Ogni modifica viene copiata in una cartella a tua scelta: rapporti (ripristinabili), foto e PDF. Sincronizzala con Drive, Syncthing o altro per avere una copia di sicurezza e far leggere i PDF all'ufficio. I rapporti si modificano solo su questo telefono.</p>
+        <div id="s-folder-status" class="mt-2.5 font-mono text-[.8rem] leading-[1.4] text-ink"></div>
+        <div id="s-folder-msg" class="mt-2" hidden></div>
+        <div class="mt-2.5 flex flex-col gap-1.5">
+            <button type="button" id="s-folder-link" class="btn btn-primary">Scegli cartella</button>
+            <button type="button" id="s-folder-reactivate" class="btn btn-primary" hidden>Riattiva la cartella</button>
+            <div id="s-folder-tools" class="grid grid-cols-2 gap-1.5" hidden>
+                <button type="button" id="s-folder-sync" class="btn text-[.8rem]">Sincronizza ora</button>
+                <button type="button" id="s-folder-test" class="btn text-[.8rem]">Prova cartella</button>
+                <button type="button" id="s-folder-restore" class="btn text-[.8rem]">Ripristina dalla cartella</button>
+                <button type="button" id="s-folder-unlink" class="btn text-[.8rem] text-err-fg">Scollega</button>
             </div>
         </div>
-        <p class="mt-4 text-[.8rem] text-muted">Su Android non si può scegliere la radice della memoria né Download: crea e scegli una sottocartella (per esempio Documenti/Fiamma). Il telefono può chiedere di nuovo il permesso a ogni apertura dell'app: le modifiche restano in coda e partono appena lo riattivi. Il browser scrive ogni file con un file temporaneo «.crswap»: nelle app di sincronizzazione va ignorato.</p>
+        <p class="mt-2.5 text-[.72rem] text-muted">Su Android non si può scegliere la radice della memoria né Download: crea e scegli una sottocartella (per esempio Documenti/Fiamma). Il telefono può chiedere di nuovo il permesso a ogni apertura dell'app: le modifiche restano in coda e partono appena lo riattivi. Il browser scrive ogni file con un file temporaneo «.crswap»: nelle app di sincronizzazione va ignorato.</p>
     </div>
     <div class="card">
-        <h3 class="mb-[.2rem] text-[1rem] font-bold text-white">Backup in un file</h3>
-        <p class="mt-[.4rem] text-[.8rem] text-muted">Un file ZIP con tutti i rapporti, le foto e le impostazioni, da conservare dove vuoi. Funziona anche dove la cartella di salvataggio non è disponibile.</p>
-        <label class="mt-4 flex items-center gap-3 text-[.9rem] text-ink"><input type="checkbox" id="s-backup-photos" class="size-5 accent-brand" checked> Includi le foto</label>
-        <div class="mt-3 flex flex-col gap-2.5">
-            <button type="button" id="s-backup-save" class="btn">Scarica il backup</button>
-            <label class="btn">Ripristina da un file ZIP<input type="file" id="s-backup-in" accept=".zip,application/zip,application/x-zip-compressed" hidden></label>
+        <h3 class="sect">Backup in un file</h3>
+        <p class="text-[.75rem] text-muted">Un file ZIP con tutti i rapporti, le foto e le impostazioni, da conservare dove vuoi. Funziona anche dove la cartella di salvataggio non è disponibile.</p>
+        <label class="mt-2.5 flex items-center gap-2.5 text-[.8rem] text-ink"><input type="checkbox" id="s-backup-photos" class="size-4 accent-brand" checked> Includi le foto</label>
+        <div class="mt-2 grid grid-cols-2 gap-1.5">
+            <button type="button" id="s-backup-save" class="btn text-[.8rem]">Scarica il backup</button>
+            <label class="btn text-[.8rem]">Ripristina da ZIP<input type="file" id="s-backup-in" accept=".zip,application/zip,application/x-zip-compressed" hidden></label>
         </div>
-        <div id="s-backup-msg" class="mt-3" hidden></div>
-        <p id="s-backup-last" class="mt-3 text-[.8rem] text-muted"></p>
+        <div id="s-backup-msg" class="mt-2" hidden></div>
+        <p id="s-backup-last" class="mt-2 font-mono text-[.72rem] text-muted"></p>
     </div>
     <div class="card">
-        <h3 class="mb-[.2rem] text-[1rem] font-bold text-white">Dati predefiniti</h3>
-        <p class="mt-[.4rem] text-[.8rem] text-muted">Compilati in automatico in ogni nuovo rapporto. Utili se fai più interventi per lo stesso cliente o condominio.</p>
-        <div id="s-defaults" class="mt-4 flex flex-col gap-3.5"></div>
-        <button type="button" id="btn-defaults-clear" class="btn mt-4">Svuota i dati predefiniti</button>
+        <h3 class="sect">Dati predefiniti</h3>
+        <p class="mb-2.5 text-[.75rem] text-muted">Compilati in automatico in ogni nuovo rapporto. Utili se fai più interventi per lo stesso cliente o condominio.</p>
+        <div id="s-defaults" class="grid grid-cols-2 gap-2"></div>
+        <button type="button" id="btn-defaults-clear" class="btn mt-2.5">Svuota i dati predefiniti</button>
     </div>
-    <button id="btn-settings-back" class="btn">Indietro</button>
 </main>
 
 <div id="photo-view" class="fixed inset-0 z-30 flex items-center justify-center bg-black/92 p-3" hidden><img alt="Foto ingrandita" class="max-h-full max-w-full object-contain"></div>
 
-<div id="toast" class="fixed bottom-[calc(24px+env(safe-area-inset-bottom))] left-1/2 z-20 -translate-x-1/2 rounded-lg border border-ok-edge bg-ok-bg px-[18px] py-2.5 text-ok-fg" hidden></div>
+<div id="toast" class="fixed bottom-[calc(16px+env(safe-area-inset-bottom))] left-1/2 z-20 -translate-x-1/2 rounded border border-ok-edge bg-ok-bg px-3 py-1.5 text-[.82rem] text-ok-fg" hidden></div>
 
 <script src="vendor/zxing-reader.js"></script>
 <script type="module" src="app.js"></script>

@@ -512,7 +512,6 @@ export function init() {
     $('btn-duplicate').addEventListener('click', onDuplicate);
     $('btn-delete').addEventListener('click', onDelete);
     $('e-back').addEventListener('click', () => nav.back());
-    $('btn-editor-back').addEventListener('click', () => nav.back());
 
     // chi passa a un'altra app non deve perdere l'ultima modifica
     document.addEventListener('visibilitychange', () => {
