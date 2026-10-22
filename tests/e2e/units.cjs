@@ -108,27 +108,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   assert((await titles()).join() === 'Condizionatore' && !(await page.isVisible('#e-units-empty')), 'riaggiunto');
   await page.click('#e-back'); await home();
 
-  // 8) rapporto salvato con la scheda dell'impianto di prima: si legge come una caldaia
-  await page.evaluate(async () => {
-    const db = await import('/db.js'); const model = await import('/model.js');
-    const d = model.newReport({ id: 'vecchio-001' });
-    d.customer.name = 'Cliente Vecchio';
-    d.plant = { brand: 'Junkers', model: 'Cerapur', serial: 'JK-5', plateCode: 'OLD1', installDate: '2015-02-03', chamber: 'forzata', technology: 'condensazione', fuel: 'gpl', nominalPower: '24', actualPower: '22' };
-    await db.put(db.REPORTS, d);
-  });
-  await page.reload(); await home();
-  await page.fill('#h-search', 'cerapur');
-  assert((await page.$$('#report-list > li:not([data-month])')).length === 1, 'si trova per modello anche se salvato nel formato di prima');
-  await page.click('#report-list li button'); await editor();
-  assert((await titles()).join() === 'Caldaia' && (await page.inputValue('#u0-brand')) === 'Junkers' && (await page.inputValue('#u0-fuel')) === 'gpl' && (await page.inputValue('#u0-installDate')) === '2015-02-03' && (await page.inputValue('#c-plate')) === 'OLD1', 'caldaia ricavata dal formato di prima');
-  await page.click('#e-add-pompa');
-  await wait(800);
-  const migrated = await page.evaluate(async () => (await (await import('/db.js')).get((await import('/db.js')).REPORTS, 'vecchio-001')).plant);
-  assert(migrated.units.length === 2 && !('brand' in migrated) && migrated.units[0].brand === 'Junkers', 'salvato nel formato nuovo');
-  log('formato di prima -> caldaia + pompa salvate nel formato nuovo');
-  await page.click('#e-back'); await home();
-
-  // 9) backup e ripristino conservano gli apparecchi
+  // 8) backup e ripristino conservano gli apparecchi
   const before = await page.evaluate(async () => JSON.stringify((await (await import('/store.js')).listReports()).map((r) => r.plant.units.map((u) => [u.kind, u.brand, u.model]))));
   const zip = await page.evaluate(async () => { const r = await (await import('/backup.js')).createBackup(); return Array.from(new Uint8Array(await r.blob.arrayBuffer())); });
   await page.evaluate(async () => { const db = await import('/db.js'); await db.clear(db.REPORTS); });
@@ -137,7 +117,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   assert(before === after, 'apparecchi uguali dopo il ripristino');
   log('backup -> apparecchi conservati');
 
-  // 10) impostazioni: apparecchio dei nuovi rapporti
+  // 9) impostazioni: apparecchio dei nuovi rapporti
   await page.click('#btn-settings');
   await page.waitForSelector('#view-settings:not([hidden])');
   assert((await page.inputValue('#s-d-unitkind')) === 'caldaia', 'predefinito: caldaia');

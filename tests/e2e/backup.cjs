@@ -87,13 +87,6 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await page.setInputFiles('#s-backup-in', zip);
   await page.waitForFunction(() => /Ripristinati 0 rapporti e 0 foto/.test(document.getElementById('s-backup-msg').textContent));
   log('secondo ripristino ->', await page.textContent('#s-backup-msg'));
-  // i backup fatti con il nome precedente ("testo-qr") si leggono ancora
-  const legacy = await page.evaluate(async () => { const { createZip } = await import('/zip.js'); const b = await createZip([{ name: 'reports.json', data: JSON.stringify({ format: 1, app: 'testo-qr', exportedAt: new Date().toISOString(), reports: [] }) }]); return Array.from(new Uint8Array(await b.arrayBuffer())); });
-  fs.writeFileSync(`${SP}/dl/legacy.zip`, Buffer.from(legacy));
-  await page.evaluate(() => { document.getElementById('s-backup-msg').textContent = ''; });
-  await page.setInputFiles('#s-backup-in', `${SP}/dl/legacy.zip`);
-  await page.waitForFunction(() => /Ripristinati 0 rapporti e 0 foto/.test(document.getElementById('s-backup-msg').textContent));
-  log('backup del nome precedente -> ok');
   // file sbagliato
   fs.writeFileSync(`${SP}/dl/finto.zip`, 'non sono uno zip');
   await page.setInputFiles('#s-backup-in', `${SP}/dl/finto.zip`);

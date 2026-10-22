@@ -9,7 +9,7 @@ import { getLogo, importPhoto, importLogo } from './photos.js';
 import { createZip, readZip } from './zip.js';
 
 const FORMAT = 1;
-const APPS = ['fiamma', 'testo-qr']; // 'testo-qr': i backup fatti con il nome precedente dell'app
+const APP = 'fiamma';
 const bytesOf = async (blob) => new Uint8Array(await blob.arrayBuffer());
 const parse = (bytes, what) => {
     try {
@@ -24,7 +24,7 @@ export async function createBackup({ withPhotos = true, now = new Date() } = {})
     const reports = await db.getAll(db.REPORTS);
     const entries = [];
     const settings = loadSettings();
-    entries.push({ name: 'reports.json', data: JSON.stringify({ format: FORMAT, app: 'fiamma', exportedAt: now.toISOString(), reports }) });
+    entries.push({ name: 'reports.json', data: JSON.stringify({ format: FORMAT, app: APP, exportedAt: now.toISOString(), reports }) });
     entries.push({ name: 'settings.json', data: JSON.stringify(settings) });
     let photoCount = 0;
     if (withPhotos) {
@@ -53,7 +53,7 @@ export async function restoreBackup(file) {
     const reportsFile = files.get('reports.json');
     if (!reportsFile) throw new Error('Non è un backup di Fiamma');
     const data = parse(reportsFile, 'rapporti');
-    if (!APPS.includes(data.app) || data.format !== FORMAT || !Array.isArray(data.reports)) throw new Error('Non è un backup di Fiamma');
+    if (data.app !== APP || data.format !== FORMAT || !Array.isArray(data.reports)) throw new Error('Non è un backup di Fiamma');
 
     let reports = 0;
     let skipped = 0;

@@ -24,7 +24,7 @@ In un impianto si aggiungono con i tasti **+ Caldaia**, **+ Pompa di calore**, *
 - **Pompa di calore:** tipo (aria-acqua, aria-aria, acqua-acqua, geotermica), potenza termica nominale e frigorifera (kW), gas refrigerante (R32, R410A, R290, R134a, R407C, R454B, R744, altro), carica di refrigerante (kg).
 - **Condizionatore:** tipo (monosplit, multisplit, canalizzato, cassetta, altro), unità interne, potenza frigorifera e in riscaldamento (kW), gas refrigerante, carica (kg).
 
-La targa dell'impianto è una sola per rapporto. Nelle impostazioni, in "Dati predefiniti", si sceglie il tipo del **primo apparecchio dei nuovi rapporti** (caldaia di partenza, oppure pompa di calore, condizionatore o nessuno) e i suoi dati. La ricerca trova marca, modello e matricola di qualunque apparecchio. I rapporti salvati prima di questa funzione si aprono con la loro caldaia già al posto giusto.
+La targa dell'impianto è una sola per rapporto. Nelle impostazioni, in "Dati predefiniti", si sceglie il tipo del **primo apparecchio dei nuovi rapporti** (caldaia di partenza, oppure pompa di calore, condizionatore o nessuno) e i suoi dati. La ricerca trova marca, modello e matricola di qualunque apparecchio.
 
 ### Numerazione
 Il numero si assegna alla chiusura (le bozze eliminate non lasciano buchi); l'anno è quello della data dell'intervento. Nelle impostazioni si cambia il prossimo numero per allinearsi a un registro cartaceo. Un rapporto eliminato non libera il suo numero.
@@ -40,7 +40,7 @@ Intestazione con logo e dati della ditta, numero e data; cliente e impianto (una
 L'icona di condivisione accanto a "Salva PDF" invia il solo PDF.
 
 ## Dati e copie di sicurezza
-- I rapporti, le foto e il logo stanno nel database del browser (IndexedDB, nome `testoqr-reports`); le impostazioni e le scansioni rapide nel `localStorage` (`testoqr.config`, `testoqr.scans`). I nomi interni restano quelli del nome precedente: cambiarli farebbe perdere i dati. L'app chiede al telefono di non cancellarli (`navigator.storage.persist()`).
+- I rapporti, le foto e il logo stanno nel database del browser (IndexedDB, nome `testoqr-reports`); le impostazioni e le scansioni rapide nel `localStorage` (`testoqr.config`, `testoqr.scans`). I nomi interni cominciano per `testoqr` (il vecchio nome dell'app): sono invisibili e non vanno cambiati senza motivo, perché cambiarli azzera i dati già salvati. L'app chiede al telefono di non cancellarli (`navigator.storage.persist()`).
 - **Questa versione riparte da zero**: non legge, non converte e non cancella nulla di quanto salvato dalle versioni precedenti (che resta inutilizzato finché non cancelli i dati del sito da Chrome). Destinatario dell'email e dati predefiniti vanno reinseriti.
 - **Cartella di salvataggio** (impostazioni): ogni modifica viene copiata, 2 secondi dopo l'ultima, in una cartella scelta con il selettore di Chrome (File System Access API):
   ```
@@ -50,7 +50,6 @@ L'icona di condivisione accanto a "Salva PDF" invia il solo PDF.
           rapporto.json   rapporto.pdf (rapporti chiusi)   foto/01.jpg …
   ```
   È una copia **a senso unico** (telefono → cartella): i rapporti si modificano solo sul telefono. Un rapporto nel cestino viene tolto dalla cartella e vi torna se lo ripristini. Sincronizzando la cartella con Drive, Syncthing o altro si ha un backup e l'ufficio legge i PDF. "Ripristina dalla cartella" rilegge i `rapporto.json` e le foto e li unisce a quelli del telefono (a parità di rapporto vince la modifica più recente). Su un telefono nuovo: collega la cartella e tocca *Ripristina*.
-  - Con il nuovo nome la copia va nella cartella `Fiamma`: al primo avvio l'app ricopia tutto lì. La vecchia `TestoQR` resta com'è (si può eliminare) e il ripristino legge entrambe.
   - Il telefono può chiedere di nuovo il permesso a ogni apertura: le modifiche restano in coda e partono quando lo riattivi (la home lo ricorda).
   - Su Android non si può scegliere la radice della memoria né Download: va scelta una sottocartella (es. Documenti/Fiamma). Il browser scrive i file con un temporaneo `.crswap`: le app di sincronizzazione vanno impostate per ignorarlo.
   - **Non verificato su un telefono reale**: la funzione risulta disponibile in Chrome per Android dalla versione 132. "Prova cartella" scrive e rilegge un file e dice subito se funziona; dove non c'è, le impostazioni mostrano "Non disponibile".

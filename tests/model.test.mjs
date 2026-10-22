@@ -305,24 +305,12 @@ test('apparecchi predefiniti: tipo scelto nelle impostazioni', async () => {
     assert.equal(newReport({ id: 'abcd1234', defaults: { unitKind: 'pompa', brand: 'Daikin', fuel: 'gpl' } }).plant.units[0].brand, 'Daikin');
 });
 
-test('rapporti salvati con la scheda dell\'impianto di prima passano agli apparecchi', async () => {
-    const { upgradePlant, upgradeReport, normalizeReport, isBlank, newReport, searchText } = await import('../model.js');
-    // vecchia scheda: una caldaia con tutti i dati in "plant"
-    const old = upgradePlant({ plateCode: 'ab12', brand: 'Beretta', model: 'Ciao', serial: 'S1', fuel: 'gpl', nominalPower: '24', actualPower: '22,5', chamber: 'forzata' });
-    assert.equal(old.plateCode, 'ab12');
-    assert.equal(old.units.length, 1);
-    assert.deepEqual([old.units[0].kind, old.units[0].brand, old.units[0].fuel, old.units[0].actualPower, old.units[0].chamber], ['caldaia', 'Beretta', 'gpl', '22,5', 'forzata']);
-    assert.equal('brand' in old, false, 'i campi vecchi non restano in plant');
-    // vecchia scheda vuota: nessun apparecchio
-    assert.deepEqual(upgradePlant({ plateCode: '', brand: '', model: '' }).units, []);
-    assert.deepEqual(upgradePlant(undefined), { plateCode: '', units: [] });
-    // si può ripetere: gli apparecchi e gli id restano
-    const again = upgradePlant(old);
-    assert.deepEqual(again, old);
-    // rapporto intero
-    const doc = upgradeReport({ ...newReport({ id: 'x' }), plant: { plateCode: 'T1', brand: 'Vaillant', serial: 'XY' } });
-    assert.deepEqual(doc.plant.units.map((u) => [u.kind, u.brand, u.serial]), [['caldaia', 'Vaillant', 'XY']]);
-    // dall'esterno (backup, cartella): apparecchi strani ripuliti
+test('apparecchi: dati letti da fuori ripuliti, bozza vuota e ricerca', async () => {
+    const { normalizeReport, isBlank, newReport, searchText } = await import('../model.js');
+    // senza apparecchi: elenco vuoto
+    assert.deepEqual(normalizeReport({ id: 'abcd1234' }).plant, { plateCode: '', units: [] });
+    assert.deepEqual(normalizeReport({ id: 'abcd1234', plant: { plateCode: 'T1' } }).plant, { plateCode: 'T1', units: [] });
+    // apparecchi strani ripuliti: tipi sconosciuti scartati, id non valido rifatto, solo i campi del tipo
     const raw = normalizeReport({
         id: 'abcd1234',
         plant: { plateCode: 5, units: [{ kind: 'pompa', brand: 'Daikin', charge: '1,2', fuel: 'x' }, { kind: 'stufa', brand: 'x' }, 'no', { kind: 'caldaia', id: '../evil', brand: 7 }] },
@@ -331,6 +319,10 @@ test('rapporti salvati con la scheda dell\'impianto di prima passano agli appare
     assert.deepEqual(raw.plant.units.map((u) => [u.kind, u.brand, u.charge]), [['pompa', 'Daikin', '1,2'], ['caldaia', '', undefined]]);
     assert.match(raw.plant.units[1].id, /^[A-Za-z0-9_-]{8,64}$/);
     assert.equal('fuel' in raw.plant.units[0], false);
+    // un rapporto già pulito resta uguale
+    const clean = newReport({ id: 'abcd1234' });
+    clean.plant.units[0].brand = 'Beretta';
+    assert.deepEqual(normalizeReport(JSON.parse(JSON.stringify(clean))).plant, clean.plant);
     // bozza vuota: solo l'apparecchio predefinito, senza dati
     assert.equal(isBlank(newReport({ id: 'abcd1234' })), true);
     const filled = newReport({ id: 'abcd1234' });

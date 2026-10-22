@@ -134,26 +134,15 @@ export function unitValues(unit) {
 // "Beretta Ciao 24"
 export const unitName = (unit) => [unit.brand, unit.model].map((v) => String(v ?? '').trim()).filter(Boolean).join(' ');
 
-// Il rapporto con la scheda dell'impianto di prima (un solo apparecchio, tutto in "plant") passa a
-// "plant.units": serve a leggere i rapporti già salvati. Si può ripetere senza effetti.
-const LEGACY_UNIT_KEYS = ['brand', 'model', 'serial', 'installDate', 'chamber', 'technology', 'fuel', 'nominalPower', 'actualPower'];
-
-export function upgradePlant(plant) {
+// L'impianto letto da fuori (backup, cartella): targa e apparecchi ripuliti — tipi sconosciuti scartati,
+// campi del tipo giusto, identificativi non validi rifatti.
+function normalizePlant(plant) {
     const p = isObject(plant) ? plant : {};
-    let units = p.units;
-    if (!Array.isArray(units)) {
-        units = LEGACY_UNIT_KEYS.some((k) => String(p[k] ?? '').trim()) ? [{ kind: 'caldaia', ...Object.fromEntries(LEGACY_UNIT_KEYS.map((k) => [k, p[k]])) }] : [];
-    }
     return {
         plateCode: text(p.plateCode, 2000),
-        units: units.slice(0, 50).filter((u) => isObject(u) && unitKind(u.kind))
+        units: (Array.isArray(p.units) ? p.units : []).slice(0, 50).filter((u) => isObject(u) && unitKind(u.kind))
             .map((u) => newUnit(u.kind, u, /^[A-Za-z0-9_-]{8,64}$/.test(u.id ?? '') ? u.id : newId())),
     };
-}
-
-export function upgradeReport(doc) {
-    doc.plant = upgradePlant(doc.plant);
-    return doc;
 }
 
 // gli apparecchi di un rapporto nuovo: uno del tipo scelto nei dati predefiniti (di solito una caldaia)
@@ -456,7 +445,7 @@ export function normalizeReport(raw) {
     doc.sentAt = time(raw.sentAt, null);
     doc.deletedAt = time(raw.deletedAt, null);
     for (const k of Object.keys(doc.customer)) doc.customer[k] = text(raw.customer?.[k], 2000);
-    doc.plant = upgradePlant(raw.plant);
+    doc.plant = normalizePlant(raw.plant);
     const w = raw.intervention ?? {};
     for (const k of ['type', 'outcome', 'work', 'startTime', 'endTime', 'notes']) doc.intervention[k] = text(w[k]);
     doc.intervention.materials = (Array.isArray(w.materials) ? w.materials : []).slice(0, 200)

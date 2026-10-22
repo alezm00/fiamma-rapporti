@@ -175,32 +175,6 @@ fs.mkdirSync(`${SP}/dl`, { recursive: true });
   log('dopo l\'eliminazione ->', JSON.stringify(files));
   assert(!files.some((f) => f.includes('rapporto.json')), 'eliminato dalla cartella');
 
-  // 8b) nome precedente della cartella (TestoQR): si ricopia nella nuova e il ripristino legge la vecchia
-  await page.evaluate(async () => { const s = await import('/store.js'); const r = await s.createReport(); r.customer.name = 'Legacy Verdi'; await s.saveReport(r); });
-  await page.evaluate(async () => (await import('/folder.js')).process());
-  assert(strip(await tree()).some((f) => f.startsWith('Fiamma/rapporti/') && f.includes('Legacy-Verdi')), 'scritto in Fiamma');
-  await page.evaluate(async () => {
-    const dest = await window.T.dest();
-    const copy = async (from, to) => { for await (const [n, h] of from.entries()) { if (h.kind === 'directory') await copy(h, await to.getDirectoryHandle(n, { create: true })); else { const w = await (await to.getFileHandle(n, { create: true })).createWritable(); await w.write(await h.getFile()); await w.close(); } } };
-    await copy(await dest.getDirectoryHandle('Fiamma'), await dest.getDirectoryHandle('TestoQR', { create: true }));
-    await dest.removeEntry('Fiamma', { recursive: true });
-    const db = await import('/db.js');
-    const idx = await db.get(db.META, 'folderIndex');
-    delete idx.root; // come lasciato dalla versione precedente
-    await db.put(db.META, idx);
-  });
-  await page.reload();
-  await page.waitForSelector('#view-home:not([hidden])');
-  await installT();
-  await until(async () => strip(await tree()).some((f) => f.startsWith('Fiamma/rapporti/') && f.endsWith('rapporto.json')));
-  files = strip(await tree());
-  log('dopo il cambio di nome ->', JSON.stringify(files.filter((f) => f.endsWith('rapporto.json'))));
-  assert(files.some((f) => f.startsWith('TestoQR/rapporti/')), 'la vecchia cartella resta');
-  await page.evaluate(async () => { const f = await import('/folder.js'); const db = await import('/db.js'); await f.unlink(); await db.clear(db.REPORTS); await db.clear(db.PHOTOS); await f.linkHandle(await window.T.dest()); });
-  const both = await page.evaluate(async () => (await import('/folder.js')).restore());
-  log('ripristino da Fiamma e TestoQR ->', JSON.stringify(both));
-  assert(both.reports === 1, 'un solo rapporto, senza duplicati');
-
   // 9) cartella non più raggiungibile: errore chiaro, coda intatta
   await page.evaluate(async () => { const s = await import('/store.js'); const r = await s.createReport(); r.customer.name = 'Prova errore'; await s.saveReport(r); });
   await page.evaluate(async () => { const root = await navigator.storage.getDirectory(); await root.removeEntry('SD-card', { recursive: true }); });

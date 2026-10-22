@@ -22,7 +22,6 @@ const emitState = () => events.dispatchEvent(new Event('state'));
 export const testing = { permission: null };
 
 const ROOT = 'Fiamma';
-const LEGACY_ROOT = 'TestoQR'; // nome della cartella nelle versioni con il nome precedente dell'app: il ripristino la legge ancora
 const DELAY = 2000; // pausa dopo l'ultima modifica, prima di scrivere
 const MODE = { mode: 'readwrite' };
 const pad = (n) => String(n).padStart(2, '0');
@@ -36,7 +35,7 @@ export const supported = () => typeof globalThis.showDirectoryPicker === 'functi
 const loadLink = async () => (await db.get(db.META, 'folder')) ?? null;
 const loadQueue = async () => (await db.get(db.META, 'folderQueue'))?.items ?? {};
 const saveQueue = (items) => db.put(db.META, { key: 'folderQueue', items });
-const freshIndex = () => ({ key: 'folderIndex', reports: {}, logo: '', root: ROOT });
+const freshIndex = () => ({ key: 'folderIndex', reports: {}, logo: '' });
 const loadIndex = async () => (await db.get(db.META, 'folderIndex')) ?? freshIndex();
 const saveIndex = (index) => db.put(db.META, index);
 
@@ -361,7 +360,7 @@ export async function test() {
 // Ripristino dalla cartella: unisce i rapporti trovati a quelli del telefono
 // ---------------------------------------------------------------------------
 
-// Legge i rapporti di una cartella (Fiamma, o TestoQR del nome precedente) e li unisce a quelli del telefono
+// Legge i rapporti della cartella Fiamma e li unisce a quelli del telefono
 async function restoreRoot(root, result) {
     const rapporti = await dir(root, ['rapporti'], false).catch(() => null);
     for (const [, years] of rapporti ? await subdirs(rapporti) : []) {
@@ -403,19 +402,17 @@ export async function restore() {
     const link = await loadLink();
     if (!link) throw new Error('Nessuna cartella collegata');
     if ((await reactivate()) !== 'granted') throw new Error('Permesso non concesso: tocca "Riattiva" e consenti l\'accesso.');
-    const roots = [];
-    for (const name of [ROOT, LEGACY_ROOT]) {
-        try {
-            roots.push(await dir(link.handle, [name], false));
-        } catch (e) {
-            if (!missing(e)) throw e;
-        }
+    let root;
+    try {
+        root = await dir(link.handle, [ROOT], false);
+    } catch (e) {
+        if (missing(e)) throw new Error(`Nella cartella non c'è ancora nessuna copia (manca la cartella ${ROOT}).`);
+        throw e;
     }
-    if (!roots.length) throw new Error(`Nella cartella non c'è ancora nessuna copia (manca la cartella ${ROOT}).`);
     const result = { reports: 0, photos: 0, skipped: 0 };
     restoring = true; // i rapporti letti dalla cartella non vanno riscritti nella cartella
     try {
-        for (const root of roots) await restoreRoot(root, result);
+        await restoreRoot(root, result);
     } finally {
         restoring = false;
     }
@@ -432,12 +429,7 @@ export async function start() {
         if (!linked || restoring) return;
         enqueue(e.detail.id, e.detail.type === 'delete' ? 'delete' : 'save');
     });
-    // la copia fatta con il nome precedente sta in un'altra cartella: si ricopia tutto in quella nuova
-    // (la vecchia resta dov'è, si può eliminare)
-    if (linked && ((await loadIndex()).root ?? LEGACY_ROOT) !== ROOT) {
-        await saveIndex(freshIndex());
-        syncAll();
-    } else if (linked && Object.keys(await loadQueue()).length) schedule();
+    if (linked && Object.keys(await loadQueue()).length) schedule();
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible' && linked) {
             emitState();
