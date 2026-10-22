@@ -1,4 +1,4 @@
-// Classi Tailwind usate dal JavaScript (messaggi, storico, risultati, foto, impostazioni).
+// Classi Tailwind usate dal JavaScript (messaggi, elenchi, risultati, foto, impostazioni).
 // Sono definite qui, in un posto solo, e registrate all'avvio: il build "browser" di Tailwind
 // crea lo stile solo per le classi presenti nella pagina, e così quello degli elementi
 // creati dopo è già pronto (nessun lampo senza stile).
@@ -12,8 +12,30 @@ export const MSG_TYPES = {
     info: 'border-info-edge bg-info-bg text-info-fg',
 };
 
+// etichetta di stato del rapporto
+export const BADGES = {
+    draft: 'border-warn-edge bg-warn-bg text-warn-fg',
+    done: 'border-ok-edge bg-ok-bg text-ok-fg',
+    sent: 'border-info-edge bg-info-bg text-info-fg',
+};
+
 export const CLS = {
-    // storico delle scansioni
+    // elenco dei rapporti
+    reportOpen: 'btn flex-col items-stretch gap-1 bg-card p-4 text-left font-normal',
+    reportHead: 'flex items-center justify-between gap-2',
+    reportNum: 'font-bold text-white',
+    reportName: 'text-[1.05rem] text-white',
+    reportAddr: 'truncate text-[.9rem] text-soft',
+    reportMeta: 'text-[.85rem] text-muted',
+    badge: 'rounded-full border px-2.5 py-0.5 text-[.75rem] font-bold whitespace-nowrap',
+
+    // materiali del rapporto
+    matRow: 'flex gap-2',
+    matText: 'input min-w-0 flex-1',
+    matQty: 'input w-24 flex-none',
+    matDel: 'btn w-12 flex-none bg-field text-[1.1rem] text-err-fg',
+
+    // storico delle scansioni (e misure di un rapporto)
     historyRow: 'flex gap-1.5',
     historyOpen: 'btn min-w-0 flex-1 flex-col items-start gap-0.5 bg-field text-left font-normal',
     historyTitle: 'font-bold text-white',
@@ -62,7 +84,7 @@ export const CLS = {
 
 // mette nella pagina, nascosto, un elemento con tutte le classi sopra
 export function registerClasses() {
-    const all = [MSG, ...Object.values(MSG_TYPES), ...Object.values(CLS)].join(' ');
+    const all = [MSG, ...Object.values(MSG_TYPES), ...Object.values(BADGES), ...Object.values(CLS)].join(' ');
     const holder = document.createElement('div');
     holder.hidden = true;
     holder.setAttribute('aria-hidden', 'true');

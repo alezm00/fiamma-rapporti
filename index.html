@@ -27,52 +27,73 @@
 </head>
 <body class="bg-page p-4 pb-[calc(24px+env(safe-area-inset-bottom))] font-sans leading-[normal] text-ink [-webkit-tap-highlight-color:transparent]">
 
+<!-- ============ Elenco dei rapporti ============ -->
 <main id="view-home" class="mx-auto flex max-w-[640px] flex-col gap-4">
     <div class="card">
         <div class="flex items-center justify-between">
             <h1 class="text-[1.1rem] font-bold tracking-[.02em] text-white">Testo QR</h1>
             <button id="btn-settings" class="grid size-11 cursor-pointer place-items-center text-muted" aria-label="Impostazioni"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
         </div>
-        <p class="mt-2 mb-4 text-[.9rem] text-soft">Inquadra il QR code mostrato dall'analizzatore Testo 330 per vedere i risultati della prova.</p>
+        <p class="mt-1 mb-4 text-[.9rem] text-soft">Rapporti di intervento con le misure dell'analizzatore Testo 330.</p>
+        <div id="home-reminder" hidden></div>
         <div class="flex flex-col gap-2.5">
-            <button id="btn-scan" class="btn border-brand bg-brand hover:bg-brand-dark p-5 text-[1.15rem]">
-                <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg>
-                Scansiona QR
+            <button id="btn-new" class="btn border-brand bg-brand hover:bg-brand-dark p-5 text-[1.15rem]">
+                <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                Nuovo rapporto
             </button>
-            <label class="btn">
-                <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                Da foto
-                <input type="file" id="in-photo" accept="image/*" hidden>
-            </label>
+            <div class="flex gap-2.5">
+                <button id="btn-quick-scan" class="btn px-2 py-3 text-[.95rem]">Scansione rapida</button>
+                <button id="btn-quick-list" class="btn px-2 py-3 text-[.95rem]">Scansioni rapide</button>
+            </div>
         </div>
         <div id="home-msg" hidden></div>
     </div>
 
     <div class="card">
-        <div class="flex items-baseline justify-between">
-            <h2 class="mb-2 text-[1.3rem] font-bold text-white">Ultime scansioni</h2>
-            <button id="btn-clear" class="cursor-pointer p-1 text-[.9rem] text-link" hidden>Cancella tutto</button>
+        <h2 class="mb-3 text-[1.3rem] font-bold text-white">Rapporti</h2>
+        <input id="h-search" class="input" type="search" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Cerca cliente, targa, numero…" aria-label="Cerca nei rapporti">
+        <div id="h-status" class="mt-3 mb-3 flex flex-wrap gap-2" role="group" aria-label="Filtra per stato">
+            <button class="chip" data-status="all" aria-pressed="true">Tutti</button>
+            <button class="chip" data-status="draft" aria-pressed="false">Bozze</button>
+            <button class="chip" data-status="done" aria-pressed="false">Completati</button>
+            <button class="chip" data-status="sent" aria-pressed="false">Inviati</button>
         </div>
-        <ul id="history" class="flex flex-col gap-2"></ul>
-        <p id="history-empty" class="text-[.85rem] text-muted">Nessuna scansione salvata.</p>
-    </div>
-
-    <div class="text-center">
-        <label class="cursor-pointer p-1 text-[.9rem] text-link">Importa file (.gz / .json)<input type="file" id="in-file" accept=".gz,.json,.tjf,application/json,application/gzip" hidden></label>
+        <ul id="report-list" class="flex flex-col gap-2"></ul>
+        <p id="report-empty" class="text-[.85rem] text-muted"></p>
     </div>
 </main>
 
+<!-- ============ Fotocamera ============ -->
 <section id="view-scan" class="fixed inset-0 z-10 bg-black" hidden>
     <video id="video" class="absolute inset-0 size-full object-cover" playsinline muted></video>
     <div class="absolute top-[45%] left-1/2 aspect-square w-[min(80vw,60vh)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border-[3px] border-accent shadow-[0_0_0_100vmax_rgba(0,0,0,.45)]"></div>
     <div id="scan-status" class="absolute inset-x-4 top-[calc(16px+env(safe-area-inset-top))] rounded-lg bg-black/55 p-2.5 text-center font-bold text-white">Inquadra il QR code</div>
-    <div class="absolute inset-x-4 bottom-[calc(24px+env(safe-area-inset-bottom))] flex gap-2.5">
-        <button id="btn-torch" class="btn bg-[rgba(30,30,30,.85)] aria-pressed:bg-note aria-pressed:text-page" aria-pressed="false" hidden>Torcia</button>
-        <button id="btn-cancel" class="btn bg-[rgba(30,30,30,.85)]">Annulla</button>
+    <div id="scan-msg" class="absolute inset-x-4 top-[calc(76px+env(safe-area-inset-top))]" hidden></div>
+    <div class="absolute inset-x-4 bottom-[calc(24px+env(safe-area-inset-bottom))] flex flex-col gap-2.5">
+        <label class="cursor-pointer self-center rounded-lg bg-black/55 px-3 py-1.5 text-[.9rem] text-link">Importa file (.gz / .json)<input type="file" id="in-file" accept=".gz,.json,.tjf,application/json,application/gzip" hidden></label>
+        <div class="flex gap-2.5">
+            <button id="btn-torch" class="btn bg-[rgba(30,30,30,.85)] aria-pressed:bg-note aria-pressed:text-page" aria-pressed="false" hidden>Torcia</button>
+            <label class="btn bg-[rgba(30,30,30,.85)]">
+                <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                Da foto
+                <input type="file" id="in-photo" accept="image/*" hidden>
+            </label>
+            <button id="btn-cancel" class="btn bg-[rgba(30,30,30,.85)]">Annulla</button>
+        </div>
     </div>
 </section>
 
-<main id="view-result" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
+<!-- ============ Valori di una misura ============ -->
+<main id="view-measure" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
+    <div id="m-label-card" class="card" hidden>
+        <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Etichetta della misura</span>
+            <input id="m-label" class="input" type="text" autocomplete="off" autocapitalize="sentences" enterkeyhint="done" placeholder="Prima, Dopo…">
+        </label>
+        <div id="m-chips" class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Etichette suggerite">
+            <button class="chip" data-label="Prima" aria-pressed="false">Prima</button>
+            <button class="chip" data-label="Dopo" aria-pressed="false">Dopo</button>
+        </div>
+    </div>
     <div class="card">
         <h2 id="r-title" class="mb-2 text-[1.35rem] font-bold text-white"></h2>
         <div id="r-date" class="text-[.85rem] text-muted"></div>
@@ -88,22 +109,46 @@
         <summary class="cursor-pointer list-none px-5 py-4 font-bold text-white after:float-right after:text-muted after:content-['▾'] group-open:after:content-['▴'] [&::-webkit-details-marker]:hidden">Dati grezzi (JSON)</summary>
         <pre id="r-json" class="px-5 pb-5 text-[.75rem] whitespace-pre-wrap text-soft wrap-anywhere"></pre>
     </details>
-    <button id="btn-report" class="btn border-2 border-brand bg-transparent">
-        <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
-        Crea report PDF
-    </button>
     <div class="flex gap-2.5">
         <button id="btn-copy" class="btn">Copia testo</button>
-        <button id="btn-home" class="btn">Storico</button>
+        <button id="m-remove" class="btn text-err-fg" hidden>Rimuovi misura</button>
     </div>
-    <button id="btn-again" class="btn border-brand bg-brand hover:bg-brand-dark p-5 text-[1.15rem]">Nuova scansione</button>
+    <button id="m-add" class="btn border-brand bg-brand hover:bg-brand-dark p-5 text-[1.15rem]" hidden>Aggiungi un'altra misura</button>
+    <button id="m-again" class="btn border-brand bg-brand hover:bg-brand-dark p-5 text-[1.15rem]" hidden>Nuova scansione</button>
+    <button id="m-back" class="btn">Indietro</button>
 </main>
 
-<main id="view-report" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
+<!-- ============ Scansioni rapide ============ -->
+<main id="view-quick" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
     <div class="card">
-        <h2 class="mb-2 text-[1.3rem] font-bold text-white">Report PDF</h2>
-        <p id="rp-summary" class="text-[.9rem] text-soft"></p>
-        <div class="mt-4 flex flex-col gap-3.5">
+        <div class="flex items-baseline justify-between">
+            <h2 class="mb-2 text-[1.3rem] font-bold text-white">Scansioni rapide</h2>
+            <button id="btn-clear" class="cursor-pointer p-1 text-[.9rem] text-link" hidden>Cancella tutto</button>
+        </div>
+        <p class="mb-3 text-[.85rem] text-muted">Le ultime 20 letture, solo per rivedere i valori. Non fanno parte di nessun rapporto.</p>
+        <ul id="history" class="flex flex-col gap-2"></ul>
+        <p id="history-empty" class="text-[.85rem] text-muted">Nessuna scansione salvata.</p>
+    </div>
+    <button id="q-scan" class="btn border-brand bg-brand hover:bg-brand-dark p-5 text-[1.15rem]">Scansione rapida</button>
+    <button id="q-back" class="btn">Indietro</button>
+</main>
+
+<!-- ============ Rapporto ============ -->
+<main id="view-editor" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
+    <div class="card">
+        <div class="flex items-center gap-2">
+            <button id="e-back" class="grid size-11 flex-none cursor-pointer place-items-center text-muted" aria-label="Torna all'elenco"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+            <h2 id="e-title" class="min-w-0 flex-1 text-[1.3rem] font-bold text-white"></h2>
+            <span id="e-badge"></span>
+        </div>
+        <label class="mt-4 flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Data dell'intervento</span>
+            <input id="e-date" class="input min-h-[54px] [color-scheme:dark]" type="date">
+        </label>
+    </div>
+
+    <div class="card">
+        <h3 class="mb-3 text-[1.1rem] font-bold text-white">Cliente</h3>
+        <div class="flex flex-col gap-3.5">
             <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Nome e cognome</span>
                 <input id="c-name" class="input" type="text" autocomplete="off" autocapitalize="words" enterkeyhint="next">
             </label>
@@ -123,6 +168,12 @@
             <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Telefono</span>
                 <input id="c-phone" class="input" type="tel" inputmode="tel" autocomplete="off">
             </label>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="mb-3 text-[1.1rem] font-bold text-white">Impianto</h3>
+        <div class="flex flex-col gap-3.5">
             <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Marca caldaia</span>
                 <input id="c-brand" class="input" type="text" autocomplete="off" autocapitalize="words">
             </label>
@@ -135,48 +186,126 @@
             <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Data di installazione</span>
                 <input id="c-date" class="input min-h-[54px] [color-scheme:dark]" type="date">
             </label>
-            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Note</span>
-                <textarea id="c-notes" class="input min-h-[4.2em] resize-y" rows="4" autocomplete="off" autocapitalize="sentences" placeholder="Interventi eseguiti, anomalie, materiale…"></textarea>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="mb-3 text-[1.1rem] font-bold text-white">Intervento</h3>
+        <div class="flex flex-col gap-3.5">
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Tipo di intervento</span>
+                <select id="e-type" class="input [color-scheme:dark]"></select>
+            </label>
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Esito</span>
+                <select id="e-outcome" class="input [color-scheme:dark]"></select>
+            </label>
+            <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Lavori eseguiti</span>
+                <textarea id="e-work" class="input min-h-[4.2em] resize-y" rows="4" autocomplete="off" autocapitalize="sentences" placeholder="Pulizia bruciatore, controllo valvole…"></textarea>
             </label>
             <div class="flex flex-col gap-1.5">
-                <span class="text-[.85rem] text-muted">Foto <span id="photo-count"></span></span>
-                <div class="flex gap-2.5">
-                    <label class="btn px-2 py-3 text-[.95rem]">
-                        <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        Scatta foto
-                        <input type="file" id="in-shoot" accept="image/*" capture="environment" hidden>
-                    </label>
-                    <label class="btn px-2 py-3 text-[.95rem]">
-                        <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                        Dalla galleria
-                        <input type="file" id="in-gallery" accept="image/*" multiple hidden>
-                    </label>
-                </div>
-                <div id="photo-grid" class="grid grid-cols-3 gap-2 empty:hidden"></div>
-                <div id="photo-msg" hidden></div>
+                <span class="text-[.85rem] text-muted">Materiali</span>
+                <div id="e-materials" class="flex flex-col gap-2 empty:hidden"></div>
+                <button type="button" id="e-mat-add" class="btn">Aggiungi materiale</button>
             </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1.5">
+                    <label for="e-start" class="text-[.85rem] text-muted">Arrivo</label>
+                    <input id="e-start" class="input min-h-[54px] [color-scheme:dark]" type="time">
+                    <button type="button" id="e-start-now" class="btn p-2.5 text-[.9rem]">Adesso</button>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label for="e-end" class="text-[.85rem] text-muted">Partenza</label>
+                    <input id="e-end" class="input min-h-[54px] [color-scheme:dark]" type="time">
+                    <button type="button" id="e-end-now" class="btn p-2.5 text-[.9rem]">Adesso</button>
+                </div>
+            </div>
+            <p id="e-duration" class="text-[.9rem] text-soft empty:hidden"></p>
         </div>
-        <p class="mt-4 text-[.8rem] text-muted">I dati del cliente e le foto restano solo su questo telefono, insieme alla scansione salvata. L'indirizzo dalla posizione usa OpenStreetMap e richiede internet: invia solo le coordinate.</p>
     </div>
+
+    <div class="card">
+        <h3 class="mb-3 text-[1.1rem] font-bold text-white">Misure Testo</h3>
+        <ul id="e-measures" class="flex flex-col gap-2 empty:hidden"></ul>
+        <p id="e-measures-empty" class="mb-3 text-[.85rem] text-muted">Nessuna misura: scansiona il QR dell'analizzatore (per esempio una prima e una dopo l'intervento).</p>
+        <button type="button" id="e-measure-add" class="btn">
+            <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg>
+            Aggiungi misura
+        </button>
+    </div>
+
+    <div class="card">
+        <h3 class="mb-3 text-[1.1rem] font-bold text-white">Foto <span id="photo-count" class="text-[.85rem] font-normal text-muted"></span></h3>
+        <div class="flex flex-col gap-1.5">
+            <div class="flex gap-2.5">
+                <label class="btn px-2 py-3 text-[.95rem]">
+                    <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Scatta foto
+                    <input type="file" id="in-shoot" accept="image/*" capture="environment" hidden>
+                </label>
+                <label class="btn px-2 py-3 text-[.95rem]">
+                    <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    Dalla galleria
+                    <input type="file" id="in-gallery" accept="image/*" multiple hidden>
+                </label>
+            </div>
+            <div id="photo-grid" class="mt-1 grid grid-cols-3 gap-2 empty:hidden"></div>
+            <div id="photo-msg" hidden></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <label class="flex flex-col gap-1.5"><span class="text-[1.1rem] font-bold text-white">Note</span>
+            <textarea id="c-notes" class="input min-h-[4.2em] resize-y" rows="4" autocomplete="off" autocapitalize="sentences" placeholder="Anomalie, consigli, appuntamenti…"></textarea>
+        </label>
+        <p class="mt-4 text-[.8rem] text-muted">I dati restano su questo telefono. L'indirizzo dalla posizione usa OpenStreetMap e richiede internet: invia solo le coordinate.</p>
+    </div>
+
     <div id="report-msg" hidden></div>
+    <button id="btn-close" class="btn border-2 border-brand bg-transparent p-[18px] text-[1.05rem]" hidden>Chiudi rapporto</button>
     <div class="flex gap-2.5">
         <button id="btn-pdf-email" class="btn flex-[1.35] border-brand bg-brand hover:bg-brand-dark px-2.5 py-[18px] text-[1.05rem] whitespace-nowrap"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg> Invia email</button>
         <button id="btn-pdf-save" class="btn flex-1 px-2.5 py-[18px] text-[1.05rem] whitespace-nowrap">Salva PDF</button>
         <button id="btn-pdf-share" class="btn w-16 flex-none p-0" aria-label="Condividi PDF"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
     </div>
-    <div id="mail-info" class="mt-4 text-[.8rem] text-muted wrap-anywhere"></div>
-    <button id="btn-report-back" class="btn">Indietro</button>
+    <div id="mail-info" class="text-[.8rem] text-muted wrap-anywhere"></div>
+    <div class="flex gap-2.5">
+        <button id="btn-duplicate" class="btn">Duplica</button>
+        <button id="btn-delete" class="btn text-err-fg">Elimina</button>
+    </div>
+    <button id="btn-editor-back" class="btn">Torna all'elenco</button>
 </main>
 
+<!-- ============ Impostazioni ============ -->
 <main id="view-settings" class="mx-auto flex max-w-[640px] flex-col gap-4" hidden>
     <div class="card">
         <h2 class="mb-2 text-[1.3rem] font-bold text-white">Impostazioni</h2>
-        <h3 class="mt-[1.2rem] mb-[.2rem] text-[1rem] font-bold text-white">Email</h3>
-        <label class="flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Destinatario</span>
+        <h3 class="mt-[1.2rem] mb-[.2rem] text-[1rem] font-bold text-white">Ditta e tecnico</h3>
+        <p class="mt-[.4rem] text-[.8rem] text-muted">Compaiono nell'intestazione del PDF.</p>
+        <div id="s-company" class="mt-4 flex flex-col gap-3.5"></div>
+        <div class="mt-3.5 flex flex-col gap-1.5">
+            <span class="text-[.85rem] text-muted">Logo (facoltativo)</span>
+            <div class="flex items-center gap-2.5">
+                <img id="s-logo-img" class="h-14 max-w-[40%] rounded border border-edge bg-white object-contain" alt="Logo della ditta" hidden>
+                <label class="btn flex-1">Scegli logo<input type="file" id="s-logo-in" accept="image/*" hidden></label>
+                <button type="button" id="s-logo-del" class="btn w-auto flex-none px-4" hidden>Rimuovi</button>
+            </div>
+            <div id="s-logo-msg" hidden></div>
+        </div>
+    </div>
+    <div class="card">
+        <h3 class="mb-[.2rem] text-[1rem] font-bold text-white">Numerazione</h3>
+        <p class="mt-[.4rem] text-[.8rem] text-muted">Il rapporto prende il numero quando lo chiudi, in ordine per anno (anno della data dell'intervento). Puoi cambiare il prossimo numero per allinearti a un registro cartaceo.</p>
+        <label class="mt-4 flex flex-col gap-1.5"><span id="s-next-label" class="text-[.85rem] text-muted"></span>
+            <input id="s-next" class="input" type="number" inputmode="numeric" min="1" step="1" autocomplete="off">
+        </label>
+        <p id="s-next-hint" class="mt-[.6rem] text-[.8rem] text-muted"></p>
+    </div>
+    <div class="card">
+        <h3 class="mt-[0] mb-[.2rem] text-[1rem] font-bold text-white">Email</h3>
+        <label class="mt-3 flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Destinatario</span>
             <input id="s-email" class="input" type="email" inputmode="email" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ufficio@esempio.it">
             <div id="s-email-hint" class="rounded-lg border border-warn-edge bg-warn-bg px-3 py-2 text-[.85rem] leading-[1.4] text-warn-fg" hidden></div>
         </label>
-        <p class="mt-[.6rem] text-[.8rem] text-muted">Più indirizzi si separano con una virgola. L'oggetto è creato in automatico: «Rapporto di prova - Cliente - targa - data».</p>
+        <p class="mt-[.6rem] text-[.8rem] text-muted">Più indirizzi si separano con una virgola. L'oggetto è creato in automatico: «Rapporto di intervento n. 2026/012 - Cliente - targa - data».</p>
         <div class="mt-[.8rem] flex flex-col gap-1.5"><span class="text-[.85rem] text-muted">Il tasto "Invia email"</span>
             <label class="flex items-start gap-3 py-2 text-[.85rem] leading-[1.4] text-muted"><input type="radio" name="s-method" value="share" class="mt-0.5 size-5 shrink-0 accent-brand">
                 <span>Apre il menu di Android: scegli Gmail e la mail si apre con il PDF già allegato, oggetto e testo pronti.<small class="mt-0.5 block text-[.8rem] text-muted">Il destinatario viene copiato negli appunti: toccalo sopra la tastiera nel campo "A".</small></span></label>
@@ -186,7 +315,7 @@
     </div>
     <div class="card">
         <h3 class="mb-[.2rem] text-[1rem] font-bold text-white">Dati predefiniti</h3>
-        <p class="mt-[.4rem] text-[.8rem] text-muted">Compilati in automatico nel modulo del report quando apri una nuova scansione. Utili se fai più prove per lo stesso cliente o condominio.</p>
+        <p class="mt-[.4rem] text-[.8rem] text-muted">Compilati in automatico in ogni nuovo rapporto. Utili se fai più interventi per lo stesso cliente o condominio.</p>
         <div id="s-defaults" class="mt-4 flex flex-col gap-3.5"></div>
         <button type="button" id="btn-defaults-clear" class="btn mt-4">Svuota i dati predefiniti</button>
     </div>

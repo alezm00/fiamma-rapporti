@@ -187,3 +187,38 @@ test('misure di tipo diverso o a più colonne: una tabella ciascuna', () => {
 test('nessuna misura', () => {
     assert.deepEqual(groupMeasures([]), []);
 });
+
+test('formatDay, slug e nome del file', async () => {
+    const { formatDay, slug, reportFileName, newReport } = await import('../model.js');
+    assert.equal(formatDay('2026-10-22'), '22/10/2026');
+    assert.equal(formatDay(''), '');
+    assert.equal(slug('  Mario D\'Èrrico & Figli  '), 'Mario-D-Errico-Figli');
+    const doc = newReport({ now: new Date(2026, 9, 22), id: 'x' });
+    doc.customer.name = 'Mario Rossi';
+    assert.equal(reportFileName(doc), 'Bozza_2026-10-22_Mario-Rossi.pdf');
+    doc.number = '2026/012';
+    assert.equal(reportFileName(doc), 'Rapporto_2026-012_Mario-Rossi.pdf');
+    assert.equal(reportFileName(doc, 'json'), 'Rapporto_2026-012_Mario-Rossi.json');
+    doc.customer.name = '';
+    assert.equal(reportFileName(doc), 'Rapporto_2026-012.pdf');
+});
+
+test('bozza vuota: solo i dati predefiniti, nessuna misura né foto', async () => {
+    const { isBlank, newReport, addMeasure } = await import('../model.js');
+    const defaults = { name: 'Condominio Rossi', brand: 'Beretta' };
+    const doc = newReport({ defaults, id: 'x' });
+    assert.equal(isBlank(doc, defaults), true);
+    doc.intervention.startTime = '09:00'; // gli orari da soli non contano
+    assert.equal(isBlank(doc, defaults), true);
+    doc.customer.address = 'Via Roma 1';
+    assert.equal(isBlank(doc, defaults), false);
+    doc.customer.address = '';
+    doc.photoCount = 1;
+    assert.equal(isBlank(doc, defaults), false);
+    doc.photoCount = 0;
+    addMeasure(doc, { type: { name: 'x' } });
+    assert.equal(isBlank(doc, defaults), false);
+    const done = newReport({ id: 'y' });
+    done.status = 'done';
+    assert.equal(isBlank(done), false);
+});

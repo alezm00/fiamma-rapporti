@@ -56,4 +56,9 @@
     .icon {
         @apply size-[22px] shrink-0;
     }
+
+    /* filtri e suggerimenti: pulsanti a pillola, "premuti" quando attivi */
+    .chip {
+        @apply cursor-pointer rounded-full border border-edge bg-field px-3.5 py-1.5 text-[.9rem] whitespace-nowrap text-ink transition aria-pressed:border-brand aria-pressed:bg-brand aria-pressed:text-white;
+    }
 }

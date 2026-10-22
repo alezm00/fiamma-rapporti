@@ -28,6 +28,12 @@ const pad = (n) => String(n).padStart(2, '0');
 export const dayString = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 export const timeString = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
+// "2026-10-22" -> "22/10/2026"
+export function formatDay(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
+}
+
 export function newId() {
     return globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -61,6 +67,14 @@ export function applyEdit(doc, now = new Date()) {
     doc.updatedAt = now.getTime();
     if (doc.status === 'sent') doc.status = 'done';
     return doc;
+}
+
+// Bozza mai compilata (solo i dati predefiniti): si scarta da sola, per non lasciare righe vuote in elenco
+export function isBlank(doc, defaults = {}) {
+    if (doc.status !== 'draft' || doc.number || doc.measures.length || doc.photoCount) return false;
+    const fresh = newReport({ defaults, id: doc.id });
+    const form = (d) => JSON.stringify([d.customer, d.plant, { ...d.intervention, startTime: '', endTime: '' }]);
+    return form(doc) === form(fresh);
 }
 
 // copia i dati di cliente e impianto in un nuovo rapporto (non misure, foto né lavori)
@@ -113,6 +127,16 @@ export function markSent(doc, now = new Date()) {
 }
 
 export const reportLabel = (doc) => (doc.number ? `n. ${doc.number}` : 'Bozza');
+
+// per i nomi di file e cartelle: senza accenti né caratteri speciali ("Mario Rossi" -> "Mario-Rossi")
+export const slug = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+// "Rapporto_2026-012_Mario-Rossi.pdf" oppure "Bozza_2026-10-22_Mario-Rossi.pdf"
+export function reportFileName(doc, ext = 'pdf') {
+    const who = slug(doc.customer?.name).slice(0, 40);
+    const head = doc.number ? `Rapporto_${doc.number.replace('/', '-')}` : `Bozza_${doc.date || dayString(new Date())}`;
+    return `${[head, who].filter(Boolean).join('_')}.${ext}`;
+}
 
 // ---------------------------------------------------------------------------
 // Orari

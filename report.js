@@ -1,6 +1,7 @@
-// Report PDF (pdf-lib + font Liberation Sans): tutto in locale, funziona anche offline.
+// Rapporto di intervento in PDF (pdf-lib + font Liberation Sans): tutto in locale, funziona anche offline.
 // Le librerie e i font si caricano solo quando serve il PDF.
 import { formatDate } from './tjf.js';
+import { groupMeasures, formatDay, typeLabel, outcomeLabel, durationMinutes, formatDuration } from './model.js';
 
 const PAGE_W = 595.28; // A4
 const PAGE_H = 841.89;
@@ -10,10 +11,6 @@ const BOTTOM = MARGIN + 18; // spazio per il piè di pagina
 const PAD = 10;
 const TITLE_H = 24;
 const GAP = 12; // spazio tra i blocchi
-
-// dati dello strumento: in che ordine mostrarli e quali tralasciare nel PDF
-const DEVICE_ORDER = ['name', 'serial', 'partNumber', 'deviceIdentifier', 'firmwareVersion', 'softwareVersion', 'lastServiceDate'];
-const SKIP_DEVICE_KEYS = ['boardIndex', 'deviceTime', 'measCycle'];
 
 // "19:10:24 → 19:11:24  (1 min 00 s)": la durata passa nell'etichetta
 function phaseItem({ label, value }) {
@@ -57,73 +54,58 @@ export function preloadPdfLibs() {
 }
 
 // ---------------------------------------------------------------------------
-// Dati del cliente
+// Pulizia dei testi
 // ---------------------------------------------------------------------------
 
 const clean = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
 const oneLine = (s) => clean(String(s ?? '').replace(/[\r\n]+/g, ', '));
 const code = (s) => clean(s).replace(/\s+/g, '').toUpperCase(); // codice fiscale, targa: senza spazi, maiuscolo
-// testo su più righe (note): righe pulite, al massimo una riga vuota di seguito
+// testo su più righe (lavori, note): righe pulite, al massimo una riga vuota di seguito
 const multiline = (s) => String(s ?? '').replace(/\r\n?/g, '\n').split('\n').map(clean).join('\n').replace(/\n{3,}/g, '\n\n').trim();
-
-function formatInstallDate(v) {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || '');
-    return m ? `${m[3]}/${m[2]}/${m[1]}` : clean(v);
-}
-
-export function normalizeCustomer(c = {}) {
-    return {
-        name: clean(c.name),
-        fiscalCode: code(c.fiscalCode),
-        address: oneLine(c.address),
-        phone: clean(c.phone),
-        brand: clean(c.brand),
-        serial: clean(c.serial),
-        plateCode: code(c.plateCode),
-        installDate: formatInstallDate(c.installDate),
-        notes: multiline(c.notes),
-    };
-}
-
-const slug = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
-const pad2 = (n) => String(n).padStart(2, '0');
-
-export function reportFileName(report, customer = {}, now = new Date()) {
-    const d = report.start || now;
-    return `Report_${slug(customer.name) || 'cliente'}_${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}.pdf`;
-}
 
 // ---------------------------------------------------------------------------
 // Creazione del PDF
 // ---------------------------------------------------------------------------
 
-// photos: [{ bytes: Uint8Array JPEG, width, height }]
-export async function createReportPdf(report, customer = {}, now = new Date(), photos = []) {
+// r: il rapporto; settings: impostazioni (ditta e tecnico); photos: [{ bytes: JPEG, width, height }];
+// logo: { bytes: JPEG, width, height } oppure null
+export async function createReportPdf(r, settings = {}, { photos = [], logo = null, now = new Date() } = {}) {
     const { regular, bold } = await preloadPdfLibs();
     const { PDFDocument, rgb } = window.PDFLib;
-    const c = normalizeCustomer(customer);
+    const company = settings.company ?? {};
+    const customer = r.customer ?? {};
+    const plant = r.plant ?? {};
+    const work = r.intervention ?? {};
+    const isDraft = !r.number;
 
-    const doc = await PDFDocument.create();
-    doc.registerFontkit(window.fontkit);
-    const font = await doc.embedFont(regular, { subset: true });
-    const fontB = await doc.embedFont(bold, { subset: true });
+    const pdf = await PDFDocument.create();
+    pdf.registerFontkit(window.fontkit);
+    const font = await pdf.embedFont(regular, { subset: true });
+    const fontB = await pdf.embedFont(bold, { subset: true });
 
     const INK = rgb(0.1, 0.1, 0.1);
     const GREY = rgb(0.4, 0.4, 0.4);
     const LINE = rgb(0.8, 0.8, 0.8);
     const FILL = rgb(0.94, 0.95, 0.97);
     const ACCENT = rgb(0.04, 0.33, 0.62);
+    const AMBER = rgb(0.72, 0.42, 0);
+
+    // i caratteri che il font non ha (emoji…) diventano "?" invece di rompere il PDF
+    const glyphs = new Set(font.getCharacterSet());
+    const printable = (s) => [...clean(s)].map((ch) => (glyphs.has(ch.codePointAt(0)) ? ch : /[‍︎️]/.test(ch) ? '' : '?')).join('');
+    const lines = (s) => multiline(s).split('\n').map(printable);
 
     let page;
     let y; // bordo alto del prossimo elemento
     const newPage = () => {
-        page = doc.addPage([PAGE_W, PAGE_H]);
+        page = pdf.addPage([PAGE_W, PAGE_H]);
         y = PAGE_H - MARGIN;
     };
     const ensure = (h) => {
         if (y - h < BOTTOM) newPage();
     };
     newPage();
+    const rx = PAGE_W - MARGIN;
 
     const width = (t, size, f = font) => f.widthOfTextAtSize(t, size);
 
@@ -137,28 +119,28 @@ export async function createReportPdf(report, customer = {}, now = new Date(), p
     const text = (t, x, top, size, opts) => put(t, x, top - size * 0.8, size, opts);
 
     function wrap(t, size, maxW, f = font) {
-        const lines = [];
+        const out = [];
         let line = '';
         for (let word of t.split(' ')) {
             while (width(word, size, f) > maxW) { // parola più lunga della riga: spezzata
                 if (line) {
-                    lines.push(line);
+                    out.push(line);
                     line = '';
                 }
                 let n = word.length;
                 while (n > 1 && width(word.slice(0, n), size, f) > maxW) n--;
-                lines.push(word.slice(0, n));
+                out.push(word.slice(0, n));
                 word = word.slice(n);
             }
             const test = line ? `${line} ${word}` : word;
             if (!line || width(test, size, f) <= maxW) line = test;
             else {
-                lines.push(line);
+                out.push(line);
                 line = word;
             }
         }
-        if (line) lines.push(line);
-        return lines.length ? lines : [''];
+        if (line) out.push(line);
+        return out.length ? out : [''];
     }
 
     function truncate(t, size, maxW, f = font) {
@@ -171,9 +153,9 @@ export async function createReportPdf(report, customer = {}, now = new Date(), p
 
     function layoutFields(items, cellW) {
         return items.map(({ label, value }) => {
-            const v = clean(value);
-            const lines = v ? wrap(v, 10.5, cellW) : ['—'];
-            return { label, lines, empty: !v, h: 10 + lines.length * 13 + 5 };
+            const v = printable(value);
+            const l = v ? wrap(v, 10.5, cellW) : ['—'];
+            return { label, lines: l, empty: !v, h: 10 + l.length * 13 + 5 };
         });
     }
 
@@ -188,7 +170,7 @@ export async function createReportPdf(report, customer = {}, now = new Date(), p
         return rows;
     }
 
-    const boxHeight = (rows) => TITLE_H + rows.reduce((n, r) => n + r.h, 0) + 4;
+    const boxHeight = (rows) => TITLE_H + rows.reduce((n, row) => n + row.h, 0) + 4;
 
     function drawBox(title, rows, x, w, h) {
         page.drawRectangle({ x, y: y - h, width: w, height: h, borderColor: LINE, borderWidth: 0.8 });
@@ -204,155 +186,259 @@ export async function createReportPdf(report, customer = {}, now = new Date(), p
         }
     }
 
-    // --- intestazione ---------------------------------------------------------
-
-    text('Rapporto di prova', MARGIN, y, 22, { f: fontB });
-    let left = y - 22 * 1.25;
-    text(clean(report.title), MARGIN, left, 12, { color: GREY });
-    left -= 12 * 1.35;
-
-    let right = y;
-    const rx = PAGE_W - MARGIN;
-    if (report.start) {
-        text('Data prova', rx, right, 8, { color: GREY, align: 'right' });
-        right -= 11;
-        text(formatDate(report.start), rx, right, 11, { f: fontB, align: 'right' });
-        right -= 11 * 1.5;
-    }
-    const company = report.sections.find((s) => s.title === 'Azienda');
-    if (company) {
-        const co = Object.fromEntries(company.items.map((i) => [i.key, i.value]));
-        const lines = [
-            [co.name, true],
-            [[co.street, co.houseNumber].filter(Boolean).join(' ')],
-            [[co.postalCode, co.city].filter(Boolean).join(' ')],
-            [co.phone && `Tel. ${co.phone}`],
-            [co.email],
-        ].filter(([t]) => t);
-        for (const [t, isBold] of lines) {
-            text(truncate(clean(t), 9, 260, isBold ? fontB : font), rx, right, 9, { f: isBold ? fontB : font, color: isBold ? INK : GREY, align: 'right' });
-            right -= 12;
-        }
-    }
-    y = Math.min(left, right) - 8;
-    page.drawLine({ start: { x: MARGIN, y }, end: { x: rx, y }, thickness: 1.2, color: ACCENT });
-    y -= 12;
-
-    // --- cliente e caldaia ----------------------------------------------------
-
-    const gap = 14;
-    const halfW = (CONTENT_W - gap) / 2;
-    const clientRows = layoutRows([
-        { label: 'Nome e cognome', value: c.name },
-        { label: 'Codice fiscale', value: c.fiscalCode },
-        { label: 'Indirizzo', value: c.address },
-        { label: 'Telefono', value: c.phone },
-    ], 1, halfW - PAD * 2);
-    const boilerRows = layoutRows([
-        { label: 'Marca', value: c.brand },
-        { label: 'Matricola / codice caldaia', value: c.serial },
-        { label: 'Targa impianto', value: c.plateCode },
-        { label: 'Data di installazione', value: c.installDate },
-    ], 1, halfW - PAD * 2);
-    const h1 = Math.max(boxHeight(clientRows), boxHeight(boilerRows));
-    ensure(h1);
-    drawBox('Cliente', clientRows, MARGIN, halfW, h1);
-    drawBox('Caldaia', boilerRows, MARGIN + halfW + gap, halfW, h1);
-    y -= h1 + GAP;
-
-    // --- dati della prova -----------------------------------------------------
-
-    const testItems = report.header.map((h) => ({ label: h.label, value: h.value }));
-    const testRows = layoutRows(testItems, 3, CONTENT_W - PAD * 2);
-    const phases = report.sections.find((x) => x.title === 'Fasi della prova');
-    if (phases) testRows.push(...layoutRows(phases.items.map(phaseItem), 3, CONTENT_W - PAD * 2));
-    if (report.note) testRows.push(...layoutRows([{ label: 'Nota sulla prova', value: report.note }], 1, CONTENT_W - PAD * 2));
-    if (testRows.length) {
-        const h = boxHeight(testRows);
-        ensure(h);
-        drawBox('Dati prova', testRows, MARGIN, CONTENT_W, h);
-        y -= h + GAP;
-    }
-
-    // --- risultati ------------------------------------------------------------
-
-    const cols = report.columns.length ? report.columns : [''];
-    const unitW = 54;
-    const valW = cols.length > 1 ? 74 : 120;
-    const labelW = CONTENT_W - unitW - cols.length * valW;
-    const ROW_H = 21;
-    const HEAD_H = 19;
-
-    function tableHead() {
-        text('RISULTATI', MARGIN, y, 8.5, { f: fontB, color: ACCENT });
-        y -= 16;
-        page.drawRectangle({ x: MARGIN, y: y - HEAD_H, width: CONTENT_W, height: HEAD_H, color: FILL });
-        const base = y - HEAD_H / 2 - 3;
-        put('Parametro', MARGIN + 8, base, 9, { f: fontB, color: GREY });
-        cols.forEach((col, i) => put(cols.length > 1 ? col : 'Valore', MARGIN + labelW + (i + 1) * valW - 8, base, 9, { f: fontB, color: GREY, align: 'right' }));
-        put('Unità', MARGIN + labelW + cols.length * valW + 8, base, 9, { f: fontB, color: GREY });
-        y -= HEAD_H;
-    }
-
-    if (report.rows.length) {
-        ensure(16 + HEAD_H + ROW_H * 2);
-        tableHead();
-        for (const row of report.rows) {
-            if (y - ROW_H < BOTTOM) {
-                newPage();
-                tableHead();
-            }
-            const base = y - ROW_H / 2 - 4;
-            let lx = MARGIN + 8;
-            if (row.short && row.short !== row.label) {
-                put(row.short, lx, base, 11, { f: fontB });
-                lx += width(row.short, 11, fontB) + 8;
-            }
-            put(truncate(row.label, 10, MARGIN + labelW - lx - 6), lx, base, 10, { color: GREY });
-            cols.forEach((col, i) => {
-                const v = (row.cells[col] ?? '').replace(/^-(?=\d)/, '−');
-                put(v, MARGIN + labelW + (i + 1) * valW - 8, base, 12, { f: fontB, color: /^-+$/.test(v) ? GREY : INK, align: 'right' });
-            });
-            put(row.unit, MARGIN + labelW + cols.length * valW + 8, base, 10, { color: GREY });
-            y -= ROW_H;
-            page.drawLine({ start: { x: MARGIN, y }, end: { x: rx, y }, thickness: 0.5, color: LINE });
-        }
-        y -= GAP;
-    } else {
-        const msg = report.errors.length ? report.errors.join(' ') : 'Il QR non contiene valori di misura.';
-        text(msg, MARGIN, y, 11, { color: GREY });
-        y -= 24;
-    }
-
-    // --- strumento -----------------------------------------------------
-
-    for (const s of report.sections) {
-        if (!/^Strumento/.test(s.title)) continue;
-        const rank = (k) => (DEVICE_ORDER.includes(k) ? DEVICE_ORDER.indexOf(k) : DEVICE_ORDER.length);
-        const items = s.items.filter((i) => !SKIP_DEVICE_KEYS.includes(i.key)).sort((a, b) => rank(a.key) - rank(b.key));
-        const rows = layoutRows(items.map((i) => ({ label: i.label, value: i.value })), 3, CONTENT_W - PAD * 2);
+    // riquadro con campi, a tutta larghezza
+    function fieldsBox(title, items, cols = 3) {
+        const rows = layoutRows(items, cols, CONTENT_W - PAD * 2);
+        if (!rows.length) return;
         const h = boxHeight(rows);
         ensure(h);
-        drawBox(s.title, rows, MARGIN, CONTENT_W, h);
+        drawBox(title, rows, MARGIN, CONTENT_W, h);
         y -= h + GAP;
     }
 
-    // --- note del tecnico: il riquadro continua sulla pagina dopo se serve ----
-
-    if (c.notes) {
-        const lines = c.notes.split('\n').flatMap((par) => wrap(par || ' ', 10.5, CONTENT_W - PAD * 2));
-        for (let i = 0, first = true; i < lines.length; first = false) {
-            ensure(TITLE_H + 13 * Math.min(3, lines.length - i) + 5);
+    // riquadro di testo libero: continua sulla pagina dopo se serve
+    function textBox(title, ls) {
+        const all = ls.flatMap((par) => wrap(par || ' ', 10.5, CONTENT_W - PAD * 2));
+        for (let i = 0, first = true; i < all.length; first = false) {
+            ensure(TITLE_H + 13 * Math.min(3, all.length - i) + 5);
             const fit = Math.max(1, Math.floor((y - BOTTOM - TITLE_H - 5) / 13));
-            const chunk = lines.slice(i, i + fit);
+            const chunk = all.slice(i, i + fit);
             const h = TITLE_H + chunk.length * 13 + 5;
             page.drawRectangle({ x: MARGIN, y: y - h, width: CONTENT_W, height: h, borderColor: LINE, borderWidth: 0.8 });
-            text(first ? 'NOTE' : 'NOTE (SEGUE)', MARGIN + PAD, y - 9, 8.5, { f: fontB, color: ACCENT });
+            text(first ? title : `${title} (SEGUE)`, MARGIN + PAD, y - 9, 8.5, { f: fontB, color: ACCENT });
             chunk.forEach((l, j) => text(l, MARGIN + PAD, y - TITLE_H - j * 13, 10.5));
             y -= h + GAP;
             i += chunk.length;
         }
     }
+
+    // --- intestazione: ditta a sinistra, numero e data a destra ----------------
+
+    const RIGHT_W = 190;
+    let left = y;
+    let lx = MARGIN;
+    if (logo) {
+        const image = await pdf.embedJpg(logo.bytes);
+        const k = Math.min(120 / image.width, 48 / image.height);
+        page.drawImage(image, { x: MARGIN, y: y - image.height * k, width: image.width * k, height: image.height * k });
+        lx += image.width * k + 12;
+        left = y - image.height * k;
+    }
+    const maxLeft = rx - RIGHT_W - lx;
+    let ty = y;
+    const coLines = [
+        [company.name, 13, true],
+        [oneLine(company.address), 9],
+        [[company.vat && `P.IVA ${clean(company.vat)}`, company.phone && `Tel. ${clean(company.phone)}`].filter(Boolean).join('  ·  '), 9],
+        [company.email, 9],
+    ];
+    for (const [t, size, isBold] of coLines) {
+        const v = printable(t);
+        if (!v) continue;
+        text(truncate(v, size, maxLeft, isBold ? fontB : font), lx, ty, size, { f: isBold ? fontB : font, color: isBold ? INK : GREY });
+        ty -= size * 1.35;
+    }
+    left = Math.min(left, ty);
+
+    let right = y;
+    text('RAPPORTO DI INTERVENTO', rx, right, 8.5, { f: fontB, color: ACCENT, align: 'right' });
+    right -= 8.5 * 1.6;
+    text(isDraft ? 'BOZZA' : `n. ${r.number}`, rx, right, 20, { f: fontB, color: isDraft ? AMBER : INK, align: 'right' });
+    right -= 20 * 1.3;
+    if (r.date) {
+        text(`Data intervento ${formatDay(r.date)}`, rx, right, 10, { color: GREY, align: 'right' });
+        right -= 10 * 1.5;
+    }
+    y = Math.min(left, right) - 8;
+    page.drawLine({ start: { x: MARGIN, y }, end: { x: rx, y }, thickness: 1.2, color: ACCENT });
+    y -= 12;
+
+    // --- cliente e impianto ---------------------------------------------------
+
+    const gap = 14;
+    const halfW = (CONTENT_W - gap) / 2;
+    const installDate = /^\d{4}-\d{2}-\d{2}$/.test(plant.installDate || '') ? formatDay(plant.installDate) : clean(plant.installDate);
+    const clientRows = layoutRows([
+        { label: 'Nome e cognome', value: customer.name },
+        { label: 'Codice fiscale', value: code(customer.fiscalCode) },
+        { label: 'Indirizzo', value: oneLine(customer.address) },
+        { label: 'Telefono', value: customer.phone },
+    ], 1, halfW - PAD * 2);
+    const plantRows = layoutRows([
+        { label: 'Marca', value: plant.brand },
+        { label: 'Matricola / codice caldaia', value: plant.serial },
+        { label: 'Targa impianto', value: code(plant.plateCode) },
+        { label: 'Data di installazione', value: installDate },
+    ], 1, halfW - PAD * 2);
+    const h1 = Math.max(boxHeight(clientRows), boxHeight(plantRows));
+    ensure(h1);
+    drawBox('Cliente', clientRows, MARGIN, halfW, h1);
+    drawBox('Impianto', plantRows, MARGIN + halfW + gap, halfW, h1);
+    y -= h1 + GAP;
+
+    // --- intervento: tipo, esito, orari e durata -------------------------------
+
+    const minutes = durationMinutes(work.startTime, work.endTime);
+    const what = [
+        { label: 'Tipo di intervento', value: typeLabel(work.type) },
+        { label: 'Esito', value: outcomeLabel(work.outcome) },
+        { label: 'Data', value: formatDay(r.date) },
+    ];
+    if (work.startTime || work.endTime) {
+        what.push(
+            { label: 'Arrivo', value: work.startTime },
+            { label: 'Partenza', value: work.endTime },
+            { label: 'Durata', value: formatDuration(minutes) },
+        );
+    }
+    fieldsBox('Intervento', what, 3);
+
+    const workLines = lines(work.work);
+    if (workLines.join('')) textBox('LAVORI ESEGUITI', workLines);
+
+    // --- materiali ----------------------------------------------------------------
+
+    const materials = (work.materials ?? []).filter((m) => clean(m.text) || clean(m.qty));
+    if (materials.length) {
+        const qtyW = 110;
+        const descW = CONTENT_W - qtyW - 16;
+        const rows = materials.map((m) => {
+            const ls = wrap(printable(m.text) || '—', 10.5, descW);
+            return { ls, qty: printable(m.qty), h: Math.max(20, ls.length * 13 + 8) };
+        });
+        ensure(16 + 19 + rows[0].h);
+        text('MATERIALI', MARGIN, y, 8.5, { f: fontB, color: ACCENT });
+        y -= 16;
+        const head = () => {
+            page.drawRectangle({ x: MARGIN, y: y - 19, width: CONTENT_W, height: 19, color: FILL });
+            put('Descrizione', MARGIN + 8, y - 19 / 2 - 3, 9, { f: fontB, color: GREY });
+            put('Quantità', rx - 8, y - 19 / 2 - 3, 9, { f: fontB, color: GREY, align: 'right' });
+            y -= 19;
+        };
+        head();
+        for (const row of rows) {
+            if (y - row.h < BOTTOM) {
+                newPage();
+                head();
+            }
+            row.ls.forEach((l, j) => put(l, MARGIN + 8, y - 5 - 10.5 * 0.8 - j * 13 - 1, 10.5));
+            put(row.qty, rx - 8, y - 5 - 10.5 * 0.8 - 1, 10.5, { f: fontB, align: 'right' });
+            y -= row.h;
+            page.drawLine({ start: { x: MARGIN, y }, end: { x: rx, y }, thickness: 0.5, color: LINE });
+        }
+        y -= GAP;
+    }
+
+    // --- misure Testo: confronto affiancato per lo stesso tipo, altrimenti una tabella ciascuna ----
+
+    // columns: intestazioni; rows: [{ short, label, unit, values }]; info: righe grigie sotto il titolo
+    function drawTable(title, info, columns, rows) {
+        const n = columns.length;
+        const unitW = 54;
+        const valW = Math.min(n > 1 ? 100 : 120, (CONTENT_W - unitW - 150) / n);
+        const labelW = CONTENT_W - unitW - n * valW;
+        const ROW_H = 21;
+        const HEAD_H = 19;
+        const infoLines = info.flatMap((t) => wrap(printable(t), 9, CONTENT_W));
+
+        const tableHead = () => {
+            page.drawRectangle({ x: MARGIN, y: y - HEAD_H, width: CONTENT_W, height: HEAD_H, color: FILL });
+            const base = y - HEAD_H / 2 - 3;
+            put('Parametro', MARGIN + 8, base, 9, { f: fontB, color: GREY });
+            columns.forEach((col, i) => put(truncate(printable(col), 9, valW - 10, fontB), MARGIN + labelW + (i + 1) * valW - 8, base, 9, { f: fontB, color: GREY, align: 'right' }));
+            put('Unità', MARGIN + labelW + n * valW + 8, base, 9, { f: fontB, color: GREY });
+            y -= HEAD_H;
+        };
+
+        // il confronto resta su una pagina sola se ci entra; altrimenti continua con l'intestazione ripetuta
+        const total = 16 + infoLines.length * 12 + HEAD_H + ROW_H * rows.length;
+        ensure(total <= PAGE_H - MARGIN - BOTTOM ? total : 16 + infoLines.length * 12 + HEAD_H + ROW_H * 2);
+        text(printable(title).toUpperCase(), MARGIN, y, 8.5, { f: fontB, color: ACCENT });
+        y -= 16;
+        for (const l of infoLines) {
+            text(l, MARGIN, y, 9, { color: GREY });
+            y -= 12;
+        }
+        if (infoLines.length) y -= 2;
+        tableHead();
+        for (const row of rows) {
+            if (y - ROW_H < BOTTOM) {
+                newPage();
+                tableHead();
+            }
+            const base = y - ROW_H / 2 - 4;
+            let tx = MARGIN + 8;
+            if (row.short && row.short !== row.label) {
+                put(row.short, tx, base, 11, { f: fontB });
+                tx += width(row.short, 11, fontB) + 8;
+            }
+            put(truncate(row.label, 10, MARGIN + labelW - tx - 6), tx, base, 10, { color: GREY });
+            row.values.forEach((v0, i) => {
+                const v = String(v0 ?? '').replace(/^-(?=\d)/, '−');
+                put(v, MARGIN + labelW + (i + 1) * valW - 8, base, 12, { f: fontB, color: /^-+$/.test(v) ? GREY : INK, align: 'right' });
+            });
+            put(row.unit, MARGIN + labelW + n * valW + 8, base, 10, { color: GREY });
+            y -= ROW_H;
+            page.drawLine({ start: { x: MARGIN, y }, end: { x: rx, y }, thickness: 0.5, color: LINE });
+        }
+        y -= GAP;
+    }
+
+    const devices = new Map(); // gli strumenti usati, senza ripetizioni
+    const when = (rep, label) => [label, [rep.start && formatDate(rep.start), rep.header.find((h) => h.label === 'Combustibile')?.value].filter(Boolean).join(' · ')].filter(Boolean).join(': ');
+
+    for (const block of groupMeasures(r.measures ?? [])) {
+        const reports = block.kind === 'compare' ? block.items.map((i) => i.report) : [block.report];
+        for (const rep of reports) {
+            for (const s of rep.sections) {
+                if (!/^Strumento/.test(s.title)) continue;
+                const key = s.items.find((i) => i.key === 'serial')?.value || JSON.stringify(s.items);
+                if (!devices.has(key)) devices.set(key, s);
+            }
+        }
+        if (block.kind === 'compare') {
+            drawTable(`Misure Testo · ${block.title}`, block.items.map((i) => when(i.report, i.label)), block.table.columns, block.table.rows);
+        } else {
+            const rep = block.report;
+            const cols = rep.columns.length ? rep.columns : ['Valore'];
+            const rows = rep.rows.map((row) => ({
+                short: row.short, label: row.label, unit: row.unit, values: (rep.columns.length ? rep.columns : ['']).map((c) => row.cells[c] ?? ''),
+            }));
+            if (rows.length) {
+                drawTable(`Misure Testo · ${block.label} · ${rep.title}`, [when(rep, '')].filter((t) => t !== ''), cols, rows);
+            } else {
+                ensure(40);
+                text(printable(`Misura "${block.label}": ${rep.errors.length ? rep.errors.join(' ') : 'il QR non contiene valori di misura.'}`), MARGIN, y, 10, { color: GREY });
+                y -= 24;
+            }
+            const extra = [
+                ...rep.header,
+                ...(rep.sections.find((x) => x.title === 'Fasi della prova')?.items.map(phaseItem) ?? []),
+                ...(rep.note ? [{ label: 'Nota sulla misura', value: rep.note }] : []),
+            ];
+            const phaseOnly = extra.filter((it) => it.label !== 'Combustibile');
+            if (phaseOnly.length) fieldsBox(`Dati misura · ${block.label}`, phaseOnly, 3);
+        }
+    }
+
+    // gli strumenti in un riquadro solo: una riga ciascuno (nome, numero di serie, firmware)
+    if (devices.size) {
+        const items = [];
+        for (const s of devices.values()) {
+            const get = (k) => s.items.find((i) => i.key === k);
+            items.push(
+                { label: 'Strumento', value: get('name')?.value || s.title },
+                { label: 'N. di serie', value: get('serial')?.value },
+                { label: 'Firmware', value: get('firmwareVersion')?.value },
+            );
+        }
+        fieldsBox(devices.size > 1 ? 'Strumenti di misura' : 'Strumento di misura', items, 3);
+    }
+
+    // --- note ------------------------------------------------------------------
+
+    const noteLines = lines(work.notes);
+    if (noteLines.join('')) textBox('NOTE', noteLines);
 
     // --- foto: griglia a 2 colonne, continua sulle pagine successive ---------
 
@@ -363,7 +449,7 @@ export async function createReportPdf(report, customer = {}, now = new Date(), p
         const cellW = (CONTENT_W - PHOTO_GAP) / 2;
         const images = [];
         for (const ph of photos) {
-            const image = await doc.embedJpg(ph.bytes);
+            const image = await pdf.embedJpg(ph.bytes);
             const k = Math.min(cellW / image.width, MAX_H / image.height);
             images.push({ image, w: image.width * k, h: image.height * k });
         }
@@ -385,20 +471,31 @@ export async function createReportPdf(report, customer = {}, now = new Date(), p
         }
     }
 
-    // --- piè di pagina ----------------------------------------------------------
+    // --- tecnico ---------------------------------------------------------------
 
-    const pages = doc.getPages();
+    const technician = printable(company.technician);
+    if (technician) {
+        ensure(30);
+        y -= 6;
+        text(`Tecnico: ${technician}`, MARGIN, y, 10.5, { f: fontB });
+        y -= 20;
+    }
+
+    // --- piè di pagina ------------------------------------------------------------
+
+    const label = isDraft ? 'Bozza: rapporto non ancora chiuso' : `Rapporto di intervento n. ${r.number}`;
+    const pages = pdf.getPages();
     pages.forEach((p, i) => {
         p.drawLine({ start: { x: MARGIN, y: MARGIN }, end: { x: rx, y: MARGIN }, thickness: 0.5, color: LINE });
-        p.drawText(`Generato con Testo QR il ${formatDate(now)}`, { x: MARGIN, y: MARGIN - 12, size: 8, font, color: GREY });
-        const label = `Pagina ${i + 1} di ${pages.length}`;
-        p.drawText(label, { x: rx - width(label, 8), y: MARGIN - 12, size: 8, font, color: GREY });
+        p.drawText(printable([label, customer.name].filter(Boolean).join(' · ')), { x: MARGIN, y: MARGIN - 12, size: 8, font, color: GREY });
+        const pageLabel = `Pagina ${i + 1} di ${pages.length}`;
+        p.drawText(pageLabel, { x: rx - width(pageLabel, 8), y: MARGIN - 12, size: 8, font, color: GREY });
     });
 
-    doc.setTitle(`Rapporto di prova${c.name ? ` - ${c.name}` : ''}`);
-    doc.setProducer('Testo QR');
-    doc.setCreator('Testo QR');
-    doc.setCreationDate(now);
-    doc.setModificationDate(now);
-    return doc.save();
+    pdf.setTitle(printable(`Rapporto di intervento${r.number ? ` n. ${r.number}` : ' (bozza)'}${customer.name ? ` - ${customer.name}` : ''}`));
+    pdf.setProducer('Testo QR');
+    pdf.setCreator('Testo QR');
+    pdf.setCreationDate(now);
+    pdf.setModificationDate(now);
+    return pdf.save();
 }

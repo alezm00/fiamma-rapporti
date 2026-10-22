@@ -1,9 +1,5 @@
-// Email del report: destinatari, oggetto e testo creati in automatico.
-import { formatDate } from './tjf.js';
-import { normalizeCustomer } from './report.js';
-
-const pad = (n) => String(n).padStart(2, '0');
-const formatDay = (d) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+// Email del rapporto: destinatari, oggetto e testo creati in automatico.
+import { formatDay, typeLabel, outcomeLabel } from './model.js';
 
 // "a@x.it, b@y.it" -> ['a@x.it', 'b@y.it'] (separati da virgola, punto e virgola o spazio)
 export function parseRecipients(text) {
@@ -21,28 +17,35 @@ export function checkRecipients(text) {
         : { empty: false, ok: true, list };
 }
 
-// "Rapporto di prova - Mario Rossi - targa 06BD529A822E2B20 - 22/10/2026"
-export function buildSubject(report, customer, now = new Date()) {
-    const c = normalizeCustomer(customer);
-    return ['Rapporto di prova', c.name, c.plateCode && `targa ${c.plateCode}`, formatDay(report.start || now)].filter(Boolean).join(' - ');
+const oneLine = (s) => String(s ?? '').trim().replace(/\s*\n\s*/g, ', ');
+
+// "Rapporto di intervento n. 2026/012 - Mario Rossi - targa 06BD529A822E2B20 - 22/10/2026"
+export function buildSubject(doc) {
+    const head = doc.number ? `Rapporto di intervento n. ${doc.number}` : 'Rapporto di intervento (bozza)';
+    const plate = doc.plant?.plateCode?.trim();
+    return [head, doc.customer?.name?.trim(), plate && `targa ${plate}`, formatDay(doc.date)].filter(Boolean).join(' - ');
 }
 
-export function buildBody(report, customer, now = new Date()) {
-    const c = normalizeCustomer(customer);
-    const when = formatDate(report.start || now).replace(' ', ' alle ');
-    const boiler = [c.brand, c.serial && `matricola ${c.serial}`, c.plateCode && `targa impianto ${c.plateCode}`].filter(Boolean).join(', ');
+export function buildBody(doc, company = {}) {
+    const c = doc.customer || {};
+    const p = doc.plant || {};
+    const boiler = [p.brand, p.serial && `matricola ${p.serial}`, p.plateCode && `targa impianto ${p.plateCode}`].filter(Boolean).join(', ');
+    const what = [typeLabel(doc.intervention?.type), outcomeLabel(doc.intervention?.outcome)].filter(Boolean).join(' - ');
     const details = [
         c.name && `Cliente: ${c.name}`,
-        c.address && `Indirizzo: ${c.address}`,
-        boiler && `Caldaia: ${boiler}`,
+        c.address && `Indirizzo: ${oneLine(c.address)}`,
+        boiler && `Impianto: ${boiler}`,
+        what && `Intervento: ${what}`,
     ].filter(Boolean);
+    const label = doc.number ? `il rapporto di intervento n. ${doc.number}` : 'la bozza del rapporto di intervento';
     return [
         'Buongiorno,',
         '',
-        `in allegato il rapporto di prova${report.title ? ` «${report.title}»` : ''} eseguito il ${when}.`,
+        `in allegato ${label}${doc.date ? ` del ${formatDay(doc.date)}` : ''}.`,
         ...(details.length ? ['', ...details] : []),
         '',
         'Cordiali saluti',
+        ...[company.technician, company.name].filter(Boolean),
     ].join('\n');
 }
 
