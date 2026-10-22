@@ -1,5 +1,5 @@
 // Email del rapporto: destinatari, oggetto e testo creati in automatico.
-import { formatDay, typeLabel, outcomeLabel } from './model.js';
+import { formatDay, typeLabel, outcomeLabel, unitKind, unitName } from './model.js';
 
 // "a@x.it, b@y.it" -> ['a@x.it', 'b@y.it'] (separati da virgola, punto e virgola o spazio)
 export function parseRecipients(text) {
@@ -29,12 +29,16 @@ export function buildSubject(doc) {
 export function buildBody(doc, company = {}) {
     const c = doc.customer || {};
     const p = doc.plant || {};
-    const boiler = [[p.brand, p.model].filter(Boolean).join(' '), p.serial && `matricola ${p.serial}`, p.plateCode && `targa impianto ${p.plateCode}`].filter(Boolean).join(', ');
+    // "targa AB12; Caldaia Beretta Ciao 24 (matricola SN1); Pompa di calore Daikin Altherma"
+    const system = [
+        p.plateCode && `targa ${p.plateCode}`,
+        ...(p.units ?? []).map((u) => [unitKind(u.kind)?.label, unitName(u), u.serial && `(matricola ${u.serial})`].filter(Boolean).join(' ')),
+    ].filter(Boolean).join('; ');
     const what = [typeLabel(doc.intervention?.type), outcomeLabel(doc.intervention?.outcome)].filter(Boolean).join(' - ');
     const details = [
         c.name && `Cliente: ${c.name}`,
         c.address && `Indirizzo: ${oneLine(c.address)}`,
-        boiler && `Impianto: ${boiler}`,
+        system && `Impianto: ${system}`,
         what && `Intervento: ${what}`,
     ].filter(Boolean);
     const label = doc.number ? `il rapporto di intervento n. ${doc.number}` : 'la bozza del rapporto di intervento';

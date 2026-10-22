@@ -32,6 +32,15 @@ export const CLS = {
     reportMeta: 'font-mono text-[.7rem] text-muted',
     badge: 'rounded-sm border px-1.5 py-px font-mono text-[.62rem] font-bold tracking-[.06em] whitespace-nowrap uppercase',
 
+    // apparecchi dell'impianto (caldaie, pompe di calore, condizionatori)
+    unitCard: 'rounded border border-edge bg-page/40 p-2',
+    unitHead: 'mb-2 flex items-center justify-between gap-2',
+    unitTitle: 'font-mono text-[.78rem] font-bold tracking-[.1em] text-white uppercase',
+    unitDel: 'btn size-8 min-h-0 w-8 flex-none bg-field px-0 text-[.85rem] text-err-fg',
+    unitGrid: 'grid grid-cols-2 items-end gap-2',
+
+    defaultsUnit: 'col-span-2 grid grid-cols-2 items-end gap-2',
+
     // intestazioni dei mesi nell'elenco e righe del cestino
     monthHead: 'mt-1.5 flex items-center gap-2 font-mono text-[.66rem] font-bold tracking-[.12em] text-muted uppercase first:mt-0 after:h-px after:flex-1 after:bg-line',
     trashRow: 'rounded border border-edge bg-field p-2',

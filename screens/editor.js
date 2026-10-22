@@ -4,7 +4,7 @@
 import * as nav from '../nav.js';
 import * as store from '../store.js';
 import {
-    INTERVENTION_TYPES, OUTCOMES, CHAMBERS, TECHNOLOGIES, FUELS, durationMinutes, formatDuration, formatNumber, nextNumber, reportYear,
+    INTERVENTION_TYPES, OUTCOMES, UNIT_KINDS, newUnit, unitKind, unitTitle, durationMinutes, formatDuration, formatNumber, nextNumber, reportYear,
     timeString, reportFileName, isBlank, TRASH_DAYS,
 } from '../model.js';
 import { buildReport, formatDate } from '../tjf.js';
@@ -30,16 +30,7 @@ const FIELDS = {
     'c-cf': 'customer.fiscalCode',
     'c-address': 'customer.address',
     'c-phone': 'customer.phone',
-    'c-brand': 'plant.brand',
-    'c-model': 'plant.model',
-    'c-serial': 'plant.serial',
     'c-plate': 'plant.plateCode',
-    'c-date': 'plant.installDate',
-    'c-chamber': 'plant.chamber',
-    'c-technology': 'plant.technology',
-    'c-fuel': 'plant.fuel',
-    'c-power-nom': 'plant.nominalPower',
-    'c-power-real': 'plant.actualPower',
     'e-type': 'intervention.type',
     'e-outcome': 'intervention.outcome',
     'e-work': 'intervention.work',
@@ -157,6 +148,76 @@ function updateMailInfo() {
 function updateDuration() {
     const min = durationMinutes($('e-start').value, $('e-end').value);
     $('e-duration').textContent = min == null ? '' : `Durata dell'intervento: ${formatDuration(min)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Apparecchi dell'impianto: quante caldaie, pompe di calore e condizionatori si vuole
+// ---------------------------------------------------------------------------
+
+const UNIT_CAPS = { brand: 'words', model: 'characters', serial: 'characters' };
+
+function unitField(unit, i, f) {
+    const label = el('label', CLS.field);
+    label.append(el('span', CLS.fieldLabel, f.unit ? `${f.label} (${f.unit})` : f.label));
+    let input;
+    if (f.options) {
+        input = el('select', CLS.select);
+        input.append(new Option('Non indicato', ''), ...f.options.map((o) => new Option(o.label, o.id)));
+    } else {
+        input = el('input', f.date ? CLS.dateInput : CLS.input);
+        input.type = f.date ? 'date' : 'text';
+        if (f.decimal) input.inputMode = 'decimal';
+        input.autocomplete = 'off';
+        if (UNIT_CAPS[f.key]) input.setAttribute('autocapitalize', UNIT_CAPS[f.key]);
+    }
+    input.id = `u${i}-${f.key}`;
+    input.value = unit[f.key] ?? '';
+    const changed = () => {
+        unit[f.key] = input.value;
+        touch();
+    };
+    input.addEventListener('input', changed);
+    input.addEventListener('change', changed);
+    label.append(input);
+    return label;
+}
+
+function renderUnits() {
+    const box = $('e-units');
+    box.replaceChildren();
+    const units = doc.plant.units;
+    units.forEach((unit, i) => {
+        const kind = unitKind(unit.kind);
+        const card = el('section', CLS.unitCard);
+        card.dataset.unit = String(i);
+        card.dataset.kind = unit.kind;
+        const head = el('div', CLS.unitHead);
+        const title = unitTitle(unit, units);
+        const del = el('button', CLS.unitDel, '✕');
+        del.type = 'button';
+        del.id = `u${i}-del`;
+        del.setAttribute('aria-label', `Togli: ${title}`);
+        del.addEventListener('click', () => {
+            const filled = kind.fields.some((f) => String(unit[f.key] ?? '').trim());
+            if (filled && !confirm(`Togliere «${title}» dal rapporto?`)) return;
+            units.splice(i, 1);
+            renderUnits();
+            touch();
+        });
+        head.append(el('h4', CLS.unitTitle, title), del);
+        const grid = el('div', CLS.unitGrid);
+        for (const f of kind.fields) grid.append(unitField(unit, i, f));
+        card.append(head, grid);
+        box.append(card);
+    });
+    $('e-units-empty').hidden = units.length > 0;
+}
+
+function addUnit(kindId) {
+    doc.plant.units.push(newUnit(kindId));
+    renderUnits();
+    $('e-units').lastElementChild.querySelector('input, select').focus();
+    touch();
 }
 
 // ---------------------------------------------------------------------------
@@ -456,6 +517,7 @@ export async function enter(params) {
     fillForm();
     renderHeader();
     showSaveState('saved');
+    renderUnits();
     renderMaterials();
     renderMeasures();
     updateDuration();
@@ -488,9 +550,7 @@ export function init() {
     };
     fillSelect('e-type', INTERVENTION_TYPES, 'Seleziona…');
     fillSelect('e-outcome', OUTCOMES, 'Seleziona…');
-    fillSelect('c-chamber', CHAMBERS, 'Non indicata');
-    fillSelect('c-technology', TECHNOLOGIES, 'Non indicato');
-    fillSelect('c-fuel', FUELS, 'Non indicato');
+    for (const kind of UNIT_KINDS) $(`e-add-${kind.id}`).addEventListener('click', () => addUnit(kind.id));
 
     for (const event of ['input', 'change']) {
         $('view-editor').addEventListener(event, (e) => {

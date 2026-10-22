@@ -1,14 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseRecipients, checkRecipients, buildSubject, buildBody, mailtoUrl } from '../mail.js';
-import { newReport } from '../model.js';
+import { newReport, newUnit } from '../model.js';
 
 const closed = () => {
     const doc = newReport({ now: new Date(2026, 9, 22, 10, 0), id: 'a' });
     doc.number = '2026/012';
     doc.status = 'done';
     doc.customer = { name: 'Mario Rossi', fiscalCode: '', address: 'Via Roma 1\n33170 Pordenone PN', phone: '' };
-    doc.plant = { brand: 'Beretta', serial: 'SN1', plateCode: 'AB12', installDate: '' };
+    doc.plant = { plateCode: 'AB12', units: [newUnit('caldaia', { brand: 'Beretta', serial: 'SN1' })] };
     doc.intervention = { ...doc.intervention, type: 'ordinaria', outcome: 'ok' };
     return doc;
 };
@@ -40,7 +40,7 @@ test('testo: dati del rapporto e firma', () => {
         '',
         'Cliente: Mario Rossi',
         'Indirizzo: Via Roma 1, 33170 Pordenone PN',
-        'Impianto: Beretta, matricola SN1, targa impianto AB12',
+        'Impianto: targa AB12; Caldaia Beretta (matricola SN1)',
         'Intervento: Manutenzione ordinaria - Impianto funzionante',
         '',
         'Cordiali saluti',
@@ -49,8 +49,11 @@ test('testo: dati del rapporto e firma', () => {
     ].join('\n'));
     assert.match(buildBody(newReport({ id: 'b' })), /la bozza del rapporto/);
     const withModel = closed();
-    withModel.plant.model = 'Ciao 24';
-    assert.match(buildBody(withModel), /Impianto: Beretta Ciao 24, matricola SN1, targa impianto AB12/);
+    withModel.plant.units[0].model = 'Ciao 24';
+    withModel.plant.units.push(newUnit('pompa', { brand: 'Daikin', model: 'Altherma' }), newUnit('condizionatore', { brand: 'LG', serial: 'AC-1' }));
+    assert.match(buildBody(withModel), /Impianto: targa AB12; Caldaia Beretta Ciao 24 \(matricola SN1\); Pompa di calore Daikin Altherma; Condizionatore LG \(matricola AC-1\)/);
+    withModel.plant = { plateCode: '', units: [] };
+    assert.doesNotMatch(buildBody(withModel), /Impianto:/);
 });
 
 test('mailto: destinatari, oggetto e testo codificati', () => {

@@ -21,7 +21,12 @@ export const OUTCOMES = [
     { id: 'ko', label: 'Non funzionante' },
 ];
 
-// dati della caldaia (impianto)
+// ---------------------------------------------------------------------------
+// Apparecchi dell'impianto: caldaie, pompe di calore, condizionatori (quanti si vuole)
+// ---------------------------------------------------------------------------
+
+const opt = (...labels) => labels.map((label) => ({ id: label.toLowerCase().replace(/[^a-z0-9]+/g, '-'), label }));
+
 export const CHAMBERS = [
     { id: 'aperta', label: 'Aperta' },
     { id: 'forzata', label: 'Forzata' },
@@ -38,10 +43,126 @@ export const FUELS = [
     { id: 'gasolio', label: 'Gasolio' },
 ];
 
+export const HEAT_PUMP_TYPES = opt('Aria-acqua', 'Aria-aria', 'Acqua-acqua', 'Geotermica');
+export const AC_TYPES = opt('Monosplit', 'Multisplit', 'Canalizzato', 'Cassetta', 'Altro');
+export const REFRIGERANTS = opt('R32', 'R410A', 'R290', 'R134a', 'R407C', 'R454B', 'R744', 'Altro');
+
+// Campi: key (nel rapporto), label, e secondo i casi options (menu), date, decimal, unit (kW, kg…).
+const COMMON_FIELDS = [
+    { key: 'brand', label: 'Marca' },
+    { key: 'model', label: 'Modello' },
+    { key: 'serial', label: 'Matricola / codice' },
+    { key: 'installDate', label: 'Data di installazione', date: true },
+];
+const REFRIGERANT_FIELDS = [
+    { key: 'refrigerant', label: 'Gas refrigerante', options: REFRIGERANTS },
+    { key: 'charge', label: 'Carica di refrigerante', unit: 'kg', decimal: true },
+];
+
+export const UNIT_KINDS = [
+    {
+        id: 'caldaia', label: 'Caldaia', plural: 'caldaie', short: 'caldaia',
+        fields: [
+            ...COMMON_FIELDS,
+            { key: 'fuel', label: 'Combustibile', options: FUELS },
+            { key: 'chamber', label: 'Camera di combustione', options: CHAMBERS },
+            { key: 'technology', label: 'Tipo di caldaia', options: TECHNOLOGIES },
+            { key: 'nominalPower', label: 'Potenza termica nominale', unit: 'kW', decimal: true },
+            { key: 'actualPower', label: 'Potenza termica reale', unit: 'kW', decimal: true },
+        ],
+    },
+    {
+        id: 'pompa', label: 'Pompa di calore', plural: 'pompe di calore', short: 'pompa di calore',
+        fields: [
+            ...COMMON_FIELDS,
+            { key: 'hpType', label: 'Tipo', options: HEAT_PUMP_TYPES },
+            { key: 'nominalPower', label: 'Potenza termica nominale', unit: 'kW', decimal: true },
+            { key: 'coolingPower', label: 'Potenza frigorifera', unit: 'kW', decimal: true },
+            ...REFRIGERANT_FIELDS,
+        ],
+    },
+    {
+        id: 'condizionatore', label: 'Condizionatore', plural: 'condizionatori', short: 'condizionatore',
+        fields: [
+            ...COMMON_FIELDS,
+            { key: 'acType', label: 'Tipo', options: AC_TYPES },
+            { key: 'indoorUnits', label: 'Unità interne', decimal: true },
+            { key: 'coolingPower', label: 'Potenza frigorifera', unit: 'kW', decimal: true },
+            { key: 'nominalPower', label: 'Potenza in riscaldamento', unit: 'kW', decimal: true },
+            ...REFRIGERANT_FIELDS,
+        ],
+    },
+];
+
+export const unitKind = (id) => UNIT_KINDS.find((k) => k.id === id);
+
+// un apparecchio nuovo del tipo dato, con i valori indicati (solo i campi di quel tipo)
+export function newUnit(kindId, values = {}, id = newId()) {
+    const kind = unitKind(kindId);
+    const unit = { id, kind: kindId };
+    for (const f of kind.fields) unit[f.key] = text(values[f.key], 2000);
+    return unit;
+}
+
+// "Caldaia", e "Caldaia 1", "Caldaia 2" se ce n'è più di una dello stesso tipo
+export function unitTitle(unit, units) {
+    const label = unitKind(unit.kind)?.label ?? 'Apparecchio';
+    const same = units.filter((u) => u.kind === unit.kind);
+    return same.length > 1 ? `${label} ${same.indexOf(unit) + 1}` : label;
+}
+
+// "1 caldaia, 2 pompe di calore"
+export function unitsSummary(plant) {
+    const units = plant?.units ?? [];
+    return UNIT_KINDS.map((k) => [k, units.filter((u) => u.kind === k.id).length])
+        .filter(([, n]) => n > 0).map(([k, n]) => `${n} ${n === 1 ? k.short : k.plural}`).join(', ');
+}
+
+// i campi di un apparecchio pronti da mostrare: [{ label, value }] (menu → etichetta, data → gg/mm/aaaa, kW e kg)
+export function unitValues(unit) {
+    const kind = unitKind(unit.kind);
+    if (!kind) return [];
+    return kind.fields.map((f) => {
+        let value = String(unit[f.key] ?? '').trim();
+        if (f.options) value = labelIn(f.options, value) || value;
+        else if (f.date) value = formatDay(value) || value;
+        else if (f.unit && /^[\d.,\s]+$/.test(value) && value) value = `${value} ${f.unit}`;
+        return { label: f.label, value };
+    });
+}
+
+// "Beretta Ciao 24"
+export const unitName = (unit) => [unit.brand, unit.model].map((v) => String(v ?? '').trim()).filter(Boolean).join(' ');
+
+// Il rapporto con la scheda dell'impianto di prima (un solo apparecchio, tutto in "plant") passa a
+// "plant.units": serve a leggere i rapporti già salvati. Si può ripetere senza effetti.
+const LEGACY_UNIT_KEYS = ['brand', 'model', 'serial', 'installDate', 'chamber', 'technology', 'fuel', 'nominalPower', 'actualPower'];
+
+export function upgradePlant(plant) {
+    const p = isObject(plant) ? plant : {};
+    let units = p.units;
+    if (!Array.isArray(units)) {
+        units = LEGACY_UNIT_KEYS.some((k) => String(p[k] ?? '').trim()) ? [{ kind: 'caldaia', ...Object.fromEntries(LEGACY_UNIT_KEYS.map((k) => [k, p[k]])) }] : [];
+    }
+    return {
+        plateCode: text(p.plateCode, 2000),
+        units: units.slice(0, 50).filter((u) => isObject(u) && unitKind(u.kind))
+            .map((u) => newUnit(u.kind, u, /^[A-Za-z0-9_-]{8,64}$/.test(u.id ?? '') ? u.id : newId())),
+    };
+}
+
+export function upgradeReport(doc) {
+    doc.plant = upgradePlant(doc.plant);
+    return doc;
+}
+
+// gli apparecchi di un rapporto nuovo: uno del tipo scelto nei dati predefiniti (di solito una caldaia)
+function defaultUnits(d) {
+    const kind = d.unitKind ?? 'caldaia';
+    return unitKind(kind) ? [newUnit(kind, d)] : [];
+}
+
 const labelIn = (list, id) => list.find((i) => i.id === id)?.label ?? '';
-export const chamberLabel = (id) => labelIn(CHAMBERS, id);
-export const technologyLabel = (id) => labelIn(TECHNOLOGIES, id);
-export const fuelLabel = (id) => labelIn(FUELS, id);
 
 export const typeLabel = (id) => INTERVENTION_TYPES.find((t) => t.id === id)?.label ?? '';
 export const outcomeLabel = (id) => OUTCOMES.find((o) => o.id === id)?.label ?? '';
@@ -78,10 +199,7 @@ export function newReport({ now = new Date(), defaults = {}, id = newId() } = {}
         sentAt: null,
         deletedAt: null, // nel cestino da questo momento (si elimina per sempre dopo TRASH_DAYS giorni)
         customer: { name: d.name || '', fiscalCode: d.fiscalCode || '', address: d.address || '', phone: d.phone || '' },
-        plant: {
-            brand: d.brand || '', model: d.model || '', serial: d.serial || '', plateCode: d.plateCode || '', installDate: d.installDate || '',
-            chamber: d.chamber || '', technology: d.technology || '', fuel: d.fuel || '', nominalPower: d.nominalPower || '', actualPower: d.actualPower || '',
-        },
+        plant: { plateCode: d.plateCode || '', units: defaultUnits(d) },
         intervention: { type: '', outcome: '', work: '', materials: [], startTime: '', endTime: '', notes: d.notes || '' },
         measures: [],
         photoCount: 0,
@@ -99,8 +217,9 @@ export function applyEdit(doc, now = new Date()) {
 export function isBlank(doc, defaults = {}) {
     if (doc.status !== 'draft' || doc.number || doc.measures.length || doc.photoCount) return false;
     const fresh = newReport({ defaults, id: doc.id });
-    // i rapporti salvati prima dei campi nuovi dell'impianto non li hanno: si confronta con i valori vuoti
-    const form = (d) => JSON.stringify([{ ...fresh.customer, ...d.customer }, { ...fresh.plant, ...d.plant }, { ...fresh.intervention, ...d.intervention, startTime: '', endTime: '' }]);
+    // gli apparecchi si confrontano senza identificativo (cambia a ogni rapporto nuovo)
+    const plant = (p) => ({ plateCode: p?.plateCode ?? '', units: (p?.units ?? []).map(({ id: _id, ...u }) => u) });
+    const form = (d) => JSON.stringify([{ ...fresh.customer, ...d.customer }, plant(d.plant), { ...fresh.intervention, ...d.intervention, startTime: '', endTime: '' }]);
     return form(doc) === form(fresh);
 }
 
@@ -108,7 +227,10 @@ export function isBlank(doc, defaults = {}) {
 export function duplicateReport(doc, { now = new Date(), id = newId() } = {}) {
     const copy = newReport({ now, id });
     copy.customer = { ...doc.customer };
-    copy.plant = { ...doc.plant };
+    copy.plant = {
+        plateCode: doc.plant?.plateCode ?? '',
+        units: (doc.plant?.units ?? []).map((u) => ({ ...u, id: newId() })), // gli stessi apparecchi, con identificativi nuovi
+    };
     return copy;
 }
 
@@ -196,7 +318,7 @@ export function formatDuration(min) {
 export const normalizeText = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 export const searchText = (doc) => normalizeText([
-    doc.number, doc.customer?.name, doc.customer?.address, doc.customer?.phone, doc.plant?.plateCode, doc.plant?.serial, doc.plant?.brand, doc.plant?.model,
+    doc.number, doc.customer?.name, doc.customer?.address, doc.customer?.phone, doc.plant?.plateCode, ...(doc.plant?.units ?? []).flatMap((u) => [u.brand, u.model, u.serial]),
 ].filter(Boolean).join(' '));
 
 // query: parole separate da spazio, tutte da trovare; status: 'all' | 'draft' | 'done' | 'sent'; year: 'all' | '2026'
@@ -334,7 +456,7 @@ export function normalizeReport(raw) {
     doc.sentAt = time(raw.sentAt, null);
     doc.deletedAt = time(raw.deletedAt, null);
     for (const k of Object.keys(doc.customer)) doc.customer[k] = text(raw.customer?.[k], 2000);
-    for (const k of Object.keys(doc.plant)) doc.plant[k] = text(raw.plant?.[k], 2000);
+    doc.plant = upgradePlant(raw.plant);
     const w = raw.intervention ?? {};
     for (const k of ['type', 'outcome', 'work', 'startTime', 'endTime', 'notes']) doc.intervention[k] = text(w[k]);
     doc.intervention.materials = (Array.isArray(w.materials) ? w.materials : []).slice(0, 200)

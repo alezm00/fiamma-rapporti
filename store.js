@@ -17,15 +17,19 @@ function askPersistence() {
 
 // i rapporti nel cestino non compaiono nell'elenco
 export async function listReports() {
-    return model.sortReports((await db.getAll(db.REPORTS)).filter((r) => !r.deletedAt));
+    return model.sortReports((await db.getAll(db.REPORTS)).filter((r) => !r.deletedAt).map(model.upgradeReport));
 }
 
 // nel cestino, dal più recente
 export async function listTrash() {
-    return (await db.getAll(db.REPORTS)).filter((r) => r.deletedAt).sort((a, b) => b.deletedAt - a.deletedAt);
+    return (await db.getAll(db.REPORTS)).filter((r) => r.deletedAt).map(model.upgradeReport).sort((a, b) => b.deletedAt - a.deletedAt);
 }
 
-export const getReport = (id) => db.get(db.REPORTS, id);
+// i rapporti salvati con la scheda dell'impianto di prima passano agli apparecchi (vedi model.upgradePlant)
+export const getReport = async (id) => {
+    const doc = await db.get(db.REPORTS, id);
+    return doc ? model.upgradeReport(doc) : doc;
+};
 
 // nuova bozza, con i dati predefiniti delle impostazioni
 export async function createReport() {

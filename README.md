@@ -15,13 +15,22 @@ Tutto resta sul telefono e funziona anche **offline**: non c'è nessun server.
 La home elenca i rapporti con **ricerca** (cliente, indirizzo, targa, matricola, numero) e filtri per stato e per anno (quando i rapporti coprono più anni). I rapporti sono raggruppati per mese e se sono molti se ne vedono 50 alla volta ("Mostra altri"). Il link "Cestino (N)" in fondo all'elenco apre i rapporti eliminati. Le bozze mai compilate si scartano da sole.
 
 ### Rapporto
-Cliente (con codice fiscale controllato: un avviso, mai un blocco; indirizzo anche dalla posizione), impianto (marca, matricola, targa, data di installazione), tipo di intervento ed esito, lavori eseguiti, materiali (descrizione e quantità), orari di arrivo e partenza (pulsante "Adesso", durata calcolata), misure Testo, fino a 20 foto, note. Niente firma del cliente, niente rubrica: ogni rapporto è a sé.
+Cliente (con codice fiscale controllato: un avviso, mai un blocco; indirizzo anche dalla posizione), impianto (targa e **quanti apparecchi si vuole**: caldaie, pompe di calore, condizionatori, anche insieme), tipo di intervento ed esito, lavori eseguiti, materiali (descrizione e quantità), orari di arrivo e partenza (pulsante "Adesso", durata calcolata), misure Testo, fino a 20 foto, note. Niente firma del cliente, niente rubrica: ogni rapporto è a sé.
+
+### Impianto e apparecchi
+In un impianto si aggiungono con i tasti **+ Caldaia**, **+ Pompa di calore**, **+ Condizionatore** quanti apparecchi servono (i titoli si numerano da soli: Condizionatore 1, Condizionatore 2…). Ogni tipo ha i suoi campi:
+- **Tutti:** marca, modello, matricola / codice, data di installazione.
+- **Caldaia:** combustibile (metano, GPL, gasolio), camera di combustione (aperta, forzata), tipo (a condensazione, tradizionale), potenza termica nominale e reale (kW).
+- **Pompa di calore:** tipo (aria-acqua, aria-aria, acqua-acqua, geotermica), potenza termica nominale e frigorifera (kW), gas refrigerante (R32, R410A, R290, R134a, R407C, R454B, R744, altro), carica di refrigerante (kg).
+- **Condizionatore:** tipo (monosplit, multisplit, canalizzato, cassetta, altro), unità interne, potenza frigorifera e in riscaldamento (kW), gas refrigerante, carica (kg).
+
+La targa dell'impianto è una sola per rapporto. Nelle impostazioni, in "Dati predefiniti", si sceglie il tipo del **primo apparecchio dei nuovi rapporti** (caldaia di partenza, oppure pompa di calore, condizionatore o nessuno) e i suoi dati. La ricerca trova marca, modello e matricola di qualunque apparecchio. I rapporti salvati prima di questa funzione si aprono con la loro caldaia già al posto giusto.
 
 ### Numerazione
 Il numero si assegna alla chiusura (le bozze eliminate non lasciano buchi); l'anno è quello della data dell'intervento. Nelle impostazioni si cambia il prossimo numero per allinearsi a un registro cartaceo. Un rapporto eliminato non libera il suo numero.
 
 ### PDF
-Intestazione con logo e dati della ditta, numero e data; cliente e impianto; intervento, lavori, materiali; **misure Testo**: le misure dello stesso tipo con una colonna di valori si mettono **affiancate** in una sola tabella (una colonna per etichetta, es. Prima | Dopo); le altre (Media / Min / Max, o tipi diversi) hanno una tabella ciascuna; poi strumento, note, foto e nome del tecnico. Una bozza porta "BOZZA" al posto del numero. Si crea anche senza internet.
+Intestazione con logo e dati della ditta, numero e data; cliente e impianto (una scheda per ogni apparecchio); intervento, lavori, materiali; **misure Testo**: le misure dello stesso tipo con una colonna di valori si mettono **affiancate** in una sola tabella (una colonna per etichetta, es. Prima | Dopo); le altre (Media / Min / Max, o tipi diversi) hanno una tabella ciascuna; poi strumento, note, foto e nome del tecnico. Una bozza porta "BOZZA" al posto del numero. Si crea anche senza internet.
 
 ### Email
 "Invia email" crea oggetto («Rapporto di intervento n. 2026/012 - Mario Rossi - targa … - 22/10/2026») e testo in automatico. Dalle impostazioni si sceglie come:

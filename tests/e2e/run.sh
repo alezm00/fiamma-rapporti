@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Prove nel browser (Playwright + Chromium). Uso: tests/e2e/run.sh [prova ...]
-# Prove: reports pdf send folder backup offline form nav save trash long-list (senza argomenti: tutte)
+# Prove: reports pdf send folder backup offline form nav save trash long-list units (senza argomenti: tutte)
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 OUT=${OUT:-/tmp/testoqr-e2e}
@@ -14,7 +14,7 @@ trap 'kill $SERVER' EXIT
 sleep 1
 
 TESTS=("$@")
-[ ${#TESTS[@]} -eq 0 ] && TESTS=(reports pdf send folder backup offline form nav save trash long-list)
+[ ${#TESTS[@]} -eq 0 ] && TESTS=(reports pdf send folder backup offline form nav save trash long-list units)
 for t in "${TESTS[@]}"; do
     echo "== $t"
     node "tests/e2e/$t.cjs" "$OUT" "$OUT" "http://localhost:$PORT/"

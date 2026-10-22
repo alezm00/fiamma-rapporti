@@ -41,10 +41,10 @@ const STUB_SHARE = () => {
   await page.fill('#s-co-technician', 'Luca Bianchi');
   await page.fill('#s-d-name', 'Condominio Rossi');
   await page.fill('#s-d-address', 'Via Roma 1, 33100 Udine (UD)');
-  await page.fill('#s-d-brand', 'Beretta');
-  await page.fill('#s-d-model', 'Ciao 24');
-  await page.selectOption('#s-d-fuel', 'gpl');
-  await page.selectOption('#s-d-chamber', 'aperta');
+  await page.fill('#s-d-u-brand', 'Beretta');
+  await page.fill('#s-d-u-model', 'Ciao 24');
+  await page.selectOption('#s-d-u-fuel', 'gpl');
+  await page.selectOption('#s-d-u-chamber', 'aperta');
   await page.fill('#s-d-notes', 'Manutenzione ordinaria.');
   await page.press('#s-d-notes', 'Tab');
   await page.goBack();
@@ -52,7 +52,7 @@ const STUB_SHARE = () => {
   await page.reload();
   await page.waitForSelector('#view-home:not([hidden])');
   await page.click('#btn-settings');
-  const saved = await page.evaluate(() => ['s-email', 's-co-name', 's-co-technician', 's-d-name', 's-d-brand'].map((id) => document.getElementById(id).value));
+  const saved = await page.evaluate(() => ['s-email', 's-co-name', 's-co-technician', 's-d-name', 's-d-u-brand'].map((id) => document.getElementById(id).value));
   log('dopo reload:', JSON.stringify(saved));
   assert(saved[0] === 'ufficio@esempio.it, secondo@esempio.it' && saved[1] === 'Termoidraulica Bianchi' && saved[3] === 'Condominio Rossi', 'impostazioni salvate');
   await page.goBack();
@@ -61,9 +61,9 @@ const STUB_SHARE = () => {
   // ============ nuovo rapporto: dati predefiniti ============
   await page.click('#btn-new');
   await page.waitForSelector('#view-editor:not([hidden])');
-  const form = await page.evaluate(() => ['c-name', 'c-address', 'c-brand', 'c-notes', 'c-phone'].map((id) => document.getElementById(id).value));
+  const form = await page.evaluate(() => ['c-name', 'c-address', 'u0-brand', 'c-notes', 'c-phone'].map((id) => document.getElementById(id).value));
   log('modulo precompilato:', JSON.stringify(form));
-  const boiler = await page.evaluate(() => ['c-model', 'c-fuel', 'c-chamber', 'c-technology'].map((id) => document.getElementById(id).value));
+  const boiler = await page.evaluate(() => ['u0-model', 'u0-fuel', 'u0-chamber', 'u0-technology'].map((id) => document.getElementById(id).value));
   log('caldaia precompilata:', JSON.stringify(boiler));
   assert(boiler.join() === 'Ciao 24,gpl,aperta,', 'dati caldaia predefiniti');
   assert(form[0] === 'Condominio Rossi' && form[2] === 'Beretta' && form[3] === 'Manutenzione ordinaria.' && form[4] === '', 'dati predefiniti applicati');

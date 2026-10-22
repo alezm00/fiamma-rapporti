@@ -2,7 +2,7 @@
 // Le librerie e i font si caricano solo quando serve il PDF.
 import { formatDate } from './tjf.js';
 import {
-    groupMeasures, formatDay, typeLabel, outcomeLabel, chamberLabel, technologyLabel, fuelLabel, durationMinutes, formatDuration,
+    groupMeasures, formatDay, typeLabel, outcomeLabel, unitsSummary, unitTitle, unitValues, durationMinutes, formatDuration,
 } from './model.js';
 
 const PAGE_W = 595.28; // A4
@@ -257,26 +257,19 @@ export async function createReportPdf(r, settings = {}, { photos = [], logo = nu
 
     // --- cliente e impianto ---------------------------------------------------
 
-    const installDate = /^\d{4}-\d{2}-\d{2}$/.test(plant.installDate || '') ? formatDay(plant.installDate) : clean(plant.installDate);
-    const kw = (v) => (/^[\d.,\s]+$/.test(clean(v)) && clean(v) ? `${clean(v)} kW` : clean(v)); // "24" -> "24 kW"
     fieldsBox('Cliente', [
         { label: 'Nome e cognome', value: customer.name },
         { label: 'Codice fiscale', value: code(customer.fiscalCode) },
         { label: 'Indirizzo', value: oneLine(customer.address) },
         { label: 'Telefono', value: customer.phone },
     ], 2);
+    // l'impianto (targa, riepilogo) e una scheda per ogni apparecchio: caldaie, pompe di calore, condizionatori
+    const units = plant.units ?? [];
     fieldsBox('Impianto', [
-        { label: 'Marca', value: plant.brand },
-        { label: 'Modello', value: plant.model },
-        { label: 'Matricola / codice', value: plant.serial },
         { label: 'Targa impianto', value: code(plant.plateCode) },
-        { label: 'Data di installazione', value: installDate },
-        { label: 'Combustibile', value: fuelLabel(plant.fuel) },
-        { label: 'Camera di combustione', value: chamberLabel(plant.chamber) },
-        { label: 'Tipo di caldaia', value: technologyLabel(plant.technology) },
-        { label: 'Potenza termica nominale', value: kw(plant.nominalPower) },
-        { label: 'Potenza termica reale', value: kw(plant.actualPower) },
-    ], 4);
+        { label: 'Apparecchi', value: unitsSummary(plant) },
+    ], 2);
+    for (const unit of units) fieldsBox(unitTitle(unit, units), unitValues(unit), 4);
 
     // --- intervento: tipo, esito, orari e durata -------------------------------
 

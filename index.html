@@ -165,17 +165,15 @@
 
     <div class="card">
         <h3 class="sect">Impianto</h3>
-        <div class="grid grid-cols-2 gap-2">
-            <label class="fld"><span class="lbl">Marca caldaia</span><input id="c-brand" class="input" type="text" autocomplete="off" autocapitalize="words"></label>
-            <label class="fld"><span class="lbl">Modello</span><input id="c-model" class="input" type="text" autocomplete="off" autocapitalize="characters"></label>
-            <label class="fld"><span class="lbl">Matricola / codice</span><input id="c-serial" class="input font-mono" type="text" autocomplete="off" autocapitalize="characters"></label>
-            <label class="fld"><span class="lbl">Targa impianto</span><input id="c-plate" class="input font-mono uppercase" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false"></label>
-            <label class="fld"><span class="lbl">Data di installazione</span><input id="c-date" class="input font-mono [color-scheme:dark]" type="date"></label>
-            <label class="fld"><span class="lbl">Combustibile</span><select id="c-fuel" class="input [color-scheme:dark]"></select></label>
-            <label class="fld"><span class="lbl">Camera di combustione</span><select id="c-chamber" class="input [color-scheme:dark]"></select></label>
-            <label class="fld"><span class="lbl">Tipo di caldaia</span><select id="c-technology" class="input [color-scheme:dark]"></select></label>
-            <label class="fld"><span class="lbl">Potenza termica nominale (kW)</span><input id="c-power-nom" class="input font-mono" type="text" inputmode="decimal" autocomplete="off"></label>
-            <label class="fld"><span class="lbl">Potenza termica reale (kW)</span><input id="c-power-real" class="input font-mono" type="text" inputmode="decimal" autocomplete="off"></label>
+        <label class="fld"><span class="lbl">Targa impianto</span>
+            <input id="c-plate" class="input font-mono uppercase" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
+        </label>
+        <div id="e-units" class="mt-2 flex flex-col gap-2 empty:hidden"></div>
+        <p id="e-units-empty" class="mt-2 text-[.78rem] text-muted">Nessun apparecchio: aggiungi una caldaia, una pompa di calore o un condizionatore (anche più di uno).</p>
+        <div class="mt-2 grid grid-cols-3 gap-1.5" role="group" aria-label="Aggiungi un apparecchio">
+            <button type="button" id="e-add-caldaia" class="btn px-1 text-[.75rem] leading-tight">+ Caldaia</button>
+            <button type="button" id="e-add-pompa" class="btn px-1 text-[.75rem] leading-tight">+ Pompa di calore</button>
+            <button type="button" id="e-add-condizionatore" class="btn px-1 text-[.75rem] leading-tight">+ Condizionatore</button>
         </div>
     </div>
 
