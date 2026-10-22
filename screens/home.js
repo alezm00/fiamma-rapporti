@@ -2,6 +2,7 @@
 
 import * as nav from '../nav.js';
 import * as store from '../store.js';
+import { usingMemory } from '../db.js';
 import { filterReports, groupByMonth, yearsOf, typeLabel, formatDay, isBlank } from '../model.js';
 import { loadSettings } from '../settings.js';
 import * as folder from '../folder.js';
@@ -77,7 +78,7 @@ function render() {
     $('h-trash').textContent = `Cestino (${trashCount})`;
 }
 
-// riga discreta se la copia di sicurezza è ferma o manca da tempo
+// riga discreta se la copia di sicurezza è ferma o manca da tempo; in rosso se l'archivio del telefono non funziona
 const MONTH = 30 * 24 * 3600 * 1000;
 
 async function renderReminder() {
@@ -85,7 +86,11 @@ async function renderReminder() {
     let text = '';
     let type = 'warn';
     let action = () => nav.go('settings');
-    if (reports.length) {
+    if (usingMemory()) {
+        text = 'L\'archivio del telefono non è disponibile: i rapporti si perdono chiudendo l\'app. Apri Fiamma da una finestra normale di Chrome.';
+        type = 'error';
+        action = () => {};
+    } else if (reports.length) {
         const st = await folder.status();
         if (st.linked && st.permission !== 'granted' && st.pending) {
             text = 'La copia nella cartella è sospesa: tocca per riattivarla.';

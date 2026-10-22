@@ -1,6 +1,6 @@
 // Service worker: salva tutti i file dell'app per l'uso offline.
 // Dopo ogni modifica ai file aumentare la versione, così i telefoni scaricano l'aggiornamento.
-const CACHE = 'fiamma-v27';
+const CACHE = 'fiamma-v28';
 const FILES = [
     './',
     './index.html',
@@ -47,8 +47,13 @@ const FILES = [
     './img/icon-maskable-512.png',
 ];
 
+// 'reload': i file si scaricano dal sito, non dalla cache HTTP del browser (che potrebbe ridare quelli vecchi)
 self.addEventListener('install', (event) => {
-    event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES)).then(() => self.skipWaiting()));
+    event.waitUntil(
+        caches.open(CACHE)
+            .then((cache) => Promise.all(FILES.map((file) => cache.add(new Request(file, { cache: 'reload' })))))
+            .then(() => self.skipWaiting()),
+    );
 });
 
 self.addEventListener('activate', (event) => {

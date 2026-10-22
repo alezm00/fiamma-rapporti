@@ -77,6 +77,26 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   log('etichetta ->', await page.textContent('#toast'));
   await allowWrites();
   assert(errors.length === 0, 'errori: ' + errors.join(' // '));
+
+  // 7) archivio del telefono non disponibile (navigazione privata): la home lo dice, l'app resta usabile
+  const priv = await browser.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, locale: 'it-IT', timezoneId: 'Europe/Rome' });
+  await priv.addInitScript(() => Object.defineProperty(window, 'indexedDB', { value: undefined, configurable: true }));
+  const p2 = await priv.newPage();
+  const errors2 = []; p2.on('pageerror', (e) => errors2.push(e.message));
+  await p2.goto(BASE);
+  await p2.waitForSelector('#view-home:not([hidden])');
+  await until(async () => /archivio del telefono non è disponibile/.test((await p2.textContent('#home-reminder')) || ''));
+  assert((await p2.getAttribute('#home-reminder button', 'data-type')) === null && /err/.test(await p2.getAttribute('#home-reminder button', 'class')), 'avviso in rosso');
+  await p2.click('#btn-new');
+  await p2.waitForSelector('#view-editor:not([hidden])');
+  await p2.fill('#c-name', 'Senza archivio');
+  await until(async () => /^Salvato/.test((await p2.textContent('#e-save')) || ''));
+  log('senza archivio ->', (await p2.textContent('#e-save')).trim(), '| il rapporto si usa lo stesso');
+  await p2.screenshot({ path: `${SP}/shots5/23-no-storage.png`, fullPage: false });
+  await p2.click('#e-back');
+  await p2.waitForSelector('#view-home:not([hidden])');
+  await p2.screenshot({ path: `${SP}/shots5/23-no-storage-home.png`, fullPage: false });
+  assert(errors2.length === 0, 'errori senza archivio: ' + errors2.join(' // '));
   await browser.close();
   log('ok');
 })().catch((e) => { console.error('FAILED', e.message); process.exit(1); });
