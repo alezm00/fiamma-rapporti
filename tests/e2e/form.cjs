@@ -79,11 +79,17 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await page.click('#e-back');
   await page.waitForSelector('#view-home:not([hidden])');
   assert(/20 foto/.test(await page.textContent('#report-list')), '20 foto in elenco');
-  // eliminando il rapporto spariscono le foto
+  // eliminando il rapporto va nel cestino (foto comprese); eliminandolo per sempre spariscono le foto
   await page.click('#report-list li button');
   await page.waitForSelector('#view-editor:not([hidden])');
   await page.click('#btn-delete');
   await page.waitForSelector('#view-home:not([hidden])');
+  const inTrash = await page.evaluate(async () => { const db = await import('/db.js'); return (await db.getAll(db.PHOTOS)).length; });
+  assert(inTrash === 20, 'nel cestino le foto restano: ' + inTrash);
+  await page.click('#h-trash');
+  await page.waitForSelector('#view-trash:not([hidden])');
+  await page.click('#trash-list li button:last-of-type');
+  await page.waitForFunction(() => document.querySelectorAll('#trash-list > li').length === 0);
   const left = await page.evaluate(async () => { const db = await import('/db.js'); return (await db.getAll(db.PHOTOS)).length; });
   assert(left === 0, 'foto eliminate con il rapporto: ' + left);
   assert(errors.length === 0, 'errori: ' + errors.join(' // '));

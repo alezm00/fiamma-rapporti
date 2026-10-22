@@ -13,7 +13,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   const where = async () => page.evaluate(() => [...document.querySelectorAll('main, section')].filter((e) => e.id.startsWith('view-') && !e.hidden).map((e) => e.id.slice(5)).join('+'));
   const wait = async (name) => { await page.waitForSelector(`#view-${name}:not([hidden])`, { timeout: 15000 }); const w = await where(); assert(w === name, `schermata ${name}, trovata ${w}`); };
   const back = async (name) => { await page.goBack(); await wait(name); log('indietro ->', name); };
-  const count = () => page.$$eval('#report-list > li', (l) => l.length);
+  const count = () => page.$$eval('#report-list > li:not([data-month])', (l) => l.length);
 
   // nuovo rapporto vuoto: indietro lo scarta
   await page.click('#btn-new'); await wait('editor');
@@ -70,6 +70,38 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); });
   await wait('home');
   await page.evaluate(() => { delete document.hidden; });
+
+  // scorciatoie dell'icona: ?azione=nuovo / scansione (si ripuliscono dall'indirizzo e non si ripetono)
+  const sc = await ctx.newPage();
+  sc.on('pageerror', (e) => errors.push(e.message));
+  sc.on('dialog', (d) => d.accept());
+  const scViews = () => sc.evaluate(() => [...document.querySelectorAll('main, section')].filter((e) => e.id.startsWith('view-') && !e.hidden).map((e) => e.id.slice(5)).join('+'));
+  await sc.goto(BASE + '?azione=nuovo');
+  await sc.waitForSelector('#view-editor:not([hidden])');
+  log('scorciatoia "nuovo" ->', await scViews(), '| indirizzo', sc.url().replace(BASE, '/'));
+  assert(!sc.url().includes('azione'), 'indirizzo ripulito');
+  await sc.reload();
+  await sc.waitForSelector('#view-home:not([hidden])');
+  assert((await scViews()) === 'home', 'dopo il ricaricamento non riparte');
+  await sc.goto(BASE + '?azione=nuovo');
+  await sc.waitForSelector('#view-editor:not([hidden])');
+  await sc.goBack();
+  await sc.waitForSelector('#view-home:not([hidden])');
+  log('indietro dalla scorciatoia -> home');
+  await sc.goto(BASE + '?azione=scansione');
+  await sc.waitForSelector('#view-scan:not([hidden])');
+  assert(!sc.url().includes('azione'), 'indirizzo ripulito (scansione)');
+  await sc.click('#btn-cancel');
+  await sc.waitForSelector('#view-home:not([hidden])');
+  log('scorciatoia "scansione" -> scan, annulla -> home');
+  await sc.goto(BASE + '?azione=boh');
+  await sc.waitForSelector('#view-home:not([hidden])');
+  assert(!sc.url().includes('azione') && (await scViews()) === 'home', 'azione sconosciuta: home');
+  // il manifest le dichiara
+  const manifest = await sc.evaluate(async () => (await (await fetch('manifest.json')).json()).shortcuts.map((x) => `${x.name} -> ${x.url}`));
+  log('manifest ->', JSON.stringify(manifest));
+  assert(manifest.length === 2 && manifest[0].includes('?azione=nuovo') && manifest[1].includes('?azione=scansione'), 'scorciatoie nel manifest');
+  await sc.close();
 
   // senza fotocamera: la schermata resta con il messaggio e "Da foto" utilizzabile
   const ctx2 = await browser.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true });

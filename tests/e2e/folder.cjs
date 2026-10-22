@@ -144,7 +144,7 @@ fs.mkdirSync(`${SP}/dl`, { recursive: true });
   await page.reload();
   await page.waitForSelector('#view-home:not([hidden])');
   await installT();
-  assert((await page.$$('#report-list > li')).length === 0, 'telefono vuoto');
+  assert((await page.$$('#report-list > li:not([data-month])')).length === 0, 'telefono vuoto');
   await page.evaluate(async () => { const f = await import('/folder.js'); const root = await navigator.storage.getDirectory(); await f.linkHandle(await root.getDirectoryHandle('SD-card')); });
   await page.evaluate(async () => (await import('/folder.js')).process());
   // il ricollegamento non deve aver cancellato nulla dalla cartella
@@ -163,7 +163,7 @@ fs.mkdirSync(`${SP}/dl`, { recursive: true });
   await page.reload();
   await installT();
   await page.waitForSelector('#report-list li');
-  log('elenco dopo il ripristino ->', JSON.stringify(await page.$$eval('#report-list > li', (l) => l.map((x) => x.innerText.replace(/\n/g, ' | ')))));
+  log('elenco dopo il ripristino ->', JSON.stringify(await page.$$eval('#report-list > li:not([data-month])', (l) => l.map((x) => x.innerText.replace(/\n/g, ' | ')))));
 
   // 8) eliminazione: sparisce anche dalla cartella
   await page.click('#report-list li button');

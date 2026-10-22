@@ -1,5 +1,5 @@
 // Funzioni di utilità condivise dalle schermate.
-import { MSG, MSG_TYPES, CLS, BADGES } from './ui.js';
+import { MSG, MSG_TYPES, TOAST, CLS, BADGES } from './ui.js';
 import { STATUSES } from './model.js';
 
 export const $ = (id) => document.getElementById(id);
@@ -24,12 +24,19 @@ export function showBoxMsg(id, text, type = 'info') {
 export const statusBadge = (status) => el('span', `${CLS.badge} ${BADGES[status] ?? ''}`, STATUSES[status] ?? '');
 
 let toastTimer;
-export function toast(text) {
+export function toast(text, type = 'success') {
     const t = $('toast');
     t.textContent = text;
+    t.className = `${TOAST} ${MSG_TYPES[type] ?? ''}`;
     t.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => (t.hidden = true), 1800);
+    toastTimer = setTimeout(() => (t.hidden = true), type === 'error' ? 4500 : 1800);
+}
+
+// motivo leggibile di un salvataggio non riuscito
+export function explainSaveError(e) {
+    if (e?.name === 'QuotaExceededError') return 'memoria piena: libera spazio sul telefono';
+    return e?.message || String(e);
 }
 
 export function vibrate(ms) {

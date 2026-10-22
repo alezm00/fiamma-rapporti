@@ -6,7 +6,7 @@ import * as store from '../store.js';
 import { buildReport, reportToText, formatDate } from '../tjf.js';
 import { getScan } from '../quickscans.js';
 import { CLS } from '../ui.js';
-import { $, el, toast, debounce, keepAwake, releaseAwake } from '../util.js';
+import { $, el, toast, debounce, keepAwake, releaseAwake, explainSaveError } from '../util.js';
 
 let params = null;
 let doc = null; // il rapporto, se la misura è in un rapporto
@@ -92,7 +92,12 @@ function markChips() {
 const saveLabel = debounce(async () => {
     if (!doc || !measure) return;
     measure.label = $('m-label').value.trim() || `Misura ${doc.measures.indexOf(measure) + 1}`;
-    await store.saveReport(doc);
+    try {
+        await store.saveReport(doc);
+    } catch (e) {
+        console.error(e);
+        toast(`Etichetta non salvata: ${explainSaveError(e)}`, 'error');
+    }
 }, 300);
 
 export async function enter(p) {
@@ -157,8 +162,16 @@ export function init() {
         if (!doc || !measure) return;
         if (!confirm(`Rimuovere la misura "${measure.label}" dal rapporto?`)) return;
         saveLabel.cancel();
+        const before = doc.measures;
         doc.measures = doc.measures.filter((m) => m !== measure);
-        await store.saveReport(doc);
+        try {
+            await store.saveReport(doc);
+        } catch (e) {
+            console.error(e);
+            doc.measures = before;
+            toast(`Misura non rimossa: ${explainSaveError(e)}`, 'error');
+            return;
+        }
         measure = null; // niente salvataggio dell'etichetta in uscita
         nav.back();
     });

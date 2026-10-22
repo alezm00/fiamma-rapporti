@@ -123,7 +123,7 @@ const id8 = (id) => String(id).replace(/[^A-Za-z0-9]/g, '').slice(0, 8);
 
 async function writeReport(link, id) {
     const doc = await store.getReport(id);
-    if (!doc) return removeReport(link, id); // eliminato nel frattempo
+    if (!doc || doc.deletedAt) return removeReport(link, id); // eliminato o nel cestino: via anche dalla cartella
     const { year, dir: name } = folderPath(doc);
     const years = await dir(link.handle, [ROOT, 'rapporti', year]);
     const index = await loadIndex();

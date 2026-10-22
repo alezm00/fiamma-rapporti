@@ -77,7 +77,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await page.click('#e-mat-add'); // riga vuota che sparisce uscendo
   await page.click('#e-back');
   await page.waitForSelector('#view-home:not([hidden])');
-  const items = await page.$$eval('#report-list > li', (l) => l.map((x) => x.innerText.replace(/\n/g, ' | ')));
+  const items = await page.$$eval('#report-list > li:not([data-month])', (l) => l.map((x) => x.innerText.replace(/\n/g, ' | ')));
   log('elenco ->', JSON.stringify(items));
   assert(items.length === 1 && /bozza/i.test(items[0]) && items[0].includes('Mario Rossi') && items[0].includes('2 misure'), 'riga elenco');
   await shot('5-home-1');
@@ -106,16 +106,16 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
 
   // ricerca e filtri
   await page.fill('#h-search', 'pordenone');
-  assert((await page.$$('#report-list > li')).length === 1, 'ricerca indirizzo');
+  assert((await page.$$('#report-list > li:not([data-month])')).length === 1, 'ricerca indirizzo');
   await page.fill('#h-search', 'AB12');
-  assert((await page.$$('#report-list > li')).length === 1, 'ricerca targa');
+  assert((await page.$$('#report-list > li:not([data-month])')).length === 1, 'ricerca targa');
   await page.fill('#h-search', 'zzz');
   log('nessun risultato ->', await page.textContent('#report-empty'));
   await page.fill('#h-search', '');
   await page.click('#h-status [data-status="done"]');
-  assert((await page.$$('#report-list > li')).length === 0, 'filtro completati vuoto');
+  assert((await page.$$('#report-list > li:not([data-month])')).length === 0, 'filtro completati vuoto');
   await page.click('#h-status [data-status="draft"]');
-  assert((await page.$$('#report-list > li')).length === 1, 'filtro bozze');
+  assert((await page.$$('#report-list > li:not([data-month])')).length === 1, 'filtro bozze');
   await page.click('#h-status [data-status="all"]');
 
   // riapro: chiusura
@@ -136,21 +136,21 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   // elimina il duplicato (resta il primo)
   await page.click('#btn-delete');
   await page.waitForSelector('#view-home:not([hidden])');
-  log('dopo elimina -> righe', (await page.$$('#report-list > li')).length);
-  assert((await page.$$('#report-list > li')).length === 1, 'eliminato');
+  log('dopo elimina -> righe', (await page.$$('#report-list > li:not([data-month])')).length);
+  assert((await page.$$('#report-list > li:not([data-month])')).length === 1, 'eliminato');
 
   // bozza vuota scartata
   await page.click('#btn-new');
   await page.waitForSelector('#view-editor:not([hidden])');
   await page.click('#e-back');
   await page.waitForSelector('#view-home:not([hidden])');
-  assert((await page.$$('#report-list > li')).length === 1, 'bozza vuota scartata');
+  assert((await page.$$('#report-list > li:not([data-month])')).length === 1, 'bozza vuota scartata');
 
   // ricarica: i dati restano
   await page.reload();
   await page.waitForSelector('#view-home:not([hidden])');
   await page.waitForSelector('#report-list li');
-  log('dopo reload ->', JSON.stringify(await page.$$eval('#report-list > li', (l) => l.map((x) => x.innerText.replace(/\n/g, ' | ')))));
+  log('dopo reload ->', JSON.stringify(await page.$$eval('#report-list > li:not([data-month])', (l) => l.map((x) => x.innerText.replace(/\n/g, ' | ')))));
   await page.click('#btn-settings');
   await page.waitForSelector('#view-settings:not([hidden])');
   await shot('8-settings');

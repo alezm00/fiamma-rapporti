@@ -12,6 +12,9 @@ export const MSG_TYPES = {
     info: 'border-info-edge bg-info-bg text-info-fg',
 };
 
+// avviso a comparsa (toast): la forma, e il colore secondo il tipo (MSG_TYPES)
+export const TOAST = 'fixed bottom-[calc(16px+env(safe-area-inset-bottom))] left-1/2 z-20 max-w-[92vw] -translate-x-1/2 rounded border px-3 py-1.5 text-[.82rem]';
+
 // etichetta di stato del rapporto
 export const BADGES = {
     draft: 'border-warn-edge bg-warn-bg text-warn-fg',
@@ -28,6 +31,18 @@ export const CLS = {
     reportAddr: 'truncate text-[.78rem] text-soft',
     reportMeta: 'font-mono text-[.7rem] text-muted',
     badge: 'rounded-sm border px-1.5 py-px font-mono text-[.62rem] font-bold tracking-[.06em] whitespace-nowrap uppercase',
+
+    // intestazioni dei mesi nell'elenco e righe del cestino
+    monthHead: 'mt-1.5 flex items-center gap-2 font-mono text-[.66rem] font-bold tracking-[.12em] text-muted uppercase first:mt-0 after:h-px after:flex-1 after:bg-line',
+    trashRow: 'rounded border border-edge bg-field p-2',
+    trashActions: 'mt-1.5 grid grid-cols-2 gap-1.5',
+    trashBtn: 'btn min-h-[34px] text-[.78rem]',
+    trashBtnDel: 'btn min-h-[34px] text-[.78rem] text-err-fg',
+
+    // esito del salvataggio nel rapporto
+    saveIdle: 'font-mono text-[.64rem] text-muted',
+    saveBusy: 'font-mono text-[.64rem] text-soft',
+    saveErr: 'cursor-pointer font-mono text-[.64rem] font-bold text-err-fg',
 
     // promemoria nella home (copia di sicurezza)
     reminder: `${MSG} mb-2.5 block w-full cursor-pointer text-left`,
@@ -89,7 +104,7 @@ export const CLS = {
 
 // mette nella pagina, nascosto, un elemento con tutte le classi sopra
 export function registerClasses() {
-    const all = [MSG, ...Object.values(MSG_TYPES), ...Object.values(BADGES), ...Object.values(CLS)].join(' ');
+    const all = [MSG, TOAST, ...Object.values(MSG_TYPES), ...Object.values(BADGES), ...Object.values(CLS)].join(' ');
     const holder = document.createElement('div');
     holder.hidden = true;
     holder.setAttribute('aria-hidden', 'true');

@@ -71,7 +71,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await page.evaluate(async () => { const db = await import('/db.js'); await db.clear(db.REPORTS); await db.clear(db.PHOTOS); await db.remove(db.META, 'logo'); localStorage.clear(); });
   await page.reload();
   await page.waitForSelector('#view-home:not([hidden])');
-  assert((await page.$$('#report-list > li')).length === 0, 'vuoto');
+  assert((await page.$$('#report-list > li:not([data-month])')).length === 0, 'vuoto');
   await page.click('#btn-settings');
   await page.waitForSelector('#view-settings:not([hidden])');
   await page.setInputFiles('#s-backup-in', zip);
@@ -102,7 +102,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await page.screenshot({ path: `${SP}/shots5/15-settings-backup.png`, fullPage: true });
   await page.click('#btn-settings-back');
   await page.waitForSelector('#view-home:not([hidden])');
-  assert((await page.$$('#report-list > li')).length === 2, 'due rapporti in elenco');
+  assert((await page.$$('#report-list > li:not([data-month])')).length === 2, 'due rapporti in elenco');
   // dopo un backup recente niente promemoria
   log('promemoria dopo backup ->', (await page.$('#home-reminder button')) ? 'presente' : 'assente');
   assert((await page.$('#home-reminder button')) === null || !(await page.isVisible('#home-reminder button')), 'nessun promemoria dopo il backup');

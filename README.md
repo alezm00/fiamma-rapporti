@@ -5,13 +5,14 @@ Web app (PWA) per Android per scrivere i **rapporti di intervento** di un tecnic
 Tutto resta sul telefono e funziona anche **offline**: non c'è nessun server.
 
 ## Come si usa
-1. **Nuovo rapporto** (home): compili cliente, impianto, intervento, lavori, materiali, orari, note e foto. Si salva da solo a ogni modifica.
+1. **Nuovo rapporto** (home): compili cliente, impianto, intervento, lavori, materiali, orari, note e foto. Si salva da solo a ogni modifica: sotto il titolo una scritta dice quando ("Salvato 14:32"); se il salvataggio non riesce (per esempio memoria piena) compare "NON SALVATO" in rosso, si tocca per riprovare e uscendo dal rapporto un avviso segnala cosa andrebbe perso.
 2. **Aggiungi misura**: inquadri il QR del Testo (o "Da foto" / "Importa file"). La misura entra nel rapporto con un'etichetta (*Prima*, *Dopo*, o quella che scrivi). I valori si vedono grandi, per ricopiarli a mano; lo schermo resta acceso.
 3. **Chiudi rapporto**: assegna il numero progressivo (2026/012) e lo stato passa da *Bozza* a *Completato*.
 4. **Invia email** o **Salva PDF** (A4, con intestazione della ditta): dopo l'invio un rapporto chiuso diventa *Inviato*. Se lo modifichi torna *Completato*, così in elenco si vede che va rimandato.
 5. **Duplica** copia cliente e impianto in una nuova bozza (per più interventi allo stesso cliente).
+6. **Elimina** sposta il rapporto nel **cestino**, da dove si recupera entro 30 giorni (poi va via per sempre con misure e foto; una bozza mai compilata si elimina subito). Il numero già assegnato non viene riusato.
 
-La home elenca i rapporti con **ricerca** (cliente, indirizzo, targa, matricola, numero) e filtro per stato. Le bozze mai compilate si scartano da sole.
+La home elenca i rapporti con **ricerca** (cliente, indirizzo, targa, matricola, numero) e filtri per stato e per anno (quando i rapporti coprono più anni). I rapporti sono raggruppati per mese e se sono molti se ne vedono 50 alla volta ("Mostra altri"). Il link "Cestino (N)" in fondo all'elenco apre i rapporti eliminati. Le bozze mai compilate si scartano da sole.
 
 ### Rapporto
 Cliente (con codice fiscale controllato: un avviso, mai un blocco; indirizzo anche dalla posizione), impianto (marca, matricola, targa, data di installazione), tipo di intervento ed esito, lavori eseguiti, materiali (descrizione e quantità), orari di arrivo e partenza (pulsante "Adesso", durata calcolata), misure Testo, fino a 20 foto, note. Niente firma del cliente, niente rubrica: ogni rapporto è a sé.
@@ -39,7 +40,7 @@ L'icona di condivisione accanto a "Salva PDF" invia il solo PDF.
       rapporti/2026/2026-012_Mario-Rossi_ab12cd34/      (bozza: BOZZA_2026-10-22_Mario-Rossi_ab12cd34)
           rapporto.json   rapporto.pdf (rapporti chiusi)   foto/01.jpg …
   ```
-  È una copia **a senso unico** (telefono → cartella): i rapporti si modificano solo sul telefono. Sincronizzando la cartella con Drive, Syncthing o altro si ha un backup e l'ufficio legge i PDF. "Ripristina dalla cartella" rilegge i `rapporto.json` e le foto e li unisce a quelli del telefono (a parità di rapporto vince la modifica più recente). Su un telefono nuovo: collega la cartella e tocca *Ripristina*.
+  È una copia **a senso unico** (telefono → cartella): i rapporti si modificano solo sul telefono. Un rapporto nel cestino viene tolto dalla cartella e vi torna se lo ripristini. Sincronizzando la cartella con Drive, Syncthing o altro si ha un backup e l'ufficio legge i PDF. "Ripristina dalla cartella" rilegge i `rapporto.json` e le foto e li unisce a quelli del telefono (a parità di rapporto vince la modifica più recente). Su un telefono nuovo: collega la cartella e tocca *Ripristina*.
   - Con il nuovo nome la copia va nella cartella `Fiamma`: al primo avvio l'app ricopia tutto lì. La vecchia `TestoQR` resta com'è (si può eliminare) e il ripristino legge entrambe.
   - Il telefono può chiedere di nuovo il permesso a ogni apertura: le modifiche restano in coda e partono quando lo riattivi (la home lo ricorda).
   - Su Android non si può scegliere la radice della memoria né Download: va scelta una sottocartella (es. Documenti/Fiamma). Il browser scrive i file con un temporaneo `.crswap`: le app di sincronizzazione vanno impostate per ignorarlo.
@@ -57,6 +58,8 @@ L'indirizzo dalla posizione usa OpenStreetMap ([Nominatim](https://nominatim.org
 2. Menu ⋮ → **Installa app** (o "Aggiungi a schermata Home").
 3. Da quel momento funziona anche **offline**.
 
+Tenendo premuta l'icona sulla schermata Home compaiono le scorciatoie **Nuovo rapporto** e **Scansione rapida** (compaiono dopo che Chrome ha aggiornato l'app installata, anche dopo qualche giorno).
+
 ## Sviluppo
 - Nessuna compilazione e nessun npm: file statici (`python3 -m http.server`).
 - Test della logica: `node --test tests/*.test.mjs` (numerazione, stati, ricerca, raggruppamento delle misure, email, ZIP, impostazioni, codice fiscale).
@@ -73,7 +76,7 @@ Lo stile usa [Tailwind CSS 4](https://tailwindcss.com) nella versione "browser" 
 
 ### File
 - `index.html`, `app.js`: pagina e avvio; `nav.js`: schermate e tasto indietro di Android
-- `screens/`: `home` (elenco), `editor` (rapporto), `scan` (fotocamera), `measure` (valori di una misura), `quick` (scansioni rapide), `settings`
+- `screens/`: `home` (elenco), `editor` (rapporto), `scan` (fotocamera), `measure` (valori di una misura), `quick` (scansioni rapide), `trash` (cestino), `settings`
 - `model.js`: rapporto, stati, numerazione, ricerca, raggruppamento delle misure (solo logica, provata con `node --test`)
 - `store.js`, `db.js`, `photos.js`: archivio sul telefono (IndexedDB), foto e logo
 - `folder.js`: copia nella cartella di salvataggio; `backup.js`, `zip.js`: backup in un file ZIP (senza librerie)

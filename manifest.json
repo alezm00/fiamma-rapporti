@@ -25,5 +25,33 @@
   "background_color": "#121212",
   "display": "standalone",
   "theme_color": "#121212",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "shortcuts": [
+    {
+      "name": "Nuovo rapporto",
+      "short_name": "Nuovo",
+      "description": "Crea un nuovo rapporto di intervento",
+      "url": "./?azione=nuovo",
+      "icons": [
+        {
+          "src": "img/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Scansione rapida",
+      "short_name": "Scansione",
+      "description": "Leggi il QR dell'analizzatore senza creare un rapporto",
+      "url": "./?azione=scansione",
+      "icons": [
+        {
+          "src": "img/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
 }

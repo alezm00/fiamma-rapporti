@@ -5,7 +5,7 @@ import * as nav from '../nav.js';
 import * as store from '../store.js';
 import {
     INTERVENTION_TYPES, OUTCOMES, CHAMBERS, TECHNOLOGIES, FUELS, durationMinutes, formatDuration, formatNumber, nextNumber, reportYear,
-    timeString, reportFileName,
+    timeString, reportFileName, isBlank, TRASH_DAYS,
 } from '../model.js';
 import { buildReport, formatDate } from '../tjf.js';
 import { createReportPdf, preloadPdfLibs } from '../report.js';
@@ -15,7 +15,7 @@ import { listPhotos, addPhoto, removePhoto, photosForPdf, logoForPdf } from '../
 import { buildBody, buildSubject, checkRecipients, mailtoUrl } from '../mail.js';
 import { loadSettings } from '../settings.js';
 import { CLS } from '../ui.js';
-import { $, el, showBoxMsg, toast, debounce, downloadFile, openMailto, canShareFiles, statusBadge } from '../util.js';
+import { $, el, showBoxMsg, toast, debounce, downloadFile, openMailto, canShareFiles, statusBadge, explainSaveError } from '../util.js';
 
 const MAX_PHOTOS = 20;
 
@@ -74,12 +74,50 @@ function readForm() {
 // Salvataggio
 // ---------------------------------------------------------------------------
 
+let saveError = '';
+
+// scritta sotto il titolo: "Salvato 14:32" / "Salvataggio…" / "NON SALVATO: motivo" (si tocca per riprovare)
+function showSaveState(state, detail = '') {
+    const box = $('e-save');
+    if (state === 'error') {
+        saveError = detail;
+        box.className = CLS.saveErr;
+        box.textContent = 'NON SALVATO · tocca per riprovare';
+        box.title = detail;
+    } else if (state === 'saving') {
+        box.className = CLS.saveBusy;
+        box.textContent = 'Salvataggio…';
+    } else {
+        saveError = '';
+        box.className = CLS.saveIdle;
+        box.textContent = `Salvato ${timeString(new Date(doc?.updatedAt ?? Date.now()))}`;
+    }
+}
+
+// Salva il rapporto. Restituisce false se non è riuscito: le modifiche restano da salvare
+// (si riprova alla modifica successiva, al tocco sulla scritta e all'uscita).
 async function saveNow() {
-    if (!doc || !dirty) return;
+    if (!doc || !dirty) return true;
+    const current = doc;
     dirty = false;
-    readForm();
-    await store.saveReport(doc);
-    renderHeader();
+    showSaveState('saving');
+    try {
+        readForm();
+        await store.saveReport(current);
+    } catch (e) {
+        dirty = true;
+        console.error(e);
+        if (current === doc) {
+            showSaveState('error', explainSaveError(e));
+            showBoxMsg('report-msg', `Il rapporto non è stato salvato: ${explainSaveError(e)}. Le modifiche restano a schermo: libera spazio e tocca la scritta rossa sotto il titolo per riprovare.`, 'error');
+        }
+        return false;
+    }
+    if (current === doc) {
+        showSaveState('saved');
+        renderHeader();
+    }
+    return true;
 }
 
 const saveLater = debounce(saveNow, 400);
@@ -90,6 +128,16 @@ function touch() {
 }
 
 const flush = () => saveLater.flush();
+
+// operazioni che cambiano il rapporto o la sua posizione: un errore si vede, non resta silenzioso
+async function safely(action) {
+    try {
+        await action();
+    } catch (e) {
+        console.error(e);
+        showBoxMsg('report-msg', `Operazione non riuscita: ${explainSaveError(e)}.`, 'error');
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Intestazione e stato
@@ -380,13 +428,15 @@ async function onDuplicate() {
 }
 
 async function onDelete() {
-    const what = doc.number ? `Il rapporto n. ${doc.number} sarà eliminato e il suo numero non verrà riassegnato.` : 'La bozza sarà eliminata.';
-    if (!confirm(`${what} Eliminare anche misure e foto?`)) return;
-    saveLater.cancel();
-    dirty = false;
+    const what = doc.number ? `Il rapporto n. ${doc.number}` : 'La bozza';
+    const blank = isBlank(doc, loadSettings().defaults); // bozza mai compilata: non serve il cestino
+    if (!blank && !confirm(`${what} va nel cestino: si recupera entro ${TRASH_DAYS} giorni dalla schermata Cestino dell'elenco. Continuare?`)) return;
+    if (!(await flush())) return; // le ultime modifiche non sono salvate: meglio non andare avanti
     const id = doc.id;
     doc = null; // niente salvataggi dopo l'eliminazione
-    await store.deleteReport(id);
+    if (blank) await store.purgeReport(id);
+    else await store.trashReport(id);
+    toast(blank ? 'Bozza eliminata' : 'Rapporto nel cestino');
     nav.back();
 }
 
@@ -397,13 +447,15 @@ async function onDelete() {
 export async function enter(params) {
     dirty = false;
     doc = await store.getReport(params.id);
-    if (!doc) {
+    if (!doc || doc.deletedAt) {
+        doc = null;
         toast('Rapporto non trovato');
         nav.replace('home');
         return;
     }
     fillForm();
     renderHeader();
+    showSaveState('saved');
     renderMaterials();
     renderMeasures();
     updateDuration();
@@ -422,7 +474,8 @@ export async function leave() {
         doc.intervention.materials = doc.intervention.materials.filter((m) => m.text.trim() || m.qty.trim());
         if (doc.intervention.materials.length !== before) touch();
     }
-    await flush();
+    const saved = await flush();
+    if (!saved) alert(`Il rapporto non è stato salvato (${saveError}). Le ultime modifiche andranno perse: salva un backup o libera spazio e riapri il rapporto.`);
     photoUrls.forEach((url) => URL.revokeObjectURL(url));
     photoUrls = [];
     $('photo-view').hidden = true;
@@ -508,9 +561,14 @@ export function init() {
     $('btn-pdf-email').addEventListener('click', () => runPdf($('btn-pdf-email'), onEmail));
     $('btn-pdf-save').addEventListener('click', () => runPdf($('btn-pdf-save'), onSave));
     $('btn-pdf-share').addEventListener('click', () => runPdf($('btn-pdf-share'), onShare));
-    $('btn-close').addEventListener('click', onClose);
-    $('btn-duplicate').addEventListener('click', onDuplicate);
-    $('btn-delete').addEventListener('click', onDelete);
+    $('btn-close').addEventListener('click', () => safely(onClose));
+    $('btn-duplicate').addEventListener('click', () => safely(onDuplicate));
+    $('btn-delete').addEventListener('click', () => safely(onDelete));
+    $('e-save').addEventListener('click', () => {
+        if (!saveError) return;
+        dirty = true;
+        saveNow();
+    });
     $('e-back').addEventListener('click', () => nav.back());
 
     // chi passa a un'altra app non deve perdere l'ultima modifica

@@ -134,7 +134,7 @@ const STUB_SHARE = () => {
   await page.click('#e-back');
   await page.waitForSelector('#view-home:not([hidden])');
   await page.click('#h-status [data-status="sent"]');
-  assert((await page.$$('#report-list > li')).length === 1, 'filtro inviati');
+  assert((await page.$$('#report-list > li:not([data-month])')).length === 1, 'filtro inviati');
   log('elenco inviati ->', JSON.stringify((await page.textContent('#report-list')).replace(/\s+/g, ' ')));
   await page.screenshot({ path: `${SP}/shots5/11-home-sent.png`, fullPage: true });
 

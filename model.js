@@ -76,6 +76,7 @@ export function newReport({ now = new Date(), defaults = {}, id = newId() } = {}
         updatedAt: now.getTime(),
         closedAt: null,
         sentAt: null,
+        deletedAt: null, // nel cestino da questo momento (si elimina per sempre dopo TRASH_DAYS giorni)
         customer: { name: d.name || '', fiscalCode: d.fiscalCode || '', address: d.address || '', phone: d.phone || '' },
         plant: {
             brand: d.brand || '', model: d.model || '', serial: d.serial || '', plateCode: d.plateCode || '', installDate: d.installDate || '',
@@ -198,11 +199,49 @@ export const searchText = (doc) => normalizeText([
     doc.number, doc.customer?.name, doc.customer?.address, doc.customer?.phone, doc.plant?.plateCode, doc.plant?.serial, doc.plant?.brand, doc.plant?.model,
 ].filter(Boolean).join(' '));
 
-// query: parole separate da spazio, tutte da trovare; status: 'all' | 'draft' | 'done' | 'sent'
-export function filterReports(list, { query = '', status = 'all' } = {}) {
+// query: parole separate da spazio, tutte da trovare; status: 'all' | 'draft' | 'done' | 'sent'; year: 'all' | '2026'
+export function filterReports(list, { query = '', status = 'all', year = 'all' } = {}) {
     const words = normalizeText(query).split(/\s+/).filter(Boolean);
-    return list.filter((r) => (status === 'all' || r.status === status) && words.every((w) => searchText(r).includes(w)));
+    return list.filter((r) => (status === 'all' || r.status === status)
+        && (year === 'all' || reportDateYear(r) === year)
+        && words.every((w) => searchText(r).includes(w)));
 }
+
+const reportDateYear = (doc) => String(doc.date || '').slice(0, 4);
+
+// anni presenti nell'elenco, dal più recente: ['2026', '2025']
+export const yearsOf = (list) => [...new Set(list.map(reportDateYear).filter(Boolean))].sort().reverse();
+
+const MONTHS = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+
+// "2026-10" -> "ottobre 2026"
+export function monthLabel(key) {
+    const m = /^(\d{4})-(\d{2})$/.exec(key);
+    return m ? `${MONTHS[Number(m[2]) - 1] ?? ''} ${m[1]}`.trim() : 'senza data';
+}
+
+// raggruppa un elenco già ordinato per mese di intervento, mantenendo l'ordine
+export function groupByMonth(list) {
+    const groups = [];
+    for (const doc of list) {
+        const key = String(doc.date || '').slice(0, 7);
+        if (groups.at(-1)?.key !== key) groups.push({ key, label: monthLabel(key), items: [] });
+        groups.at(-1).items.push(doc);
+    }
+    return groups;
+}
+
+// ---------------------------------------------------------------------------
+// Cestino
+// ---------------------------------------------------------------------------
+
+export const TRASH_DAYS = 30;
+const DAY = 24 * 3600 * 1000;
+
+// giorni che restano prima dell'eliminazione definitiva (almeno 1 finché non è scaduto)
+export const trashDaysLeft = (doc, now = Date.now()) => Math.max(0, Math.ceil(TRASH_DAYS - (now - doc.deletedAt) / DAY));
+
+export const isExpired = (doc, now = Date.now()) => !!doc.deletedAt && now - doc.deletedAt >= TRASH_DAYS * DAY;
 
 // più recenti per data di intervento, poi per ultima modifica
 export function sortReports(list) {
@@ -293,6 +332,7 @@ export function normalizeReport(raw) {
     doc.updatedAt = time(raw.updatedAt, createdAt);
     doc.closedAt = time(raw.closedAt, null);
     doc.sentAt = time(raw.sentAt, null);
+    doc.deletedAt = time(raw.deletedAt, null);
     for (const k of Object.keys(doc.customer)) doc.customer[k] = text(raw.customer?.[k], 2000);
     for (const k of Object.keys(doc.plant)) doc.plant[k] = text(raw.plant?.[k], 2000);
     const w = raw.intervention ?? {};

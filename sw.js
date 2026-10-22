@@ -1,6 +1,6 @@
 // Service worker: salva tutti i file dell'app per l'uso offline.
 // Dopo ogni modifica ai file aumentare la versione, così i telefoni scaricano l'aggiornamento.
-const CACHE = 'fiamma-v20';
+const CACHE = 'fiamma-v22';
 const FILES = [
     './',
     './index.html',
@@ -20,6 +20,7 @@ const FILES = [
     './screens/scan.js',
     './screens/measure.js',
     './screens/quick.js',
+    './screens/trash.js',
     './screens/settings.js',
     './tjf.js',
     './report.js',

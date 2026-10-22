@@ -279,3 +279,49 @@ test('caldaia: etichette e rapporti salvati prima dei campi nuovi', async () => 
     assert.deepEqual(doc.plant, { brand: 'Beretta', model: 'Ciao', serial: '', plateCode: '', installDate: '', chamber: '', technology: '', fuel: 'gpl', nominalPower: '', actualPower: '22,5' });
     assert.match(searchText(doc), /ciao/);
 });
+
+test('cestino: giorni rimasti e scadenza a 30 giorni', async () => {
+    const { trashDaysLeft, isExpired, newReport, normalizeReport, TRASH_DAYS } = await import('../model.js');
+    const DAY = 24 * 3600 * 1000;
+    const t0 = Date.UTC(2026, 9, 1, 12);
+    const doc = newReport({ id: 'abcd1234' });
+    assert.equal(doc.deletedAt, null);
+    assert.equal(isExpired(doc, t0), false);
+    doc.deletedAt = t0;
+    assert.equal(TRASH_DAYS, 30);
+    assert.equal(trashDaysLeft(doc, t0), 30);
+    assert.equal(trashDaysLeft(doc, t0 + 10 * DAY), 20);
+    assert.equal(trashDaysLeft(doc, t0 + 29.5 * DAY), 1);
+    assert.equal(isExpired(doc, t0 + 29.9 * DAY), false);
+    assert.equal(isExpired(doc, t0 + 30 * DAY), true);
+    assert.equal(trashDaysLeft(doc, t0 + 40 * DAY), 0);
+    // si conserva nei backup; valori strani diventano "non eliminato"
+    assert.equal(normalizeReport({ id: 'abcd1234', deletedAt: t0 }).deletedAt, t0);
+    assert.equal(normalizeReport({ id: 'abcd1234', deletedAt: 'ieri' }).deletedAt, null);
+    assert.equal(normalizeReport({ id: 'abcd1234' }).deletedAt, null);
+});
+
+test('elenco lungo: mesi, anni e filtro per anno', async () => {
+    const { groupByMonth, yearsOf, monthLabel, filterReports, sortReports, newReport } = await import('../model.js');
+    const mk = (id, date, name = 'Cliente') => {
+        const r = newReport({ id, now: new Date(`${date}T10:00:00`) });
+        r.date = date;
+        r.customer.name = name;
+        return r;
+    };
+    const list = sortReports([mk('a0000001', '2026-10-22'), mk('a0000002', '2026-10-03'), mk('a0000003', '2026-02-14'), mk('a0000004', '2025-12-30'), mk('a0000005', '2025-01-05')]);
+    assert.equal(monthLabel('2026-10'), 'ottobre 2026');
+    assert.equal(monthLabel('2025-01'), 'gennaio 2025');
+    assert.equal(monthLabel(''), 'senza data');
+    const groups = groupByMonth(list);
+    assert.deepEqual(groups.map((g) => [g.key, g.label, g.items.length]), [
+        ['2026-10', 'ottobre 2026', 2], ['2026-02', 'febbraio 2026', 1], ['2025-12', 'dicembre 2025', 1], ['2025-01', 'gennaio 2025', 1],
+    ]);
+    assert.deepEqual(groups[0].items.map((r) => r.id), ['a0000001', 'a0000002']); // ordine mantenuto
+    assert.deepEqual(yearsOf(list), ['2026', '2025']);
+    assert.deepEqual(yearsOf([]), []);
+    assert.equal(filterReports(list, { year: '2025' }).length, 2);
+    assert.equal(filterReports(list, { year: '2026', query: 'cliente' }).length, 3);
+    assert.equal(filterReports(list, { year: 'all' }).length, 5);
+    assert.deepEqual(groupByMonth([]), []);
+});
