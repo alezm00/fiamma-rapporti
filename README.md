@@ -5,7 +5,7 @@ Web app (PWA) per Android che legge il QR code mostrato dall'analizzatore di com
 ## Come funziona
 - Il QR del Testo non contiene testo ma un JSON in formato [Testo TJF](https://github.com/testo/tjf) compresso con gzip. Le normali app di scansione lo rovinano; questa app legge i byte grezzi con [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (in `vendor/`), li decomprime e li impagina.
 - Il formato è letto in modo generico: analisi fumi (singola o media UNI 10389-1), tiraggio, pressione, prova di tenuta… Ogni canale viene mostrato con etichetta in italiano, valore e unità; i dati non riconosciuti finiscono in "Altri dati" e nel JSON grezzo.
-- Tocca una riga per segnarla come trascritta. Lo schermo resta acceso mentre guardi il risultato.
+- Lo schermo resta acceso mentre guardi il risultato.
 - Le ultime 20 scansioni restano salvate sul telefono (solo in locale).
 - "Da foto" legge il QR da una foto, utile se il QR è molto denso o ci sono riflessi sul display.
 

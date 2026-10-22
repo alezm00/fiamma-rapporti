@@ -78,15 +78,9 @@ function saveHistory(list) {
 
 function addToHistory(json, report) {
     const id = report.uuid || hash(JSON.stringify(json));
-    const list = loadHistory();
-    const old = list.find((e) => e.id === id);
-    const entry = { id, savedAt: Date.now(), json, done: old?.done || [] };
-    saveHistory([entry, ...list.filter((e) => e.id !== id)]);
+    const entry = { id, savedAt: Date.now(), json };
+    saveHistory([entry, ...loadHistory().filter((e) => e.id !== id)]);
     return entry;
-}
-
-function updateEntry(entry) {
-    saveHistory(loadHistory().map((e) => (e.id === entry.id ? entry : e)));
 }
 
 function renderHistory() {
@@ -427,25 +421,13 @@ function renderReport(r, entry) {
         hdr.append(...cols.map((c) => el('span', null, c)), el('span'));
         table.append(hdr);
     }
-    const done = new Set(entry.done || []);
     for (const row of r.rows) {
         const div = el('div', 'vrow');
-        div.setAttribute('role', 'button');
-        div.classList.toggle('done', done.has(row.key));
         const label = el('div', 'vlabel');
-        const code = el('span', 'vcode');
-        code.append(el('span', 'check', '✓'), document.createTextNode(row.short || row.label));
-        label.append(code);
+        label.append(el('span', 'vcode', row.short || row.label));
         if (row.short && row.short !== row.label) label.append(el('span', 'vname', row.label));
         // segno meno tipografico: più leggibile del trattino
         div.append(label, ...cols.map((c) => el('div', 'vnum', (row.cells[c] ?? '').replace(/^-(?=\d)/, '\u2212'))), el('div', 'vunit', row.unit));
-        div.addEventListener('click', () => {
-            const on = div.classList.toggle('done');
-            if (on) done.add(row.key);
-            else done.delete(row.key);
-            entry.done = [...done];
-            updateEntry(entry);
-        });
         table.append(div);
     }
     $('r-values').hidden = r.rows.length === 0;

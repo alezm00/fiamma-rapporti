@@ -107,26 +107,21 @@
         .r-meta dt { color: #9e9e9e; }
         .r-meta dd { margin: 0; color: #fff; font-weight: bold; }
         .note { margin-top: 10px; color: #ffd54f; }
-        .hint { font-size: .8rem; margin: 0 0 4px; }
 
         .vtable { display: grid; grid-template-columns: 1fr auto auto; }
         .vtable.multi { grid-template-columns: repeat(var(--cols, 1), 1fr) auto; }
         .vhead { display: contents; }
         .vhead span { color: #9e9e9e; font-size: .8rem; text-align: right; padding: 4px 0 0 8px; }
-        .vrow { display: contents; cursor: pointer; }
+        .vrow { display: contents; }
         .vrow > * { display: flex; flex-direction: column; justify-content: center; padding: 12px 0; border-bottom: 1px solid #2c2c2c; }
         .vrow:last-child > * { border-bottom: none; }
         .vlabel { min-width: 0; }
         .vtable.multi .vlabel { grid-column: 1 / -1; flex-direction: row; justify-content: flex-start; align-items: baseline; gap: 8px; padding-bottom: 0; border-bottom: none; }
         .vcode { font-weight: bold; color: #fff; font-size: 1.2rem; }
-        .vcode .check { display: none; color: #00ffcc; margin-right: 6px; }
         .vname { color: #9e9e9e; font-size: .8rem; }
         .vnum { align-items: flex-end; padding-left: 12px !important; font-size: 2rem; font-weight: bold; color: #00ffcc; font-variant-numeric: tabular-nums; white-space: nowrap; }
         .vtable.multi .vnum { font-size: 1.45rem; padding-left: 8px !important; }
         .vunit { color: #b0b0b0; padding-left: 6px !important; min-width: 2.6em; font-size: .95rem; }
-        .vrow.done > * { opacity: .35; }
-        .vrow.done .vnum { text-decoration: line-through; }
-        .vrow.done .check { display: inline; }
 
         details.container { padding: 0; }
         details summary { padding: 1rem 1.25rem; font-weight: bold; color: #fff; cursor: pointer; list-style: none; }
@@ -200,7 +195,6 @@
     </div>
     <div id="r-errors" class="msg error" hidden></div>
     <div id="r-values" class="container">
-        <p class="hint muted">Tocca una riga per segnarla come trascritta</p>
         <div id="r-table" class="vtable"></div>
     </div>
     <div id="r-sections" class="stack"></div>
