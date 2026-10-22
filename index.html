@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <meta name="robots" content="noai, noimageai">
+    <meta name="googlebot" content="noindex, nofollow">
+    <meta name="bingbot" content="noindex, nofollow">
+
+    <meta name="theme-color" content="#121212">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Testo QR">
+    <meta name="referrer" content="no-referrer">
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="img/icon-192.png">
+    <link rel="apple-touch-icon" href="img/icon-192.png">
+
+    <title>Testo QR</title>
+    <style>
+        /* Stili per il tema scuro (come Ricerca_targhe) */
+        * { box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
+            background-color: #121212;
+            color: #e0e0e0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        [hidden] { display: none !important; }
+        .view { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+        .container {
+            background: #1e1e1e;
+            padding: 1.25rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+        }
+        h1 { font-size: 1.1rem; color: #fff; margin: 0; letter-spacing: .02em; }
+        h2 { color: #ffffff; margin: 0 0 0.5rem; font-size: 1.3rem; }
+        p { color: #b0b0b0; margin: 0 0 1rem; font-size: 0.9rem; }
+        .muted { color: #9e9e9e; font-size: .85rem; }
+
+        button, .button {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%;
+            padding: 14px;
+            background-color: #2a2a2a;
+            color: white;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            cursor: pointer;
+            font: inherit;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: background 0.3s, transform 0.1s;
+        }
+        button:active, .button:active { transform: scale(0.98); }
+        .primary { background-color: #007bff; border-color: #007bff; }
+        .primary:hover { background-color: #0056b3; }
+        .big { padding: 20px; font-size: 1.15rem; }
+        .stack { display: flex; flex-direction: column; gap: 10px; }
+        .link { background: none; border: none; width: auto; padding: 4px; color: #4dabf5; font-weight: normal; font-size: .9rem; }
+        .icon { width: 22px; height: 22px; flex: none; }
+
+        .msg { padding: 1rem; border-radius: 8px; line-height: 1.45; font-size: .95rem; }
+        .success { background-color: #1b3320; color: #81c784; border: 1px solid #2e7d32; }
+        .error { background-color: #331b1b; color: #e57373; border: 1px solid #c62828; }
+        .info { background-color: #1b2733; color: #90caf9; border: 1px solid #1e5a8c; }
+
+        /* Storico */
+        .row-head { display: flex; justify-content: space-between; align-items: baseline; }
+        #history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+        #history li { display: flex; gap: 6px; }
+        .hitem { flex: 1; min-width: 0; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; font-weight: normal; background: #252525; }
+        .h-title { font-weight: bold; color: #fff; }
+        .h-meta { color: #9e9e9e; font-size: .85rem; }
+        .h-vals { color: #00ffcc; font-size: .9rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .hdel { width: 48px; flex: none; background: #252525; color: #e57373; font-size: 1.1rem; }
+        .footer { text-align: center; }
+
+        /* Scanner */
+        #view-scan { position: fixed; inset: 0; max-width: none; background: #000; z-index: 10; }
+        #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .frame {
+            position: absolute; left: 50%; top: 45%; width: min(80vw, 60vh); aspect-ratio: 1;
+            transform: translate(-50%, -50%);
+            border: 3px solid #00ffcc; border-radius: 16px;
+            box-shadow: 0 0 0 100vmax rgba(0,0,0,.45);
+        }
+        #scan-status {
+            position: absolute; left: 16px; right: 16px; top: calc(16px + env(safe-area-inset-top));
+            text-align: center; color: #fff; font-weight: bold; background: rgba(0,0,0,.55); padding: 10px; border-radius: 8px;
+        }
+        .scan-actions { position: absolute; left: 16px; right: 16px; bottom: calc(24px + env(safe-area-inset-bottom)); display: flex; gap: 10px; }
+        .scan-actions button { background: rgba(30,30,30,.85); }
+        #btn-torch.on { background: #ffd54f; color: #121212; }
+
+        /* Risultato */
+        .r-head h2 { font-size: 1.35rem; }
+        .r-meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 10px 0 0; }
+        .r-meta dt { color: #9e9e9e; }
+        .r-meta dd { margin: 0; color: #fff; font-weight: bold; }
+        .note { margin-top: 10px; color: #ffd54f; }
+        .hint { font-size: .8rem; margin: 0 0 4px; }
+
+        .vtable { display: grid; grid-template-columns: 1fr auto auto; }
+        .vtable.multi { grid-template-columns: repeat(var(--cols, 1), 1fr) auto; }
+        .vhead { display: contents; }
+        .vhead span { color: #9e9e9e; font-size: .8rem; text-align: right; padding: 4px 0 0 8px; }
+        .vrow { display: contents; cursor: pointer; }
+        .vrow > * { display: flex; flex-direction: column; justify-content: center; padding: 12px 0; border-bottom: 1px solid #2c2c2c; }
+        .vrow:last-child > * { border-bottom: none; }
+        .vlabel { min-width: 0; }
+        .vtable.multi .vlabel { grid-column: 1 / -1; flex-direction: row; justify-content: flex-start; align-items: baseline; gap: 8px; padding-bottom: 0; border-bottom: none; }
+        .vcode { font-weight: bold; color: #fff; font-size: 1.2rem; }
+        .vcode .check { display: none; color: #00ffcc; margin-right: 6px; }
+        .vname { color: #9e9e9e; font-size: .8rem; }
+        .vnum { align-items: flex-end; padding-left: 12px !important; font-size: 2rem; font-weight: bold; color: #00ffcc; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .vtable.multi .vnum { font-size: 1.45rem; padding-left: 8px !important; }
+        .vunit { color: #b0b0b0; padding-left: 6px !important; min-width: 2.6em; font-size: .95rem; }
+        .vrow.done > * { opacity: .35; }
+        .vrow.done .vnum { text-decoration: line-through; }
+        .vrow.done .check { display: inline; }
+
+        details.container { padding: 0; }
+        details summary { padding: 1rem 1.25rem; font-weight: bold; color: #fff; cursor: pointer; list-style: none; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::after { content: '▾'; float: right; color: #9e9e9e; }
+        details[open] summary::after { content: '▴'; }
+        details dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; padding: 0 1.25rem 1.25rem; }
+        details dt { color: #9e9e9e; }
+        details dd { margin: 0; color: #e0e0e0; overflow-wrap: anywhere; }
+        details pre { margin: 0; padding: 0 1.25rem 1.25rem; font-size: .75rem; white-space: pre-wrap; overflow-wrap: anywhere; color: #b0b0b0; }
+        .actions { display: flex; gap: 10px; }
+
+        .toast {
+            position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+            background: #1b3320; color: #81c784; border: 1px solid #2e7d32; padding: 10px 18px; border-radius: 8px; z-index: 20;
+        }
+    </style>
+</head>
+<body>
+
+<main id="view-home" class="view">
+    <div class="container">
+        <h1>Testo QR</h1>
+        <p style="margin-top: .5rem">Inquadra il QR code mostrato dall'analizzatore Testo 330 per vedere i risultati della prova.</p>
+        <div class="stack">
+            <button id="btn-scan" class="primary big">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/><path d="M13 7h4v4M7 13v4h4"/></svg>
+                Scansiona QR
+            </button>
+            <label class="button">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                Da foto
+                <input type="file" id="in-photo" accept="image/*" hidden>
+            </label>
+        </div>
+        <div id="home-msg" class="msg" style="margin-top: 1rem" hidden></div>
+    </div>
+
+    <div class="container">
+        <div class="row-head">
+            <h2>Ultime scansioni</h2>
+            <button id="btn-clear" class="link" hidden>Cancella tutto</button>
+        </div>
+        <ul id="history"></ul>
+        <p id="history-empty" class="muted" style="margin: 0">Nessuna scansione salvata.</p>
+    </div>
+
+    <div class="footer">
+        <label class="link">Importa file (.gz / .json)<input type="file" id="in-file" accept=".gz,.json,.tjf,application/json,application/gzip" hidden></label>
+    </div>
+</main>
+
+<section id="view-scan" class="view" hidden>
+    <video id="video" playsinline muted></video>
+    <div class="frame"></div>
+    <div id="scan-status">Inquadra il QR code</div>
+    <div class="scan-actions">
+        <button id="btn-torch" hidden>Torcia</button>
+        <button id="btn-cancel">Annulla</button>
+    </div>
+</section>
+
+<main id="view-result" class="view" hidden>
+    <div class="container r-head">
+        <h2 id="r-title"></h2>
+        <div id="r-date" class="muted"></div>
+        <dl id="r-header" class="r-meta"></dl>
+        <div id="r-note" class="note" hidden></div>
+    </div>
+    <div id="r-errors" class="msg error" hidden></div>
+    <div id="r-values" class="container">
+        <p class="hint muted">Tocca una riga per segnarla come trascritta</p>
+        <div id="r-table" class="vtable"></div>
+    </div>
+    <div id="r-sections" class="stack"></div>
+    <details class="container">
+        <summary>Dati grezzi (JSON)</summary>
+        <pre id="r-json"></pre>
+    </details>
+    <div class="actions">
+        <button id="btn-copy">Copia testo</button>
+        <button id="btn-home">Storico</button>
+    </div>
+    <button id="btn-again" class="primary big">Nuova scansione</button>
+</main>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="vendor/zxing-reader.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
