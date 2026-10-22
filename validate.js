@@ -66,10 +66,22 @@ export function checkFiscalCode(input) {
 }
 
 // ---------------------------------------------------------------------------
-// Telefono: mostrato come "123 456 7890"
+// Telefono: cellulari come "333 123 4567", fissi come "0434 123123"
 // ---------------------------------------------------------------------------
 
 const group = (d) => [d.slice(0, 3), d.slice(3, 6), d.slice(6)].filter(Boolean).join(' ');
+
+// prefissi dei fissi con 2 o 3 cifre (0 compreso): tutti gli altri ne hanno 4
+const AREA_2 = ['02', '06'];
+const AREA_3 = [
+    '010', '011', '015', '019', '030', '031', '035', '039', '040', '041', '045', '049', '050', '051',
+    '055', '059', '070', '071', '075', '079', '080', '081', '085', '089', '090', '091', '095', '099',
+];
+
+function formatLandline(d) {
+    const n = AREA_2.includes(d.slice(0, 2)) ? 2 : AREA_3.includes(d.slice(0, 3)) ? 3 : 4;
+    return `${d.slice(0, n)} ${d.slice(n)}`;
+}
 
 export function checkPhone(input) {
     const raw = String(input ?? '').trim();
@@ -94,5 +106,6 @@ export function checkPhone(input) {
     if (!/^(3\d{8,9}|0\d{5,10})$/.test(digits)) {
         return bad(raw, 'Numero non riconosciuto: un cellulare inizia con 3 (9-10 cifre), un fisso con 0 (6-11 cifre).');
     }
-    return { empty: false, ok: true, value: `${prefix ? `${prefix} ` : ''}${group(digits)}` };
+    const national = digits.startsWith('0') ? formatLandline(digits) : group(digits);
+    return { empty: false, ok: true, value: `${prefix ? `${prefix} ` : ''}${national}` };
 }
