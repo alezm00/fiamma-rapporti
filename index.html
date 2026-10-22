@@ -133,9 +133,11 @@
         details summary::-webkit-details-marker { display: none; }
         details summary::after { content: '▾'; float: right; color: #9e9e9e; }
         details[open] summary::after { content: '▴'; }
-        details dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; padding: 0 1.25rem 1.25rem; }
-        details dt { color: #9e9e9e; }
-        details dd { margin: 0; color: #e0e0e0; overflow-wrap: anywhere; }
+        /* etichetta sopra, valore sotto a tutta larghezza: i testi lunghi vanno a capo */
+        details dl { margin: 0; padding: 0 1.25rem .5rem; }
+        details dt { color: #9e9e9e; font-size: .8rem; padding-top: 10px; border-top: 1px solid #2c2c2c; }
+        details dt:first-child { border-top: none; padding-top: 0; }
+        details dd { margin: 2px 0 10px; color: #e0e0e0; font-size: 1.05rem; overflow-wrap: anywhere; }
         details pre { margin: 0; padding: 0 1.25rem 1.25rem; font-size: .75rem; white-space: pre-wrap; overflow-wrap: anywhere; color: #b0b0b0; }
         .actions { display: flex; gap: 10px; }
 
