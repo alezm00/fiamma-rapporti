@@ -77,6 +77,17 @@
 
         /* Storico */
         .row-head { display: flex; justify-content: space-between; align-items: baseline; }
+        .row-head.center { align-items: center; }
+        .icon-btn { width: 44px; height: 44px; padding: 0; background: transparent; border: none; color: #9e9e9e; }
+        .actions .big { padding: 18px 10px; font-size: 1.05rem; white-space: nowrap; }
+        .actions #btn-pdf-email { flex: 1.35; }
+        .actions .icon-only { width: 64px; flex: none; padding: 0; }
+        .mail-info { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
+        .mail-info #mail-info { overflow-wrap: anywhere; }
+        h3 { color: #fff; font-size: 1rem; margin: 1.2rem 0 .2rem; }
+        .radio { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; color: #e0e0e0; font-size: .95rem; line-height: 1.4; }
+        .radio input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: #007bff; }
+        .radio small { display: block; color: #9e9e9e; font-size: .8rem; margin-top: 2px; }
         #history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
         #history li { display: flex; gap: 6px; }
         .hitem { flex: 1; min-width: 0; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; font-weight: normal; background: #252525; }
@@ -143,7 +154,7 @@
         .form { display: flex; flex-direction: column; gap: 14px; margin-top: 1rem; }
         .field { display: flex; flex-direction: column; gap: 6px; }
         .field > span, .field > label { color: #9e9e9e; font-size: .85rem; }
-        input[type="text"], input[type="tel"], input[type="date"], textarea {
+        input[type="text"], input[type="tel"], input[type="date"], input[type="email"], textarea {
             width: 100%;
             padding: 14px;
             border: 2px solid #333;
@@ -182,7 +193,10 @@
 
 <main id="view-home" class="view">
     <div class="container">
-        <h1>Testo QR</h1>
+        <div class="row-head center">
+            <h1>Testo QR</h1>
+            <button id="btn-settings" class="icon-btn" aria-label="Impostazioni"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+        </div>
         <p style="margin-top: .5rem">Inquadra il QR code mostrato dall'analizzatore Testo 330 per vedere i risultati della prova.</p>
         <div class="stack">
             <button id="btn-scan" class="primary big">
@@ -310,10 +324,37 @@
     </div>
     <div id="report-msg" class="msg" hidden></div>
     <div class="actions">
-        <button id="btn-pdf-share" class="primary big">Condividi PDF</button>
+        <button id="btn-pdf-email" class="primary big"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg> Invia email</button>
         <button id="btn-pdf-save" class="big">Salva PDF</button>
+        <button id="btn-pdf-share" class="big icon-only" aria-label="Condividi PDF"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
     </div>
+    <div class="muted small mail-info"><span id="mail-info"></span><button type="button" id="btn-mail-settings" class="link">Impostazioni</button></div>
     <button id="btn-report-back">Indietro</button>
+</main>
+
+<main id="view-settings" class="view" hidden>
+    <div class="container">
+        <h2>Impostazioni</h2>
+        <h3>Email</h3>
+        <label class="field"><span>Destinatario</span>
+            <input id="s-email" type="email" inputmode="email" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ufficio@esempio.it">
+            <div id="s-email-hint" class="msg warn hint" hidden></div>
+        </label>
+        <p class="muted small" style="margin: .6rem 0 0">Più indirizzi si separano con una virgola. L'oggetto è creato in automatico: «Rapporto di prova - Cliente - targa - data».</p>
+        <div class="field" style="margin-top: .8rem"><span>Il tasto "Invia email"</span>
+            <label class="radio"><input type="radio" name="s-method" value="share">
+                <span>Apre il menu di Android: scegli Gmail e la mail si apre con il PDF già allegato, oggetto e testo pronti.<small>Il destinatario viene copiato negli appunti: toccalo sopra la tastiera nel campo "A".</small></span></label>
+            <label class="radio"><input type="radio" name="s-method" value="mailto">
+                <span>Apre subito Gmail con destinatario, oggetto e testo già compilati.<small>Il PDF si salva nei download e va allegato con la graffetta.</small></span></label>
+        </div>
+    </div>
+    <div class="container">
+        <h3 style="margin-top: 0">Dati predefiniti</h3>
+        <p class="muted small" style="margin: .4rem 0 0">Compilati in automatico nel modulo del report quando apri una nuova scansione. Utili se fai più prove per lo stesso cliente o condominio.</p>
+        <div id="s-defaults" class="form"></div>
+        <button type="button" id="btn-defaults-clear" style="margin-top: 1rem">Svuota i dati predefiniti</button>
+    </div>
+    <button id="btn-settings-back">Indietro</button>
 </main>
 
 <div id="photo-view" hidden><img alt="Foto ingrandita"></div>

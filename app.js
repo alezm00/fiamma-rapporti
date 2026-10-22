@@ -3,6 +3,8 @@ import { createReportPdf, preloadPdfLibs, reportFileName } from './report.js';
 import { getPosition, geoErrorMessage, reverseGeocode } from './geo.js';
 import { checkFiscalCode } from './validate.js';
 import { listPhotos, addPhoto, removePhoto, keepPhotosOf } from './photos.js';
+import { buildBody, buildSubject, checkRecipients, mailtoUrl } from './mail.js';
+import { loadSettings, saveSettings } from './settings.js';
 
 const $ = (id) => document.getElementById(id);
 const HISTORY_KEY = 'testoqr.history';
@@ -147,17 +149,23 @@ $('btn-clear').addEventListener('click', () => {
 // ---------------------------------------------------------------------------
 
 let current = 'home';
+let settingsFrom = 'home'; // da dove si è aperta la pagina impostazioni
 
 function show(view) {
     $('photo-view').hidden = true;
+    // chi scrive e torna indietro subito non deve perdere l'ultima modifica
+    if (current === 'report' && view !== 'report') flushCustomer();
+    if (current === 'settings' && view !== 'settings') persistSettings();
     if (current === 'scan' && view !== 'scan') stopScan();
-    for (const v of ['home', 'scan', 'result', 'report']) $(`view-${v}`).hidden = v !== view;
+    for (const v of ['home', 'scan', 'result', 'report', 'settings']) $(`view-${v}`).hidden = v !== view;
     if (view !== 'home') {
-        // il report è un livello in più: "indietro" torna al risultato
-        if (current === 'home' || (view === 'report' && current === 'result')) history.pushState({ view }, '');
+        // report e impostazioni sono un livello in più: "indietro" torna alla vista precedente
+        const deeper = (view === 'report' && current === 'result') || (view === 'settings' && (current === 'home' || current === 'report'));
+        if (current === 'home' || deeper) history.pushState({ view }, '');
         else history.replaceState({ view }, '');
     }
     current = view;
+    if (view === 'report') updateMailInfo();
     if (view === 'result') requestWakeLock();
     else releaseWakeLock();
     if (view === 'home') renderHistory();
@@ -170,7 +178,8 @@ function goHome() {
 }
 
 window.addEventListener('popstate', () => {
-    if (current === 'report') show('result');
+    if (current === 'settings') show(settingsFrom);
+    else if (current === 'report') show('result');
     else if (current !== 'home') show('home');
 });
 
@@ -545,7 +554,7 @@ function canShareFiles() {
 }
 
 function openReportForm() {
-    const customer = currentEntry.customer || {};
+    const customer = currentEntry.customer ?? loadSettings().defaults; // nuova scansione: dati predefiniti
     for (const [key, id] of Object.entries(FIELDS)) $(id).value = customer[key] || '';
     showBoxMsg('geo-msg', '');
     showBoxMsg('report-msg', '');
@@ -553,10 +562,8 @@ function openReportForm() {
     validateCustomer();
     renderPhotos();
     $('rp-summary').textContent = [currentReport.title, currentReport.start && formatDate(currentReport.start)].filter(Boolean).join(' · ');
-    const share = canShareFiles();
-    $('btn-pdf-share').hidden = !share;
-    $('btn-pdf-save').classList.toggle('primary', !share);
-    preloadPdfLibs().catch(() => {}); // pronte quando si preme "Condividi", altrimenti il telefono può negare la condivisione
+    $('btn-pdf-share').hidden = !canShareFiles();
+    preloadPdfLibs().catch(() => {}); // pronte quando si preme "Invia" o "Condividi", altrimenti il telefono può negare la condivisione
     show('report');
 }
 
@@ -568,9 +575,18 @@ $('btn-report-back').addEventListener('click', () => {
 });
 
 let customerTimer;
+function flushCustomer() {
+    clearTimeout(customerTimer);
+    saveCustomer();
+}
 $('view-report').addEventListener('input', () => {
     clearTimeout(customerTimer);
     customerTimer = setTimeout(saveCustomer, 300);
+});
+// anche se si passa a un'altra app
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && current === 'report') flushCustomer();
+    if (document.hidden && current === 'settings') persistSettings();
 });
 
 // indirizzo dalla posizione del telefono
@@ -726,12 +742,158 @@ $('btn-pdf-share').addEventListener('click', () => runPdf($('btn-pdf-share'), as
     } catch (e) {
         if (e.name === 'AbortError') return; // annullato dall'utente
         if (e.name === 'NotAllowedError') {
-            showBoxMsg('report-msg', 'La condivisione non è partita: premi di nuovo "Condividi PDF".', 'error');
+            showBoxMsg('report-msg', 'La condivisione non è partita: premi di nuovo il pulsante.', 'error');
             return;
         }
         throw e;
     }
 }));
+
+// ---------------------------------------------------------------------------
+// Email
+// ---------------------------------------------------------------------------
+
+function openMailto(url) {
+    const a = el('a');
+    a.href = url;
+    document.body.append(a);
+    a.click();
+    a.remove();
+}
+
+function updateMailInfo() {
+    const { list } = checkRecipients(loadSettings().email);
+    $('mail-info').textContent = list.length ? `Destinatario: ${list.join(', ')}` : 'Nessun destinatario impostato.';
+}
+
+$('btn-pdf-email').addEventListener('click', () => runPdf($('btn-pdf-email'), async () => {
+    const settings = loadSettings();
+    const recipients = checkRecipients(settings.email);
+    const problems = validateCustomer();
+    const customer = readCustomer();
+    const subject = buildSubject(currentReport, customer);
+    const body = buildBody(currentReport, customer);
+    const useShare = settings.method !== 'mailto' && canShareFiles();
+
+    const notes = [];
+    if (!recipients.list.length) notes.push('Nessun destinatario impostato: scrivilo in Gmail oppure impostalo nelle impostazioni.');
+    else if (!recipients.ok) notes.push(`${recipients.error}.`);
+    if (problems.length) notes.push(`Controlla: ${problems.join(', ')}.`);
+    // con la condivisione il destinatario non si può precompilare: lo si copia negli appunti
+    if (useShare && recipients.list.length) {
+        const copied = await navigator.clipboard?.writeText(recipients.list.join(', ')).then(() => true, () => false);
+        if (copied) notes.push('Destinatario copiato negli appunti: nel campo "A" toccalo sopra la tastiera.');
+    }
+    const warn = !recipients.ok || problems.length > 0 || !recipients.list.length;
+    if (notes.length) showBoxMsg('report-msg', notes.join(' '), warn ? 'warn' : 'info');
+
+    const file = await buildPdfFile();
+    if (useShare && navigator.canShare?.({ files: [file] })) {
+        try {
+            await navigator.share({ files: [file], title: subject, text: body });
+        } catch (e) {
+            if (e.name === 'AbortError') return; // annullato dall'utente
+            if (e.name === 'NotAllowedError') {
+                showBoxMsg('report-msg', 'La condivisione non è partita: premi di nuovo il pulsante.', 'error');
+                return;
+            }
+            throw e;
+        }
+        return;
+    }
+    // Gmail con destinatario, oggetto e testo già compilati; un PDF non si può allegare da una pagina web
+    downloadFile(file);
+    showBoxMsg('report-msg', [`PDF salvato nei download (${file.name}): in Gmail tocca la graffetta e allegalo.`, ...notes].join(' '), 'info');
+    openMailto(mailtoUrl(recipients.list, subject, body));
+}));
+
+// ---------------------------------------------------------------------------
+// Impostazioni
+// ---------------------------------------------------------------------------
+
+// campi che si possono precompilare nei nuovi report
+const FIELD_DEFS = [
+    { key: 'name', label: 'Nome e cognome', capitalize: 'words' },
+    { key: 'fiscalCode', label: 'Codice fiscale', capitalize: 'characters' },
+    { key: 'address', label: 'Indirizzo', rows: 2, capitalize: 'words' },
+    { key: 'phone', label: 'Telefono', type: 'tel' },
+    { key: 'brand', label: 'Marca caldaia', capitalize: 'words' },
+    { key: 'serial', label: 'Matricola / codice caldaia', capitalize: 'characters' },
+    { key: 'plateCode', label: 'Targa impianto', capitalize: 'characters' },
+    { key: 'installDate', label: 'Data di installazione', type: 'date' },
+    { key: 'notes', label: 'Note', rows: 4, capitalize: 'sentences' },
+];
+
+function buildDefaultsForm() {
+    const box = $('s-defaults');
+    for (const def of FIELD_DEFS) {
+        const label = el('label', 'field');
+        label.append(el('span', null, def.label));
+        const input = def.rows ? el('textarea') : el('input');
+        input.id = `s-d-${def.key}`;
+        if (def.rows) input.rows = def.rows;
+        else input.type = def.type || 'text';
+        input.autocomplete = 'off';
+        if (def.capitalize) input.setAttribute('autocapitalize', def.capitalize);
+        label.append(input);
+        box.append(label);
+    }
+}
+
+function fillSettings() {
+    const s = loadSettings();
+    $('s-email').value = s.email;
+    for (const radio of document.querySelectorAll('input[name="s-method"]')) radio.checked = radio.value === s.method;
+    for (const def of FIELD_DEFS) $(`s-d-${def.key}`).value = s.defaults[def.key] || '';
+    $('s-email-hint').hidden = true;
+}
+
+function persistSettings() {
+    const defaults = {};
+    for (const def of FIELD_DEFS) {
+        const value = $(`s-d-${def.key}`).value;
+        if (value.trim()) defaults[def.key] = value;
+    }
+    saveSettings({
+        email: $('s-email').value.trim(),
+        method: document.querySelector('input[name="s-method"]:checked')?.value === 'mailto' ? 'mailto' : 'share',
+        defaults,
+    });
+}
+
+function openSettings(from) {
+    settingsFrom = from;
+    fillSettings();
+    show('settings');
+}
+
+buildDefaultsForm();
+$('btn-settings').addEventListener('click', () => openSettings('home'));
+$('btn-mail-settings').addEventListener('click', () => openSettings('report'));
+$('btn-settings-back').addEventListener('click', () => {
+    persistSettings();
+    if (history.state?.view === 'settings') history.back();
+    else show(settingsFrom);
+});
+
+let settingsTimer;
+$('view-settings').addEventListener('input', () => {
+    $('s-email-hint').hidden = true; // l'avviso riappare a campo finito
+    clearTimeout(settingsTimer);
+    settingsTimer = setTimeout(persistSettings, 300);
+});
+$('view-settings').addEventListener('change', () => {
+    persistSettings();
+    const r = checkRecipients($('s-email').value);
+    $('s-email-hint').hidden = r.ok;
+    $('s-email-hint').textContent = r.ok ? '' : r.error;
+});
+
+$('btn-defaults-clear').addEventListener('click', () => {
+    if (!confirm('Svuotare tutti i dati predefiniti?')) return;
+    for (const def of FIELD_DEFS) $(`s-d-${def.key}`).value = '';
+    persistSettings();
+});
 
 renderHistory();
 cleanupPhotos();
