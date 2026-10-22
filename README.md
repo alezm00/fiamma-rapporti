@@ -79,7 +79,7 @@ Lo stile usa [Tailwind CSS 4](https://tailwindcss.com) nella versione "browser" 
 - `report.js`: creazione del PDF; `mail.js`: oggetto, testo e destinatari; `settings.js`: impostazioni
 - `scanner.js`, `tjf.js`: lettura del QR e decodifica dei dati Testo; `quickscans.js`: scansioni rapide
 - `geo.js`, `validate.js`, `util.js`, `ui.js`: posizione e indirizzo, codice fiscale, utilità, classi di stile
-- `sw.js`, `manifest.json`, `img/`: PWA offline
+- `sw.js`, `manifest.json`, `img/`: PWA offline. L'icona (foglio con fiamma e mirino del QR) è `img/icon.svg`; `node tools/make-icons.cjs` ne ricava i PNG (serve Playwright)
 - `vendor/`: librerie incluse nell'app, con le rispettive licenze
   - Tailwind CSS 4.3.3, build "browser" (stile, MIT)
   - zxing-wasm 3.1.5 (lettore QR, MIT)

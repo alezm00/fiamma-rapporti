@@ -1,6 +1,6 @@
 // Service worker: salva tutti i file dell'app per l'uso offline.
 // Dopo ogni modifica ai file aumentare la versione, così i telefoni scaricano l'aggiornamento.
-const CACHE = 'testo-qr-v16';
+const CACHE = 'testo-qr-v17';
 const FILES = [
     './',
     './index.html',
@@ -39,6 +39,8 @@ const FILES = [
     './vendor/fontkit.umd.min.js',
     './vendor/LiberationSans-Regular.ttf',
     './vendor/LiberationSans-Bold.ttf',
+    './img/icon.svg',
+    './img/apple-touch-icon.png',
     './img/icon-192.png',
     './img/icon-512.png',
     './img/icon-maskable-512.png',

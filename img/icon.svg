@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Rapporto di intervento (foglio) + fiamma della caldaia + mirino del QR -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#232323"/>
+      <stop offset="1" stop-color="#121212"/>
+    </linearGradient>
+    <linearGradient id="fire" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffb02e"/>
+      <stop offset="1" stop-color="#ff4d1a"/>
+    </linearGradient>
+  </defs>
+  <rect id="tile" width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g id="art">
+    <!-- mirino -->
+    <g fill="none" stroke="#00ffcc" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M112 148V120a24 24 0 0 1 24-24h28"/>
+      <path d="M348 96h28a24 24 0 0 1 24 24v28"/>
+      <path d="M400 364v28a24 24 0 0 1-24 24h-28"/>
+      <path d="M164 416h-28a24 24 0 0 1-24-24v-28"/>
+    </g>
+    <!-- foglio con angolo piegato -->
+    <path d="M178 128h122l56 56v190a14 14 0 0 1-14 14H178a14 14 0 0 1-14-14V142a14 14 0 0 1 14-14z" fill="#fff"/>
+    <path d="M300 128v42a14 14 0 0 0 14 14h42z" fill="#c4d2e6"/>
+    <!-- fiamma -->
+    <path d="M256 168c5 28 40 46 40 82 0 26-18 44-40 44s-40-18-40-44c0-20 11-31 19-44 2 14 7 22 15 24-2-22 1-44 6-62z" fill="url(#fire)"/>
+    <path d="M256 224c4 16 22 26 22 44 0 14-10 24-22 24s-22-10-22-24c0-14 12-22 22-44z" fill="#ffd54f"/>
+    <!-- righe del rapporto -->
+    <rect x="198" y="318" width="116" height="14" rx="7" fill="#aebcd2"/>
+    <rect x="198" y="344" width="78" height="14" rx="7" fill="#aebcd2"/>
+  </g>
+</svg>
