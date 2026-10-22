@@ -149,7 +149,6 @@ $('btn-clear').addEventListener('click', () => {
 // ---------------------------------------------------------------------------
 
 let current = 'home';
-let settingsFrom = 'home'; // da dove si è aperta la pagina impostazioni
 
 function show(view) {
     $('photo-view').hidden = true;
@@ -159,9 +158,8 @@ function show(view) {
     if (current === 'scan' && view !== 'scan') stopScan();
     for (const v of ['home', 'scan', 'result', 'report', 'settings']) $(`view-${v}`).hidden = v !== view;
     if (view !== 'home') {
-        // report e impostazioni sono un livello in più: "indietro" torna alla vista precedente
-        const deeper = (view === 'report' && current === 'result') || (view === 'settings' && (current === 'home' || current === 'report'));
-        if (current === 'home' || deeper) history.pushState({ view }, '');
+        // il report è un livello in più: "indietro" torna al risultato
+        if (current === 'home' || (view === 'report' && current === 'result')) history.pushState({ view }, '');
         else history.replaceState({ view }, '');
     }
     current = view;
@@ -178,8 +176,7 @@ function goHome() {
 }
 
 window.addEventListener('popstate', () => {
-    if (current === 'settings') show(settingsFrom);
-    else if (current === 'report') show('result');
+    if (current === 'report') show('result');
     else if (current !== 'home') show('home');
 });
 
@@ -763,7 +760,7 @@ function openMailto(url) {
 
 function updateMailInfo() {
     const { list } = checkRecipients(loadSettings().email);
-    $('mail-info').textContent = list.length ? `Destinatario: ${list.join(', ')}` : 'Nessun destinatario impostato.';
+    $('mail-info').textContent = list.length ? `Destinatario: ${list.join(', ')}` : 'Nessun destinatario impostato (si imposta dalle impostazioni nella pagina iniziale).';
 }
 
 $('btn-pdf-email').addEventListener('click', () => runPdf($('btn-pdf-email'), async () => {
@@ -776,7 +773,7 @@ $('btn-pdf-email').addEventListener('click', () => runPdf($('btn-pdf-email'), as
     const useShare = settings.method !== 'mailto' && canShareFiles();
 
     const notes = [];
-    if (!recipients.list.length) notes.push('Nessun destinatario impostato: scrivilo in Gmail oppure impostalo nelle impostazioni.');
+    if (!recipients.list.length) notes.push('Nessun destinatario impostato: scrivilo in Gmail oppure impostalo dalle impostazioni nella pagina iniziale.');
     else if (!recipients.ok) notes.push(`${recipients.error}.`);
     if (problems.length) notes.push(`Controlla: ${problems.join(', ')}.`);
     // con la condivisione il destinatario non si può precompilare: lo si copia negli appunti
@@ -861,19 +858,17 @@ function persistSettings() {
     });
 }
 
-function openSettings(from) {
-    settingsFrom = from;
+function openSettings() {
     fillSettings();
     show('settings');
 }
 
 buildDefaultsForm();
-$('btn-settings').addEventListener('click', () => openSettings('home'));
-$('btn-mail-settings').addEventListener('click', () => openSettings('report'));
+$('btn-settings').addEventListener('click', openSettings);
 $('btn-settings-back').addEventListener('click', () => {
     persistSettings();
     if (history.state?.view === 'settings') history.back();
-    else show(settingsFrom);
+    else show('home');
 });
 
 let settingsTimer;

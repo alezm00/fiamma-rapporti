@@ -82,8 +82,7 @@
         .actions .big { padding: 18px 10px; font-size: 1.05rem; white-space: nowrap; }
         .actions #btn-pdf-email { flex: 1.35; }
         .actions .icon-only { width: 64px; flex: none; padding: 0; }
-        .mail-info { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
-        .mail-info #mail-info { overflow-wrap: anywhere; }
+        #mail-info { overflow-wrap: anywhere; }
         h3 { color: #fff; font-size: 1rem; margin: 1.2rem 0 .2rem; }
         .radio { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; color: #e0e0e0; font-size: .95rem; line-height: 1.4; }
         .radio input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: #007bff; }
@@ -328,7 +327,7 @@
         <button id="btn-pdf-save" class="big">Salva PDF</button>
         <button id="btn-pdf-share" class="big icon-only" aria-label="Condividi PDF"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
     </div>
-    <div class="muted small mail-info"><span id="mail-info"></span><button type="button" id="btn-mail-settings" class="link">Impostazioni</button></div>
+    <div id="mail-info" class="muted small"></div>
     <button id="btn-report-back">Indietro</button>
 </main>
 
