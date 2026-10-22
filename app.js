@@ -1,7 +1,7 @@
 import { bytesToJson, buildReport, reportToText, formatDate } from './tjf.js';
 import { createReportPdf, preloadPdfLibs, reportFileName } from './report.js';
 import { getPosition, geoErrorMessage, reverseGeocode } from './geo.js';
-import { checkFiscalCode, checkPhone } from './validate.js';
+import { checkFiscalCode } from './validate.js';
 
 const $ = (id) => document.getElementById(id);
 const HISTORY_KEY = 'testoqr.history';
@@ -500,10 +500,9 @@ function showBoxMsg(id, text, type = 'info') {
     box.hidden = !text;
 }
 
-// Controlli sui dati: mostrano un avviso sotto il campo ma non bloccano mai il PDF.
+// Controllo del codice fiscale: mostra un avviso sotto il campo ma non blocca mai il PDF.
 const CHECKS = [
     { id: 'c-cf', hint: 'cf-hint', name: 'codice fiscale', check: checkFiscalCode },
-    { id: 'c-phone', hint: 'phone-hint', name: 'telefono', check: checkPhone },
 ];
 
 // restituisce i nomi dei campi da controllare
@@ -522,11 +521,6 @@ function validateCustomer() {
 for (const { id, hint } of CHECKS) $(id).addEventListener('input', () => ($(hint).hidden = true));
 $('c-cf').addEventListener('change', () => {
     $('c-cf').value = checkFiscalCode($('c-cf').value).value; // maiuscolo, senza spazi
-    validateCustomer();
-});
-$('c-phone').addEventListener('change', () => {
-    const r = checkPhone($('c-phone').value);
-    if (r.ok) $('c-phone').value = r.value; // 123 456 7890
     validateCustomer();
 });
 

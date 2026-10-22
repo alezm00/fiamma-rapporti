@@ -1,5 +1,5 @@
-// Controlli sui dati del cliente: codice fiscale italiano e numero di telefono.
-// Servono solo per avvisare chi scrive: non bloccano mai la creazione del PDF.
+// Controllo del codice fiscale italiano del cliente.
+// Serve solo per avvisare chi scrive: non blocca mai la creazione del PDF.
 
 // ---------------------------------------------------------------------------
 // Codice fiscale
@@ -63,49 +63,4 @@ export function checkFiscalCode(input) {
         return bad(value, 'Carattere di controllo errato (l\'ultima lettera): controlla che il codice sia scritto bene.');
     }
     return { empty: false, ok: true, value };
-}
-
-// ---------------------------------------------------------------------------
-// Telefono: cellulari come "333 123 4567", fissi come "0434 123123"
-// ---------------------------------------------------------------------------
-
-const group = (d) => [d.slice(0, 3), d.slice(3, 6), d.slice(6)].filter(Boolean).join(' ');
-
-// prefissi dei fissi con 2 o 3 cifre (0 compreso): tutti gli altri ne hanno 4
-const AREA_2 = ['02', '06'];
-const AREA_3 = [
-    '010', '011', '015', '019', '030', '031', '035', '039', '040', '041', '045', '049', '050', '051',
-    '055', '059', '070', '071', '075', '079', '080', '081', '085', '089', '090', '091', '095', '099',
-];
-
-function formatLandline(d) {
-    const n = AREA_2.includes(d.slice(0, 2)) ? 2 : AREA_3.includes(d.slice(0, 3)) ? 3 : 4;
-    return `${d.slice(0, n)} ${d.slice(n)}`;
-}
-
-export function checkPhone(input) {
-    const raw = String(input ?? '').trim();
-    if (!raw) return { empty: true, ok: true, value: '' };
-    if (/[^\d\s+().\-/]/.test(raw)) return bad(raw, 'Il numero può contenere solo cifre, spazi e il prefisso internazionale (+39).');
-    if (raw.lastIndexOf('+') > 0) return bad(raw, 'Il simbolo + va scritto solo all\'inizio, come prefisso internazionale.');
-
-    let digits = raw.replace(/\D/g, '');
-    let prefix = '';
-    if (raw.startsWith('+') || digits.startsWith('00')) {
-        if (!raw.startsWith('+')) digits = digits.slice(2); // 0039… come +39…
-        if (digits.startsWith('39')) {
-            prefix = '+39';
-            digits = digits.slice(2);
-        } else {
-            // altro Paese: non si conosce la lunghezza del prefisso, si controlla solo il totale
-            return digits.length >= 8 && digits.length <= 15
-                ? { empty: false, ok: true, value: `+${group(digits)}` }
-                : bad(raw, 'Numero internazionale non valido: deve avere da 8 a 15 cifre.');
-        }
-    }
-    if (!/^(3\d{8,9}|0\d{5,10})$/.test(digits)) {
-        return bad(raw, 'Numero non riconosciuto: un cellulare inizia con 3 (9-10 cifre), un fisso con 0 (6-11 cifre).');
-    }
-    const national = digits.startsWith('0') ? formatLandline(digits) : group(digits);
-    return { empty: false, ok: true, value: `${prefix ? `${prefix} ` : ''}${national}` };
 }
