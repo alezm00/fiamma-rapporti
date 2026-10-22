@@ -9,6 +9,7 @@ import { getLogo, importPhoto, importLogo } from './photos.js';
 import { createZip, readZip } from './zip.js';
 
 const FORMAT = 1;
+const APPS = ['fiamma', 'testo-qr']; // 'testo-qr': i backup fatti con il nome precedente dell'app
 const bytesOf = async (blob) => new Uint8Array(await blob.arrayBuffer());
 const parse = (bytes, what) => {
     try {
@@ -23,7 +24,7 @@ export async function createBackup({ withPhotos = true, now = new Date() } = {})
     const reports = await db.getAll(db.REPORTS);
     const entries = [];
     const settings = loadSettings();
-    entries.push({ name: 'reports.json', data: JSON.stringify({ format: FORMAT, app: 'testo-qr', exportedAt: now.toISOString(), reports }) });
+    entries.push({ name: 'reports.json', data: JSON.stringify({ format: FORMAT, app: 'fiamma', exportedAt: now.toISOString(), reports }) });
     entries.push({ name: 'settings.json', data: JSON.stringify(settings) });
     let photoCount = 0;
     if (withPhotos) {
@@ -43,16 +44,16 @@ export async function createBackup({ withPhotos = true, now = new Date() } = {})
     const blob = await createZip(entries);
     updateSettings({ lastBackup: now.getTime() });
     const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    return { blob, name: `TestoQR-backup-${stamp}.zip`, reports: reports.length, photos: photoCount };
+    return { blob, name: `Fiamma-backup-${stamp}.zip`, reports: reports.length, photos: photoCount };
 }
 
 // Unisce il backup ai dati del telefono: a parità di rapporto vince la modifica più recente.
 export async function restoreBackup(file) {
     const files = await readZip(file);
     const reportsFile = files.get('reports.json');
-    if (!reportsFile) throw new Error('Non è un backup di Testo QR');
+    if (!reportsFile) throw new Error('Non è un backup di Fiamma');
     const data = parse(reportsFile, 'rapporti');
-    if (data.app !== 'testo-qr' || data.format !== FORMAT || !Array.isArray(data.reports)) throw new Error('Non è un backup di Testo QR');
+    if (!APPS.includes(data.app) || data.format !== FORMAT || !Array.isArray(data.reports)) throw new Error('Non è un backup di Fiamma');
 
     let reports = 0;
     let skipped = 0;

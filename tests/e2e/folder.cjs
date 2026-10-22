@@ -41,7 +41,7 @@ fs.mkdirSync(`${SP}/dl`, { recursive: true });
   log('stato dopo il collegamento ->', JSON.stringify(st));
   assert(st.linked && st.name === 'SD-card' && st.permission === 'granted' && st.pending === 0, 'collegata');
   log('cartella vuota ->', JSON.stringify(strip(await tree())));
-  assert(strip(await tree()).join() === 'TestoQR/impostazioni.json', 'solo le impostazioni');
+  assert(strip(await tree()).join() === 'Fiamma/impostazioni.json', 'solo le impostazioni');
 
   // 2) nuovo rapporto da interfaccia: dopo 2 secondi compare in cartella
   await page.click('#btn-new');
@@ -63,7 +63,7 @@ fs.mkdirSync(`${SP}/dl`, { recursive: true });
   let files = strip(await tree());
   log('dopo la pausa ->', JSON.stringify(files));
   const draftDir = files.find((f) => f.endsWith('rapporto.json')).replace('/rapporto.json', '');
-  assert(new RegExp(`^TestoQR/rapporti/${ISO_TODAY.slice(0, 4)}/BOZZA_${ISO_TODAY}_Mario-Rossi_[0-9a-f]{8}$`).test(draftDir), 'cartella della bozza');
+  assert(new RegExp(`^Fiamma/rapporti/${ISO_TODAY.slice(0, 4)}/BOZZA_${ISO_TODAY}_Mario-Rossi_[0-9a-f]{8}$`).test(draftDir), 'cartella della bozza');
   assert(files.includes(`${draftDir}/foto/01.jpg`) && files.includes(`${draftDir}/foto/02.jpg`) && !files.some((f) => f.endsWith('.pdf')), 'foto sì, PDF no per la bozza');
   const json = JSON.parse(new TextDecoder().decode(await page.evaluate(async (p) => Array.from(await window.T.read(p)), `${draftDir}/rapporto.json`).then((a) => Uint8Array.from(a))));
   assert(json.customer.name === 'Mario Rossi' && json.measures.length === 1 && json.photos.length === 2 && json.photos[0].file === 'foto/01.jpg', 'contenuto del json');
@@ -127,8 +127,8 @@ fs.mkdirSync(`${SP}/dl`, { recursive: true });
   assert(!(await tree()).some((f) => f.includes('prova.txt')), 'file di prova rimosso');
   await page.click('#s-folder-sync');
   await page.waitForFunction(() => /Copia completata/.test(document.getElementById('s-folder-msg').textContent), null, { timeout: 20000 });
-  assert((await tree()).some((f) => f.startsWith('TestoQR/impostazioni.json')), 'impostazioni copiate');
-  const sets = JSON.parse(new TextDecoder().decode(Uint8Array.from(await page.evaluate(async () => Array.from(await window.T.read('TestoQR/impostazioni.json'))))));
+  assert((await tree()).some((f) => f.startsWith('Fiamma/impostazioni.json')), 'impostazioni copiate');
+  const sets = JSON.parse(new TextDecoder().decode(Uint8Array.from(await page.evaluate(async () => Array.from(await window.T.read('Fiamma/impostazioni.json'))))));
   assert(sets.company.name === 'Termoidraulica Bianchi' && sets.counters['2026'] === 1 && !('lastBackup' in sets), 'impostazioni.json');
   await page.screenshot({ path: `${SP}/shots5/13-settings-folder.png`, fullPage: true });
 
@@ -174,6 +174,32 @@ fs.mkdirSync(`${SP}/dl`, { recursive: true });
   files = strip(await tree());
   log('dopo l\'eliminazione ->', JSON.stringify(files));
   assert(!files.some((f) => f.includes('rapporto.json')), 'eliminato dalla cartella');
+
+  // 8b) nome precedente della cartella (TestoQR): si ricopia nella nuova e il ripristino legge la vecchia
+  await page.evaluate(async () => { const s = await import('/store.js'); const r = await s.createReport(); r.customer.name = 'Legacy Verdi'; await s.saveReport(r); });
+  await page.evaluate(async () => (await import('/folder.js')).process());
+  assert(strip(await tree()).some((f) => f.startsWith('Fiamma/rapporti/') && f.includes('Legacy-Verdi')), 'scritto in Fiamma');
+  await page.evaluate(async () => {
+    const dest = await window.T.dest();
+    const copy = async (from, to) => { for await (const [n, h] of from.entries()) { if (h.kind === 'directory') await copy(h, await to.getDirectoryHandle(n, { create: true })); else { const w = await (await to.getFileHandle(n, { create: true })).createWritable(); await w.write(await h.getFile()); await w.close(); } } };
+    await copy(await dest.getDirectoryHandle('Fiamma'), await dest.getDirectoryHandle('TestoQR', { create: true }));
+    await dest.removeEntry('Fiamma', { recursive: true });
+    const db = await import('/db.js');
+    const idx = await db.get(db.META, 'folderIndex');
+    delete idx.root; // come lasciato dalla versione precedente
+    await db.put(db.META, idx);
+  });
+  await page.reload();
+  await page.waitForSelector('#view-home:not([hidden])');
+  await installT();
+  await until(async () => strip(await tree()).some((f) => f.startsWith('Fiamma/rapporti/') && f.endsWith('rapporto.json')));
+  files = strip(await tree());
+  log('dopo il cambio di nome ->', JSON.stringify(files.filter((f) => f.endsWith('rapporto.json'))));
+  assert(files.some((f) => f.startsWith('TestoQR/rapporti/')), 'la vecchia cartella resta');
+  await page.evaluate(async () => { const f = await import('/folder.js'); const db = await import('/db.js'); await f.unlink(); await db.clear(db.REPORTS); await db.clear(db.PHOTOS); await f.linkHandle(await window.T.dest()); });
+  const both = await page.evaluate(async () => (await import('/folder.js')).restore());
+  log('ripristino da Fiamma e TestoQR ->', JSON.stringify(both));
+  assert(both.reports === 1, 'un solo rapporto, senza duplicati');
 
   // 9) cartella non più raggiungibile: errore chiaro, coda intatta
   await page.evaluate(async () => { const s = await import('/store.js'); const r = await s.createReport(); r.customer.name = 'Prova errore'; await s.saveReport(r); });

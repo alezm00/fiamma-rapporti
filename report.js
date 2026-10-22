@@ -495,8 +495,8 @@ export async function createReportPdf(r, settings = {}, { photos = [], logo = nu
     });
 
     pdf.setTitle(printable(`Rapporto di intervento${r.number ? ` n. ${r.number}` : ' (bozza)'}${customer.name ? ` - ${customer.name}` : ''}`));
-    pdf.setProducer('Testo QR');
-    pdf.setCreator('Testo QR');
+    pdf.setProducer('Fiamma');
+    pdf.setCreator('Fiamma');
     pdf.setCreationDate(now);
     pdf.setModificationDate(now);
     return pdf.save();

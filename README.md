@@ -1,6 +1,6 @@
-# Testo QR
+# Fiamma
 
-Web app (PWA) per Android per scrivere i **rapporti di intervento** di un tecnico di caldaie, con le misure dell'analizzatore di combustione **Testo 330** lette dal suo QR code. Si crea prima il rapporto e poi vi si aggiungono le scansioni; la scansione rapida (solo per leggere e ricopiare i valori) resta a parte.
+Web app (PWA) per Android per scrivere i **rapporti di intervento** di un tecnico di caldaie, con le misure dell'analizzatore di combustione **Testo 330** lette dal suo QR code. (Fino alla versione precedente si chiamava "Testo QR"; non è un'app di Testo.) Si crea prima il rapporto e poi vi si aggiungono le scansioni; la scansione rapida (solo per leggere e ricopiare i valori) resta a parte.
 
 Tutto resta sul telefono e funziona anche **offline**: non c'è nessun server.
 
@@ -30,18 +30,19 @@ Intestazione con logo e dati della ditta, numero e data; cliente e impianto; int
 L'icona di condivisione accanto a "Salva PDF" invia il solo PDF.
 
 ## Dati e copie di sicurezza
-- I rapporti, le foto e il logo stanno nel database del browser (IndexedDB, nome `testoqr-reports`); le impostazioni e le scansioni rapide nel `localStorage` (`testoqr.config`, `testoqr.scans`). L'app chiede al telefono di non cancellarli (`navigator.storage.persist()`).
+- I rapporti, le foto e il logo stanno nel database del browser (IndexedDB, nome `testoqr-reports`); le impostazioni e le scansioni rapide nel `localStorage` (`testoqr.config`, `testoqr.scans`). I nomi interni restano quelli del nome precedente: cambiarli farebbe perdere i dati. L'app chiede al telefono di non cancellarli (`navigator.storage.persist()`).
 - **Questa versione riparte da zero**: non legge, non converte e non cancella nulla di quanto salvato dalle versioni precedenti (che resta inutilizzato finché non cancelli i dati del sito da Chrome). Destinatario dell'email e dati predefiniti vanno reinseriti.
 - **Cartella di salvataggio** (impostazioni): ogni modifica viene copiata, 2 secondi dopo l'ultima, in una cartella scelta con il selettore di Chrome (File System Access API):
   ```
-  <cartella scelta>/TestoQR/
+  <cartella scelta>/Fiamma/
       impostazioni.json, logo.jpg
       rapporti/2026/2026-012_Mario-Rossi_ab12cd34/      (bozza: BOZZA_2026-10-22_Mario-Rossi_ab12cd34)
           rapporto.json   rapporto.pdf (rapporti chiusi)   foto/01.jpg …
   ```
   È una copia **a senso unico** (telefono → cartella): i rapporti si modificano solo sul telefono. Sincronizzando la cartella con Drive, Syncthing o altro si ha un backup e l'ufficio legge i PDF. "Ripristina dalla cartella" rilegge i `rapporto.json` e le foto e li unisce a quelli del telefono (a parità di rapporto vince la modifica più recente). Su un telefono nuovo: collega la cartella e tocca *Ripristina*.
+  - Con il nuovo nome la copia va nella cartella `Fiamma`: al primo avvio l'app ricopia tutto lì. La vecchia `TestoQR` resta com'è (si può eliminare) e il ripristino legge entrambe.
   - Il telefono può chiedere di nuovo il permesso a ogni apertura: le modifiche restano in coda e partono quando lo riattivi (la home lo ricorda).
-  - Su Android non si può scegliere la radice della memoria né Download: va scelta una sottocartella (es. Documenti/TestoQR). Il browser scrive i file con un temporaneo `.crswap`: le app di sincronizzazione vanno impostate per ignorarlo.
+  - Su Android non si può scegliere la radice della memoria né Download: va scelta una sottocartella (es. Documenti/Fiamma). Il browser scrive i file con un temporaneo `.crswap`: le app di sincronizzazione vanno impostate per ignorarlo.
   - **Non verificato su un telefono reale**: la funzione risulta disponibile in Chrome per Android dalla versione 132. "Prova cartella" scrive e rilegge un file e dice subito se funziona; dove non c'è, le impostazioni mostrano "Non disponibile".
 - **Backup in un file ZIP** (impostazioni): rapporti, foto (facoltative), impostazioni e logo; vale su qualunque browser. Il ripristino unisce il backup ai dati del telefono.
 - La home ricorda con una riga discreta se la copia nella cartella è sospesa o se non c'è una copia di sicurezza da più di 30 giorni.
