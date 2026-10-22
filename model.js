@@ -246,3 +246,46 @@ export function groupMeasures(measures) {
     }
     return blocks;
 }
+
+// ---------------------------------------------------------------------------
+// Dati letti da fuori (cartella di salvataggio, backup): si rifà un rapporto pulito
+// ---------------------------------------------------------------------------
+
+const text = (v, max = 20000) => (typeof v === 'string' ? v.slice(0, max) : '');
+const time = (v, fallback) => (Number.isFinite(v) && v > 0 ? v : fallback);
+const isObject = (v) => v && typeof v === 'object' && !Array.isArray(v);
+
+// Restituisce un rapporto con tutti i campi del tipo giusto, oppure null se non è un rapporto.
+export function normalizeReport(raw) {
+    if (!isObject(raw) || !/^[A-Za-z0-9_-]{8,64}$/.test(raw.id ?? '')) return null;
+    const createdAt = time(raw.createdAt, Date.now());
+    const doc = newReport({ id: raw.id, now: new Date(createdAt) });
+    doc.status = Object.hasOwn(STATUSES, raw.status) ? raw.status : 'draft';
+    doc.number = doc.status !== 'draft' && /^\d{4}\/\d{3,}$/.test(raw.number ?? '') ? raw.number : null;
+    if (!doc.number) doc.status = 'draft';
+    doc.date = /^\d{4}-\d{2}-\d{2}$/.test(raw.date ?? '') ? raw.date : doc.date;
+    doc.updatedAt = time(raw.updatedAt, createdAt);
+    doc.closedAt = time(raw.closedAt, null);
+    doc.sentAt = time(raw.sentAt, null);
+    for (const k of Object.keys(doc.customer)) doc.customer[k] = text(raw.customer?.[k], 2000);
+    for (const k of Object.keys(doc.plant)) doc.plant[k] = text(raw.plant?.[k], 2000);
+    const w = raw.intervention ?? {};
+    for (const k of ['type', 'outcome', 'work', 'startTime', 'endTime', 'notes']) doc.intervention[k] = text(w[k]);
+    doc.intervention.materials = (Array.isArray(w.materials) ? w.materials : []).slice(0, 200)
+        .filter(isObject).map((m) => ({ text: text(m.text, 500), qty: text(m.qty, 100) }));
+    doc.measures = (Array.isArray(raw.measures) ? raw.measures : []).slice(0, 100)
+        .filter((m) => isObject(m) && isObject(m.json))
+        .map((m) => ({ id: text(m.id, 64) || newId(), label: text(m.label, 200), json: m.json, addedAt: time(m.addedAt, createdAt) }));
+    doc.photoCount = Math.max(0, Math.floor(Number(raw.photoCount) || 0));
+    return doc;
+}
+
+// Dove va il rapporto nella cartella di salvataggio: rapporti/<anno>/<dir>/
+// ("2026-012_Mario-Rossi_ab12cd34", per le bozze "BOZZA_2026-10-22_Mario-Rossi_ab12cd34")
+export function folderPath(doc) {
+    const id8 = String(doc.id).replace(/[^A-Za-z0-9]/g, '').slice(0, 8);
+    const who = slug(doc.customer?.name).slice(0, 30);
+    const year = (doc.number || doc.date || dayString(new Date())).slice(0, 4);
+    const head = doc.number ? doc.number.replace('/', '-') : `BOZZA_${doc.date}`;
+    return { year, dir: [head, who, id8].filter(Boolean).join('_') };
+}

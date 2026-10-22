@@ -4,7 +4,8 @@ import * as nav from '../nav.js';
 import * as store from '../store.js';
 import { filterReports, typeLabel, formatDay, isBlank } from '../model.js';
 import { loadSettings } from '../settings.js';
-import { CLS } from '../ui.js';
+import * as folder from '../folder.js';
+import { CLS, MSG_TYPES } from '../ui.js';
 import { $, el, statusBadge } from '../util.js';
 
 let reports = [];
@@ -42,6 +43,35 @@ function render() {
     for (const chip of $('h-status').children) chip.setAttribute('aria-pressed', String(chip.dataset.status === filter.status));
 }
 
+// riga discreta se la copia di sicurezza è ferma o manca da tempo
+const MONTH = 30 * 24 * 3600 * 1000;
+
+async function renderReminder() {
+    const box = $('home-reminder');
+    let text = '';
+    let type = 'warn';
+    let action = () => nav.go('settings');
+    if (reports.length) {
+        const st = await folder.status();
+        if (st.linked && st.permission !== 'granted' && st.pending) {
+            text = 'La copia nella cartella è sospesa: tocca per riattivarla.';
+            action = () => folder.reactivate().then(renderReminder);
+        } else if (st.linked && st.error) {
+            text = `Copia nella cartella non riuscita: ${st.error}`;
+        } else if (!st.linked && Date.now() - loadSettings().lastBackup > MONTH) {
+            text = 'Nessuna copia di sicurezza recente: collega una cartella o scarica un backup (Impostazioni).';
+            type = 'info';
+        }
+    }
+    box.hidden = !text;
+    box.replaceChildren();
+    if (!text) return;
+    const button = el('button', `${CLS.reminder} ${MSG_TYPES[type]}`, text);
+    button.type = 'button';
+    button.addEventListener('click', action);
+    box.append(button);
+}
+
 export async function enter() {
     // le bozze mai compilate (solo i dati predefiniti) non servono: si scartano
     const defaults = loadSettings().defaults;
@@ -51,6 +81,7 @@ export async function enter() {
     reports = await store.listReports();
     $('h-search').value = filter.query;
     render();
+    renderReminder();
 }
 
 export function init() {
@@ -61,6 +92,7 @@ export function init() {
     $('btn-quick-scan').addEventListener('click', () => nav.go('scan', { mode: 'quick' }));
     $('btn-quick-list').addEventListener('click', () => nav.go('quick'));
     $('btn-settings').addEventListener('click', () => nav.go('settings'));
+    folder.events.addEventListener('state', () => nav.current() === 'home' && renderReminder());
 
     $('h-search').addEventListener('input', (e) => {
         filter.query = e.target.value;

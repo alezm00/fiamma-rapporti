@@ -222,3 +222,42 @@ test('bozza vuota: solo i dati predefiniti, nessuna misura né foto', async () =
     done.status = 'done';
     assert.equal(isBlank(done), false);
 });
+
+test('rapporto letto da fuori: campi puliti e tipi giusti', async () => {
+    const { normalizeReport, newReport, closeReport } = await import('../model.js');
+    assert.equal(normalizeReport(null), null);
+    assert.equal(normalizeReport({ id: '../evil' }), null);
+    assert.equal(normalizeReport([]), null);
+    const doc = newReport({ now: at(2026, 10, 22), id: 'abcd1234-aaaa' });
+    doc.customer.name = 'Mario Rossi';
+    doc.intervention.materials = [{ text: 'Guarnizione', qty: '2' }];
+    addMeasure(doc, combustion(60, 4, 10));
+    closeReport(doc, {}, at(2026, 10, 22));
+    const copy = normalizeReport(JSON.parse(JSON.stringify(doc)));
+    assert.deepEqual(copy, doc);
+    // dati strani: numeri al posto di testi, stato inventato, numero senza chiusura
+    const odd = normalizeReport({
+        id: 'abcd1234-bbbb', status: 'hacked', number: '2026/001', customer: { name: 42, address: 'Via Roma' },
+        intervention: { materials: [{ text: 1 }, 'x', { text: 'ok', qty: 3 }] }, measures: [{ json: 'no' }, { id: 'm1', label: 'Prima', json: {} }],
+        updatedAt: 'ieri', photoCount: -4,
+    });
+    assert.equal(odd.status, 'draft');
+    assert.equal(odd.number, null);
+    assert.equal(odd.customer.name, '');
+    assert.equal(odd.customer.address, 'Via Roma');
+    assert.deepEqual(odd.intervention.materials, [{ text: '', qty: '' }, { text: 'ok', qty: '' }]);
+    assert.deepEqual(odd.measures.map((m) => m.id), ['m1']);
+    assert.equal(typeof odd.updatedAt, 'number');
+    assert.equal(odd.photoCount, 0);
+});
+
+test('percorso nella cartella: anno, numero, cliente e id', async () => {
+    const { folderPath, newReport, closeReport } = await import('../model.js');
+    const doc = newReport({ now: at(2025, 12, 30), id: 'ab12cd34-0000' });
+    doc.customer.name = 'Anna Verdi';
+    assert.deepEqual(folderPath(doc), { year: '2025', dir: 'BOZZA_2025-12-30_Anna-Verdi_ab12cd34' });
+    closeReport(doc, { 2025: 11 }, at(2026, 1, 2));
+    assert.deepEqual(folderPath(doc), { year: '2025', dir: '2025-012_Anna-Verdi_ab12cd34' });
+    doc.customer.name = '';
+    assert.equal(folderPath(doc).dir, '2025-012_ab12cd34');
+});

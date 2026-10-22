@@ -29,6 +29,9 @@ export const CLS = {
     reportMeta: 'text-[.85rem] text-muted',
     badge: 'rounded-full border px-2.5 py-0.5 text-[.75rem] font-bold whitespace-nowrap',
 
+    // promemoria nella home (copia di sicurezza)
+    reminder: `${MSG} mb-4 block w-full cursor-pointer text-left`,
+
     // materiali del rapporto
     matRow: 'flex gap-2',
     matText: 'input min-w-0 flex-1',

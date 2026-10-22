@@ -89,3 +89,25 @@ export async function logoForPdf() {
     const logo = await getLogo();
     return logo ? { bytes: new Uint8Array(await logo.blob.arrayBuffer()), width: logo.width, height: logo.height } : null;
 }
+
+// ---------------------------------------------------------------------------
+// Ripristino (da backup o cartella di salvataggio): foto e logo già pronti
+// ---------------------------------------------------------------------------
+
+const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+const isSize = (n) => Number.isFinite(n) && n > 0 && n <= 20000;
+
+// aggiunge la foto se non c'è già; false se è scartata o esiste
+export async function importPhoto({ id, reportId, blob, width, height, addedAt }) {
+    if (!SAFE_ID.test(id ?? '') || !SAFE_ID.test(reportId ?? '') || !(blob instanceof Blob) || !isSize(width) || !isSize(height)) return false;
+    if (await db.get(db.PHOTOS, id)) return false;
+    await db.put(db.PHOTOS, { id, reportId, blob: blob.type === 'image/jpeg' ? blob : new Blob([blob], { type: 'image/jpeg' }), width, height, addedAt: Number(addedAt) || Date.now() });
+    return true;
+}
+
+export async function importLogo(blob, width, height) {
+    if (await getLogo()) return false;
+    if (!(blob instanceof Blob) || !isSize(width) || !isSize(height)) return false;
+    await db.put(db.META, { key: 'logo', blob, width, height });
+    return true;
+}

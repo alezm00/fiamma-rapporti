@@ -2,6 +2,7 @@
 
 import * as nav from './nav.js';
 import { registerClasses } from './ui.js';
+import * as folder from './folder.js';
 import * as home from './screens/home.js';
 import * as editor from './screens/editor.js';
 import * as scan from './screens/scan.js';
@@ -19,4 +20,5 @@ for (const [name, screen] of Object.entries(SCREENS)) {
     nav.register(name, { el: `view-${name}`, enter: screen.enter, leave: screen.leave });
 }
 
+folder.start(); // la copia nella cartella di salvataggio (se collegata)
 nav.start();

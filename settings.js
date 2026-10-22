@@ -7,21 +7,34 @@ export const EMPTY_COMPANY = { name: '', vat: '', address: '', phone: '', email:
 
 const text = (v) => (typeof v === 'string' ? v : '');
 
+// da un oggetto qualunque (localStorage, file di backup) a impostazioni complete e del tipo giusto
+export function normalizeSettings(s) {
+    const company = { ...EMPTY_COMPANY };
+    for (const k of Object.keys(EMPTY_COMPANY)) company[k] = text(s?.company?.[k]);
+    const defaults = {};
+    for (const [k, v] of Object.entries(s?.defaults && typeof s.defaults === 'object' ? s.defaults : {})) {
+        if (typeof v === 'string') defaults[k] = v;
+    }
+    const counters = {}; // anno -> ultimo numero usato
+    for (const [year, n] of Object.entries(s?.counters && typeof s.counters === 'object' ? s.counters : {})) {
+        if (/^\d{4}$/.test(year) && Number.isFinite(n) && n >= 0) counters[year] = Math.floor(n);
+    }
+    return {
+        email: text(s?.email),
+        method: s?.method === 'mailto' ? 'mailto' : 'share',
+        defaults,
+        company,
+        counters,
+        lastBackup: Number(s?.lastBackup) || 0,
+    };
+}
+
 export function loadSettings() {
     let s = null;
     try {
         s = JSON.parse(localStorage.getItem(KEY));
     } catch {}
-    const company = { ...EMPTY_COMPANY };
-    for (const k of Object.keys(EMPTY_COMPANY)) company[k] = text(s?.company?.[k]);
-    return {
-        email: text(s?.email),
-        method: s?.method === 'mailto' ? 'mailto' : 'share',
-        defaults: s?.defaults && typeof s.defaults === 'object' ? s.defaults : {},
-        company,
-        counters: s?.counters && typeof s.counters === 'object' ? s.counters : {}, // anno -> ultimo numero usato
-        lastBackup: Number(s?.lastBackup) || 0,
-    };
+    return normalizeSettings(s);
 }
 
 export function saveSettings(settings) {
@@ -35,4 +48,21 @@ export function updateSettings(patch) {
     const next = { ...loadSettings(), ...patch };
     saveSettings(next);
     return next;
+}
+
+// Ripristino: i dati letti da fuori riempiono solo quello che qui è vuoto;
+// i contatori dei numeri prendono il più alto, così un numero non si riassegna.
+export function mergeSettings(local, incoming) {
+    const inc = normalizeSettings(incoming);
+    const company = { ...local.company };
+    for (const k of Object.keys(company)) company[k] = company[k] || inc.company[k];
+    const counters = { ...local.counters };
+    for (const [year, n] of Object.entries(inc.counters)) counters[year] = Math.max(counters[year] || 0, n);
+    return {
+        ...local,
+        email: local.email || inc.email,
+        defaults: Object.keys(local.defaults).length ? local.defaults : inc.defaults,
+        company,
+        counters,
+    };
 }
