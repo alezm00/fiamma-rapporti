@@ -177,11 +177,27 @@ async function runFolder(button, action) {
     }
 }
 
+// la domanda quando la cartella scelta contiene già delle impostazioni
+function askSettings(handle, { settings, modified }) {
+    const who = [settings.company.name, settings.email].filter(Boolean).join(', ');
+    return `Nella cartella «${handle.name}» ci sono impostazioni salvate${modified ? ` il ${when(modified)}` : ''}${who ? ` (${who})` : ''}.\n\nCaricarle al posto di quelle di questo telefono? Valgono ditta, email, dati predefiniti e logo; il numero progressivo dei rapporti non torna mai indietro.`;
+}
+
 function initFolder() {
     folder.events.addEventListener('state', () => nav.current() === 'settings' && renderFolder());
 
+    // Scegli cartella: se dentro ci sono già delle impostazioni, si chiede se prenderle e ricaricarle
     $('s-folder-link').addEventListener('click', () => runFolder($('s-folder-link'), async () => {
-        if (await folder.link()) showBoxMsg('s-folder-msg', 'Cartella collegata: sto copiando i rapporti. Tocca "Prova cartella" per controllare che funzioni.', 'success');
+        const handle = await folder.pick();
+        if (!handle) return; // annullato
+        const found = await folder.peekSettings(handle);
+        const take = !!found && confirm(askSettings(handle, found));
+        await folder.linkHandle(handle, { fromFolder: take });
+        if (take) {
+            fill();
+            await showLogo();
+        }
+        showBoxMsg('s-folder-msg', `${take ? 'Impostazioni caricate dalla cartella. ' : ''}Cartella collegata: sto copiando i rapporti. Tocca "Prova cartella" per controllare che funzioni.`, 'success');
     }));
     $('s-folder-reactivate').addEventListener('click', () => runFolder($('s-folder-reactivate'), async () => {
         if ((await folder.reactivate()) !== 'granted') showBoxMsg('s-folder-msg', 'Permesso non concesso: senza, la copia non può partire.', 'warn');

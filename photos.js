@@ -105,8 +105,9 @@ export async function importPhoto({ id, reportId, blob, width, height, addedAt }
     return true;
 }
 
-export async function importLogo(blob, width, height) {
-    if (await getLogo()) return false;
+// replace = true: sostituisce il logo che c'è già (altrimenti si aggiunge solo se manca)
+export async function importLogo(blob, width, height, { replace = false } = {}) {
+    if (!replace && (await getLogo())) return false;
     if (!(blob instanceof Blob) || !isSize(width) || !isSize(height)) return false;
     await db.put(db.META, { key: 'logo', blob, width, height });
     return true;

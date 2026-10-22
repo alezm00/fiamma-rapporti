@@ -13,7 +13,7 @@ import * as store from './store.js';
 import { folderPath, normalizeReport } from './model.js';
 import { listPhotos, photosForPdf, logoForPdf, getLogo, importPhoto, importLogo } from './photos.js';
 import { createReportPdf } from './report.js';
-import { loadSettings, saveSettings, updateSettings, mergeSettings } from './settings.js';
+import { loadSettings, saveSettings, updateSettings, mergeSettings, normalizeSettings } from './settings.js';
 
 export const events = new EventTarget(); // 'state': cambia lo stato della copia
 const emitState = () => events.dispatchEvent(new Event('state'));
@@ -96,6 +96,12 @@ async function writeFile(parent, name, data) {
 
 async function readFile(parent, name) {
     return (await parent.getFileHandle(name)).getFile();
+}
+
+// Un File preso dalla cartella dipende dal file che sta nella cartella: se poi lo riscrivi (o cambia) non si legge più.
+// Quello che si tiene sul telefono (foto, logo) si copia quindi in memoria.
+async function memoryCopy(file) {
+    return new Blob([await file.arrayBuffer()], { type: 'image/jpeg' });
 }
 
 const missing = (e) => e?.name === 'NotFoundError' || e?.name === 'TypeMismatchError';
@@ -187,14 +193,17 @@ async function writeSettings(link) {
     } catch {}
     const { lastBackup, ...settings } = mergeSettings(loadSettings(), existing);
     const logo = await getLogo();
-    await writeFile(root, 'impostazioni.json', JSON.stringify({ ...settings, logo: logo ? { width: logo.width, height: logo.height } : null }, null, 2));
-    const index = await loadIndex();
-    const sig = logo ? String(logo.blob.size) : '';
-    if (sig !== index.logo) {
-        if (logo) await writeFile(root, 'logo.jpg', logo.blob);
-        else await root.removeEntry('logo.jpg').catch(() => {});
-        index.logo = sig;
-        await saveIndex(index);
+    // come per le impostazioni, il logo già in cartella non si perde se qui non c'è
+    const logoInfo = logo ? { width: logo.width, height: logo.height } : (existing?.logo ?? null);
+    await writeFile(root, 'impostazioni.json', JSON.stringify({ ...settings, logo: logoInfo }, null, 2));
+    if (logo) {
+        const index = await loadIndex();
+        const sig = String(logo.blob.size);
+        if (sig !== index.logo) {
+            await writeFile(root, 'logo.jpg', logo.blob);
+            index.logo = sig;
+            await saveIndex(index);
+        }
     }
 }
 
@@ -289,20 +298,54 @@ export function explain(e) {
 // Collegare, riattivare, scollegare
 // ---------------------------------------------------------------------------
 
-// Collega una cartella (da usare con un tocco dell'utente) e la riempie con tutti i rapporti.
-export async function link() {
-    let handle;
+// Fa scegliere la cartella con il selettore di sistema (serve un tocco dell'utente). null se si annulla.
+export async function pick() {
     try {
-        handle = await globalThis.showDirectoryPicker({ id: 'testoqr', ...MODE });
+        return await globalThis.showDirectoryPicker({ id: 'testoqr', ...MODE });
     } catch (e) {
-        if (e.name === 'AbortError') return false; // annullato
+        if (e.name === 'AbortError') return null;
         throw e;
     }
-    await linkHandle(handle);
+}
+
+// Le impostazioni già salvate in una cartella (da un altro telefono o da una installazione precedente):
+// { settings, logo, modified } oppure null se non ce ne sono (o il file non si legge).
+export async function peekSettings(handle) {
+    try {
+        const root = await dir(handle, [ROOT], false);
+        const file = await readFile(root, 'impostazioni.json');
+        const raw = JSON.parse(await file.text());
+        return { settings: normalizeSettings(raw), logo: raw?.logo ?? null, modified: file.lastModified };
+    } catch (e) {
+        if (missing(e) || e instanceof SyntaxError) return null;
+        throw e;
+    }
+}
+
+// Prende le impostazioni dalla cartella al posto di quelle del telefono (ditta, email, numerazione, dati
+// predefiniti, logo). Il numero progressivo non torna mai indietro: per ogni anno vale il più alto.
+async function takeSettingsFrom(handle) {
+    const found = await peekSettings(handle);
+    if (!found) return false;
+    const local = loadSettings();
+    const counters = { ...found.settings.counters };
+    for (const [year, n] of Object.entries(local.counters)) counters[year] = Math.max(counters[year] || 0, n);
+    saveSettings({ ...found.settings, counters, lastBackup: local.lastBackup });
+    if (found.logo) {
+        try {
+            const root = await dir(handle, [ROOT], false);
+            await importLogo(await memoryCopy(await readFile(root, 'logo.jpg')), found.logo.width, found.logo.height, { replace: true });
+        } catch (e) {
+            if (!missing(e)) throw e; // senza il file del logo si tiene quello che c'è
+        }
+    }
     return true;
 }
 
-export async function linkHandle(handle) {
+// Collega la cartella scelta e la riempie con tutti i rapporti.
+// fromFolder = true: prima prende le impostazioni salvate nella cartella (vedi takeSettingsFrom).
+export async function linkHandle(handle, { fromFolder = false } = {}) {
+    if (fromFolder) await takeSettingsFrom(handle);
     await db.put(db.META, { key: 'folder', handle, name: handle.name, linkedAt: Date.now(), lastWrite: 0 });
     await db.put(db.META, freshIndex());
     linked = true;
@@ -382,7 +425,7 @@ async function restoreRoot(root, result) {
             for (const p of Array.isArray(raw.photos) ? raw.photos : []) {
                 if (!fotoDir || !/^[\w.-]+\.jpg$/.test(String(p?.file).replace(/^foto\//, ''))) continue;
                 try {
-                    const blob = await readFile(fotoDir, p.file.replace(/^foto\//, ''));
+                    const blob = await memoryCopy(await readFile(fotoDir, p.file.replace(/^foto\//, '')));
                     if (await importPhoto({ id: p.id, reportId: doc.id, blob, width: p.width, height: p.height, addedAt: p.addedAt })) result.photos++;
                 } catch {}
             }
@@ -392,7 +435,7 @@ async function restoreRoot(root, result) {
         const settings = JSON.parse(await (await readFile(root, 'impostazioni.json')).text());
         saveSettings(mergeSettings(loadSettings(), settings));
         const size = settings.logo;
-        if (size) await importLogo(await readFile(root, 'logo.jpg'), size.width, size.height);
+        if (size) await importLogo(await memoryCopy(await readFile(root, 'logo.jpg')), size.width, size.height);
     } catch (e) {
         if (!missing(e) && !(e instanceof SyntaxError)) throw e;
     }

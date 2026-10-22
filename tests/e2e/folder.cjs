@@ -159,6 +159,24 @@ fs.mkdirSync(`${SP}/dl`, { recursive: true });
   assert(restored.company.name === 'Termoidraulica Bianchi' && restored.counters['2026'] === 1 && restored.defaults.name === 'Condominio Rossi', 'impostazioni ripristinate');
   st = await page.evaluate(async () => (await import('/folder.js')).status());
   assert(st.pending === 0, 'il ripristino non rimette nulla in coda: ' + st.pending);
+  // le foto ripristinate dalla cartella si possono riscrivere nella stessa cartella (non dipendono più dal suo file)
+  await page.evaluate(async () => {
+    const s = await import('/store.js'); const ph = await import('/photos.js');
+    const doc = (await s.listReports())[0];
+    const c = document.createElement('canvas'); c.width = 300; c.height = 200; c.getContext('2d').fillRect(0, 0, 300, 200);
+    const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+    await ph.addPhoto(doc.id, new File([blob], 'nuova.png', { type: 'image/png' }));
+    doc.photoCount = (await ph.listPhotos(doc.id)).length;
+    await s.saveReport(doc);
+    await (await import('/folder.js')).process();
+  });
+  const sizes = await page.evaluate(async () => {
+    const out = []; const walk = async (d, p) => { for await (const [n, h] of d.entries()) { if (h.kind === 'directory') await walk(h, p + n + '/'); else if (p.includes('/foto/')) out.push((await (await h.getFile()).arrayBuffer()).byteLength); } };
+    await walk(await (await navigator.storage.getDirectory()).getDirectoryHandle('SD-card'), '');
+    return out;
+  });
+  log('foto nella cartella dopo il ripristino e una modifica ->', JSON.stringify(sizes));
+  assert(sizes.length === 3 && sizes.every((n) => n > 1000), 'foto leggibili nella cartella');
   // numerazione: il prossimo rapporto chiuso è il 002
   await page.reload();
   await installT();
