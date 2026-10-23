@@ -1,503 +1,37 @@
 // Rapporto di intervento: cliente, impianto, intervento, misure Testo, foto, note.
 // Si salva da solo a ogni modifica (dopo una breve pausa) e quando si esce dalla schermata.
+// Qui l'ingresso e l'uscita; le parti stanno negli altri file della cartella:
+// form (campi), session (rapporto aperto e salvataggio), units, materials, measures, photos,
+// address, send (PDF ed email), actions (chiudi, duplica, elimina).
 
 import * as nav from '../../ui/nav.js';
 import * as store from '../../data/store.js';
-import {
-    INTERVENTION_TYPES, OUTCOMES, UNIT_KINDS, newUnit, unitKind, unitTitle, durationMinutes, formatDuration, formatReportNumber, nextNumber, reportYear,
-    reportFileName, isBlank, TRASH_DAYS,
-} from '../../model/index.js';
-import { buildReport, topValues } from '../../qr/tjf/index.js';
-import { formatDate, formatTime } from '../../lib/dates.js';
-import { createReportPdf, preloadPdfLibs } from '../../pdf/index.js';
-import { getPosition, geoErrorMessage, reverseGeocode } from '../../lib/geo.js';
+import { INTERVENTION_TYPES, OUTCOMES } from '../../model/index.js';
+import { preloadPdfLibs } from '../../pdf/index.js';
 import { checkFiscalCode } from '../../lib/validate.js';
-import { listPhotos, addPhoto, removePhoto, photosForPdf, logoForPdf } from '../../data/photos.js';
-import { buildBody, buildSubject, checkRecipients, mailtoUrl } from '../../model/mail.js';
-import { loadSettings } from '../../data/settings.js';
-import { CLS } from '../../ui/classes.js';
-import { $, el, fieldElement, showBoxMsg, toast, debounce, downloadFile, openMailto, canShareFiles, statusBadge, explainSaveError } from '../../ui/util.js';
-
-const MAX_PHOTOS = 20;
-
-let doc = null;
-let dirty = false;
-let photoUrls = [];
-
-// campo della pagina -> percorso nel rapporto
-const FIELDS = {
-    'e-date': 'date',
-    'c-name': 'customer.name',
-    'c-cf': 'customer.fiscalCode',
-    'c-address': 'customer.address',
-    'c-phone': 'customer.phone',
-    'c-plate': 'plant.plateCode',
-    'e-type': 'intervention.type',
-    'e-outcome': 'intervention.outcome',
-    'e-work': 'intervention.work',
-    'e-start': 'intervention.startTime',
-    'e-end': 'intervention.endTime',
-    'c-notes': 'intervention.notes',
-};
-
-function getPath(path) {
-    return path.split('.').reduce((o, k) => o?.[k], doc);
-}
-
-function setPath(path, value) {
-    const keys = path.split('.');
-    const last = keys.pop();
-    keys.reduce((o, k) => o[k], doc)[last] = value;
-}
-
-function fillForm() {
-    for (const [id, path] of Object.entries(FIELDS)) $(id).value = getPath(path) ?? '';
-}
-
-function readForm() {
-    for (const [id, path] of Object.entries(FIELDS)) {
-        const value = $(id).value;
-        if (id === 'e-date' && !value) continue; // la data dell'intervento non resta vuota
-        setPath(path, value);
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Salvataggio
-// ---------------------------------------------------------------------------
-
-let saveError = '';
-
-// scritta sotto il titolo: "Salvato 14:32" / "Salvataggio…" / "NON SALVATO: motivo" (si tocca per riprovare)
-function showSaveState(state, detail = '') {
-    const box = $('e-save');
-    if (state === 'error') {
-        saveError = detail;
-        box.className = CLS.saveErr;
-        box.textContent = 'NON SALVATO · tocca per riprovare';
-        box.title = detail;
-    } else if (state === 'saving') {
-        box.className = CLS.saveBusy;
-        box.textContent = 'Salvataggio…';
-    } else {
-        saveError = '';
-        box.className = CLS.saveIdle;
-        box.textContent = `Salvato ${formatTime(new Date(doc?.updatedAt ?? Date.now()), false)}`;
-    }
-}
-
-// Salva il rapporto. Restituisce false se non è riuscito: le modifiche restano da salvare
-// (si riprova alla modifica successiva, al tocco sulla scritta e all'uscita).
-async function saveNow() {
-    if (!doc || !dirty) return true;
-    const current = doc;
-    dirty = false;
-    showSaveState('saving');
-    try {
-        readForm();
-        await store.saveReport(current);
-    } catch (e) {
-        dirty = true;
-        console.error(e);
-        if (current === doc) {
-            showSaveState('error', explainSaveError(e));
-            showBoxMsg('report-msg', `Il rapporto non è stato salvato: ${explainSaveError(e)}. Le modifiche restano a schermo: libera spazio e tocca la scritta rossa sotto il titolo per riprovare.`, 'error');
-        }
-        return false;
-    }
-    if (current === doc) {
-        showSaveState('saved');
-        renderHeader();
-    }
-    return true;
-}
-
-const saveLater = debounce(saveNow, 400);
-
-function touch() {
-    dirty = true;
-    saveLater();
-}
-
-const flush = () => saveLater.flush();
-
-// Esegue un'azione del rapporto: un errore si vede, non resta silenzioso. Con un pulsante, questo resta
-// disattivato finché l'azione lavora (il PDF può richiedere qualche secondo).
-async function guarded(action, { button, error = (e) => `Operazione non riuscita: ${explainSaveError(e)}.` } = {}) {
-    if (button) {
-        button.disabled = true;
-        showBoxMsg('report-msg', '');
-    }
-    try {
-        await action();
-    } catch (e) {
-        console.error(e);
-        showBoxMsg('report-msg', error(e), 'error');
-    } finally {
-        if (button) button.disabled = false;
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Intestazione e stato
-// ---------------------------------------------------------------------------
-
-function renderHeader() {
-    $('e-title').textContent = doc.number ? `Rapporto n. ${doc.number}` : 'Rapporto';
-    $('e-badge').replaceChildren(statusBadge(doc.status));
-    $('btn-close').hidden = doc.status !== 'draft';
-}
-
-function updateMailInfo() {
-    const { list } = checkRecipients(loadSettings().email);
-    $('mail-info').textContent = list.length ? `Destinatario: ${list.join(', ')}` : 'Nessun destinatario impostato (si imposta dalle impostazioni nella pagina iniziale).';
-}
-
-function updateDuration() {
-    const min = durationMinutes($('e-start').value, $('e-end').value);
-    $('e-duration').textContent = min == null ? '' : `Durata dell'intervento: ${formatDuration(min)}`;
-}
-
-// ---------------------------------------------------------------------------
-// Apparecchi dell'impianto: quante caldaie, pompe di calore e condizionatori si vuole
-// ---------------------------------------------------------------------------
-
-const UNIT_CAPS = { brand: 'words', model: 'characters', serial: 'characters' };
-
-function unitField(unit, i, f) {
-    const label = fieldElement({ ...f, capitalize: UNIT_CAPS[f.key] }, `u${i}-${f.key}`);
-    const input = label.querySelector('select, input');
-    input.value = unit[f.key] ?? '';
-    const changed = () => {
-        unit[f.key] = input.value;
-        touch();
-    };
-    input.addEventListener('input', changed);
-    input.addEventListener('change', changed);
-    return label;
-}
-
-function renderUnits() {
-    const box = $('e-units');
-    box.replaceChildren();
-    const units = doc.plant.units;
-    units.forEach((unit, i) => {
-        const kind = unitKind(unit.kind);
-        const card = el('section', CLS.unitCard);
-        card.dataset.unit = String(i);
-        card.dataset.kind = unit.kind;
-        const head = el('div', CLS.unitHead);
-        const title = unitTitle(unit, units);
-        const del = el('button', CLS.unitDel, '✕');
-        del.type = 'button';
-        del.id = `u${i}-del`;
-        del.setAttribute('aria-label', `Togli: ${title}`);
-        del.addEventListener('click', () => {
-            const filled = kind.fields.some((f) => String(unit[f.key] ?? '').trim());
-            if (filled && !confirm(`Togliere «${title}» dal rapporto?`)) return;
-            units.splice(i, 1);
-            renderUnits();
-            touch();
-        });
-        head.append(el('h4', CLS.unitTitle, title), del);
-        const grid = el('div', CLS.unitGrid);
-        for (const f of kind.fields) grid.append(unitField(unit, i, f));
-        card.append(head, grid);
-        box.append(card);
-    });
-    $('e-units-empty').hidden = units.length > 0;
-}
-
-function addUnit(kindId) {
-    doc.plant.units.push(newUnit(kindId));
-    renderUnits();
-    $('e-units').lastElementChild.querySelector('input, select').focus();
-    touch();
-}
-
-// ---------------------------------------------------------------------------
-// Materiali
-// ---------------------------------------------------------------------------
-
-function renderMaterials() {
-    const box = $('e-materials');
-    box.replaceChildren();
-    doc.intervention.materials.forEach((m, i) => {
-        const row = el('div', CLS.matRow);
-        const text = el('input', CLS.matText);
-        text.type = 'text';
-        text.value = m.text;
-        text.placeholder = 'Descrizione';
-        text.autocomplete = 'off';
-        text.setAttribute('autocapitalize', 'sentences');
-        text.setAttribute('aria-label', `Materiale ${i + 1}`);
-        text.addEventListener('input', () => {
-            m.text = text.value;
-            touch();
-        });
-        const qty = el('input', CLS.matQty);
-        qty.type = 'text';
-        qty.value = m.qty;
-        qty.placeholder = 'Quantità';
-        qty.autocomplete = 'off';
-        qty.setAttribute('aria-label', `Quantità del materiale ${i + 1}`);
-        qty.addEventListener('input', () => {
-            m.qty = qty.value;
-            touch();
-        });
-        const del = el('button', CLS.matDel, '✕');
-        del.type = 'button';
-        del.setAttribute('aria-label', `Togli il materiale ${i + 1}`);
-        del.addEventListener('click', () => {
-            doc.intervention.materials.splice(i, 1);
-            renderMaterials();
-            touch();
-        });
-        row.append(text, qty, del);
-        box.append(row);
-    });
-}
-
-// ---------------------------------------------------------------------------
-// Misure Testo
-// ---------------------------------------------------------------------------
-
-function renderMeasures() {
-    const ul = $('e-measures');
-    ul.replaceChildren();
-    for (const m of doc.measures) {
-        let report;
-        try {
-            report = buildReport(m.json);
-        } catch {
-            continue;
-        }
-        const li = el('li');
-        const open = el('button', CLS.historyOpen);
-        open.append(el('span', CLS.historyTitle, m.label));
-        open.append(el('span', CLS.historyMeta, [report.title, formatDate(report.start || new Date(m.addedAt))].filter(Boolean).join(' · ')));
-        const vals = topValues(report);
-        if (vals) open.append(el('span', CLS.historyVals, vals));
-        open.addEventListener('click', () => nav.go('measure', { source: 'report', reportId: doc.id, measureId: m.id }));
-        li.append(open);
-        ul.append(li);
-    }
-    $('e-measures-empty').hidden = doc.measures.length > 0;
-}
-
-// ---------------------------------------------------------------------------
-// Controllo del codice fiscale: avviso sotto il campo, non blocca mai il PDF
-// ---------------------------------------------------------------------------
-
-// restituisce i nomi dei campi da controllare
-function validateCustomer() {
-    const r = checkFiscalCode($('c-cf').value);
-    $('cf-hint').hidden = r.ok;
-    $('cf-hint').textContent = r.ok ? '' : r.error;
-    return r.ok ? [] : ['codice fiscale'];
-}
-
-// ---------------------------------------------------------------------------
-// Foto
-// ---------------------------------------------------------------------------
-
-async function renderPhotos() {
-    const current = doc;
-    const photos = await listPhotos(current.id);
-    if (current !== doc) return; // nel frattempo si è aperto un altro rapporto
-    photoUrls.forEach((url) => URL.revokeObjectURL(url));
-    photoUrls = [];
-    const grid = $('photo-grid');
-    grid.replaceChildren();
-    for (const photo of photos) {
-        const url = URL.createObjectURL(photo.blob);
-        photoUrls.push(url);
-        const cell = el('div', CLS.photo);
-        const img = el('img', CLS.photoImg);
-        img.src = url;
-        img.alt = 'Foto';
-        img.addEventListener('click', () => {
-            $('photo-view').querySelector('img').src = url;
-            $('photo-view').hidden = false;
-        });
-        const del = el('button', CLS.photoDel, '✕');
-        del.type = 'button';
-        del.setAttribute('aria-label', 'Elimina foto');
-        del.addEventListener('click', async () => {
-            if (!confirm('Eliminare questa foto?')) return;
-            await removePhoto(photo.id);
-            renderPhotos();
-        });
-        cell.append(img, del);
-        grid.append(cell);
-    }
-    $('photo-count').textContent = photos.length ? `(${photos.length} di ${MAX_PHOTOS})` : '';
-    if (doc.photoCount !== photos.length) {
-        doc.photoCount = photos.length;
-        touch();
-    }
-}
-
-async function addPhotoFiles(files) {
-    const current = doc;
-    const room = MAX_PHOTOS - (await listPhotos(current.id)).length;
-    if (room <= 0) {
-        showBoxMsg('photo-msg', `Massimo ${MAX_PHOTOS} foto per rapporto: elimina una foto per aggiungerne altre.`, 'warn');
-        return;
-    }
-    const batch = files.slice(0, room);
-    let error = '';
-    for (const [i, file] of batch.entries()) {
-        showBoxMsg('photo-msg', `Elaboro la foto ${i + 1} di ${batch.length}…`);
-        try {
-            await addPhoto(current.id, file);
-            if (current === doc) await renderPhotos();
-        } catch (e) {
-            error = e.name === 'QuotaExceededError' ? 'Memoria del telefono piena: libera spazio e riprova.' : `Foto non aggiunta: ${e.message || e}`;
-            break;
-        }
-    }
-    if (error) showBoxMsg('photo-msg', error, 'error');
-    else if (files.length > batch.length) showBoxMsg('photo-msg', `Massimo ${MAX_PHOTOS} foto per rapporto: ne ho aggiunte ${batch.length}.`, 'warn');
-    else showBoxMsg('photo-msg', '');
-}
-
-// ---------------------------------------------------------------------------
-// PDF ed email
-// ---------------------------------------------------------------------------
-
-async function buildPdfFile() {
-    await flush();
-    const settings = loadSettings();
-    const [photos, logo] = await Promise.all([photosForPdf(doc.id), logoForPdf()]);
-    const bytes = await createReportPdf(doc, settings, { photos, logo });
-    return new File([bytes], reportFileName(doc), { type: 'application/pdf' });
-}
-
-// dopo l'invio un rapporto chiuso passa a "inviato"
-async function markSent() {
-    await store.markSent(doc);
-    renderHeader();
-}
-
-// condivide il PDF con il menu di Android; se la condivisione parte, il rapporto risulta inviato
-async function sharePdf(data) {
-    try {
-        await navigator.share(data);
-    } catch (e) {
-        if (e.name === 'AbortError') return; // annullato dall'utente
-        if (e.name === 'NotAllowedError') {
-            showBoxMsg('report-msg', 'La condivisione non è partita: premi di nuovo il pulsante.', 'error');
-            return;
-        }
-        throw e;
-    }
-    await markSent();
-}
-
-async function onEmail() {
-    const settings = loadSettings();
-    const recipients = checkRecipients(settings.email);
-    const problems = validateCustomer();
-    await flush();
-    const subject = buildSubject(doc);
-    const body = buildBody(doc, settings.company);
-    const useShare = settings.method !== 'mailto' && canShareFiles();
-
-    const notes = [];
-    if (!recipients.list.length) notes.push('Nessun destinatario impostato: scrivilo in Gmail oppure impostalo dalle impostazioni nella pagina iniziale.');
-    else if (!recipients.ok) notes.push(`${recipients.error}.`);
-    if (problems.length) notes.push(`Controlla: ${problems.join(', ')}.`);
-    // con la condivisione il destinatario non si può precompilare: lo si copia negli appunti
-    if (useShare && recipients.list.length) {
-        const copied = await navigator.clipboard?.writeText(recipients.list.join(', ')).then(() => true, () => false);
-        if (copied) notes.push('Destinatario copiato negli appunti: nel campo "A" toccalo sopra la tastiera.');
-    }
-    const warn = !recipients.ok || problems.length > 0 || !recipients.list.length;
-    if (notes.length) showBoxMsg('report-msg', notes.join(' '), warn ? 'warn' : 'info');
-
-    const file = await buildPdfFile();
-    if (useShare && navigator.canShare?.({ files: [file] })) {
-        await sharePdf({ files: [file], title: subject, text: body });
-        return;
-    }
-    // Gmail con destinatario, oggetto e testo già compilati; un PDF non si può allegare da una pagina web
-    downloadFile(file);
-    showBoxMsg('report-msg', [`PDF salvato nei download (${file.name}): in Gmail tocca la graffetta e allegalo.`, ...notes].join(' '), 'info');
-    openMailto(mailtoUrl(recipients.list, subject, body));
-    await markSent();
-}
-
-async function onSave() {
-    const problems = validateCustomer();
-    const file = await buildPdfFile();
-    downloadFile(file);
-    if (problems.length) showBoxMsg('report-msg', `PDF salvato, ma controlla: ${problems.join(', ')}.`, 'warn');
-    else showBoxMsg('report-msg', `PDF salvato nei download: ${file.name}`, 'success');
-}
-
-async function onShare() {
-    const problems = validateCustomer();
-    if (problems.length) showBoxMsg('report-msg', `Controlla: ${problems.join(', ')}. Il PDF viene creato lo stesso.`, 'warn');
-    const file = await buildPdfFile();
-    if (!navigator.canShare?.({ files: [file] })) {
-        downloadFile(file);
-        showBoxMsg('report-msg', `Condivisione non disponibile: PDF salvato nei download (${file.name})`, 'info');
-        return;
-    }
-    await sharePdf({ files: [file], title: file.name });
-}
-
-// ---------------------------------------------------------------------------
-// Chiusura, duplicazione, eliminazione
-// ---------------------------------------------------------------------------
-
-async function onClose() {
-    await flush();
-    const year = reportYear(doc);
-    const number = formatReportNumber(year, nextNumber(loadSettings().counters, year));
-    const missing = doc.customer.name.trim() ? '' : 'Manca il nome del cliente. ';
-    if (!confirm(`${missing}Chiudere il rapporto? Prenderà il numero ${number}.`)) return;
-    await store.close(doc);
-    renderHeader();
-    showBoxMsg('report-msg', `Rapporto chiuso: numero ${doc.number}.`, 'success');
-}
-
-async function onDuplicate() {
-    await flush();
-    const copy = await store.duplicate(doc);
-    toast('Nuova bozza con i dati di cliente e impianto');
-    nav.replace('editor', { id: copy.id, isNew: true });
-}
-
-async function onDelete() {
-    const what = doc.number ? `Il rapporto n. ${doc.number}` : 'La bozza';
-    const blank = isBlank(doc); // bozza mai compilata: non serve il cestino
-    if (!blank && !confirm(`${what} va nel cestino: si recupera entro ${TRASH_DAYS} giorni dalla schermata Cestino dell'elenco. Continuare?`)) return;
-    if (!(await flush())) return; // le ultime modifiche non sono salvate: meglio non andare avanti
-    const id = doc.id;
-    doc = null; // niente salvataggi dopo l'eliminazione
-    if (blank) await store.purgeReport(id);
-    else await store.trashReport(id);
-    toast(blank ? 'Bozza eliminata' : 'Rapporto nel cestino');
-    nav.back();
-}
-
-// ---------------------------------------------------------------------------
-// Schermata
-// ---------------------------------------------------------------------------
+import { formatTime } from '../../lib/dates.js';
+import { $, showBoxMsg, toast, canShareFiles } from '../../ui/util.js';
+import { session, openSession, touch, flush, showSaveState, lastSaveError, retrySave } from './session.js';
+import { FIELDS, fillForm, renderHeader, updateDuration, updateMailInfo, validateCustomer } from './form.js';
+import { renderUnits, initUnits } from './units.js';
+import { renderMaterials, dropEmptyMaterials, initMaterials } from './materials.js';
+import { renderMeasures, initMeasures } from './measures.js';
+import { renderPhotos, releasePhotos, initPhotos } from './photos.js';
+import { initAddress } from './address.js';
+import { initSend } from './send.js';
+import { initActions } from './actions.js';
 
 export async function enter(params) {
-    dirty = false;
-    doc = await store.getReport(params.id);
+    const doc = await store.getReport(params.id);
     if (!doc || doc.deletedAt) {
-        doc = null;
+        openSession(null);
         toast('Rapporto non trovato');
         nav.replace('home');
         return;
     }
-    fillForm();
-    renderHeader();
+    openSession(doc);
+    fillForm(doc);
+    renderHeader(doc);
     showSaveState('saved');
     renderUnits();
     renderMaterials();
@@ -512,18 +46,11 @@ export async function enter(params) {
 }
 
 export async function leave() {
-    if (doc) {
-        // righe dei materiali rimaste vuote
-        const before = doc.intervention.materials.length;
-        doc.intervention.materials = doc.intervention.materials.filter((m) => m.text.trim() || m.qty.trim());
-        if (doc.intervention.materials.length !== before) touch();
-    }
+    if (session.doc) dropEmptyMaterials();
     const saved = await flush();
-    if (!saved) alert(`Il rapporto non è stato salvato (${saveError}). Le ultime modifiche andranno perse: salva un backup o libera spazio e riapri il rapporto.`);
-    photoUrls.forEach((url) => URL.revokeObjectURL(url));
-    photoUrls = [];
-    $('photo-view').hidden = true;
-    doc = null;
+    if (!saved) alert(`Il rapporto non è stato salvato (${lastSaveError()}). Le ultime modifiche andranno perse: salva un backup o libera spazio e riapri il rapporto.`);
+    releasePhotos();
+    session.doc = null;
 }
 
 export function init() {
@@ -532,11 +59,18 @@ export function init() {
     };
     fillSelect('e-type', INTERVENTION_TYPES, 'Seleziona…');
     fillSelect('e-outcome', OUTCOMES, 'Seleziona…');
-    for (const kind of UNIT_KINDS) $(`e-add-${kind.id}`).addEventListener('click', () => addUnit(kind.id));
+
+    initUnits();
+    initMaterials();
+    initMeasures();
+    initPhotos();
+    initAddress();
+    initSend();
+    initActions();
 
     for (const event of ['input', 'change']) {
         $('view-editor').addEventListener(event, (e) => {
-            if (!doc || !(e.target.id in FIELDS)) return;
+            if (!session.doc || !(e.target.id in FIELDS)) return;
             if (e.target.id === 'c-cf' && event === 'input') $('cf-hint').hidden = true; // l'avviso riappare a campo finito
             if (e.target.id === 'e-start' || e.target.id === 'e-end') updateDuration();
             touch();
@@ -554,64 +88,8 @@ export function init() {
             touch();
         });
     }
-    $('e-mat-add').addEventListener('click', () => {
-        doc.intervention.materials.push({ text: '', qty: '' });
-        renderMaterials();
-        $('e-materials').lastElementChild.querySelector('input').focus();
-        touch();
-    });
-    $('e-measure-add').addEventListener('click', () => nav.go('scan', { mode: 'attach', reportId: doc.id }));
 
-    // indirizzo dalla posizione del telefono
-    $('btn-geo').addEventListener('click', async () => {
-        const btn = $('btn-geo');
-        btn.disabled = true;
-        try {
-            showBoxMsg('geo-msg', 'Rilevo la posizione…');
-            let pos;
-            try {
-                pos = await getPosition();
-            } catch (e) {
-                showBoxMsg('geo-msg', geoErrorMessage(e), 'error');
-                return;
-            }
-            const { latitude, longitude, accuracy } = pos.coords;
-            showBoxMsg('geo-msg', 'Cerco l\'indirizzo…');
-            try {
-                const address = await reverseGeocode(latitude.toFixed(6), longitude.toFixed(6));
-                if (!doc) return;
-                $('c-address').value = address;
-                touch();
-                showBoxMsg('geo-msg', `Indirizzo trovato (precisione circa ${Math.round(accuracy)} m). Controllalo prima di creare il PDF.`, 'success');
-            } catch {
-                showBoxMsg('geo-msg', `Posizione trovata (${latitude.toFixed(5)}, ${longitude.toFixed(5)}) ma non riesco a ricavare l'indirizzo (serve internet). Inseriscilo a mano.`, 'error');
-            }
-        } finally {
-            btn.disabled = false;
-        }
-    });
-
-    for (const id of ['in-shoot', 'in-gallery']) {
-        $(id).addEventListener('change', (e) => {
-            const files = Array.from(e.target.files);
-            e.target.value = '';
-            if (files.length && doc) addPhotoFiles(files);
-        });
-    }
-    $('photo-view').addEventListener('click', () => ($('photo-view').hidden = true));
-
-    const pdfError = (e) => `Impossibile creare il PDF: ${e.message || e}`;
-    for (const [id, action] of [['btn-pdf-email', onEmail], ['btn-pdf-save', onSave], ['btn-pdf-share', onShare]]) {
-        $(id).addEventListener('click', () => guarded(action, { button: $(id), error: pdfError }));
-    }
-    $('btn-close').addEventListener('click', () => guarded(onClose));
-    $('btn-duplicate').addEventListener('click', () => guarded(onDuplicate));
-    $('btn-delete').addEventListener('click', () => guarded(onDelete));
-    $('e-save').addEventListener('click', () => {
-        if (!saveError) return;
-        dirty = true;
-        saveNow();
-    });
+    $('e-save').addEventListener('click', retrySave);
     $('e-back').addEventListener('click', () => nav.back());
 
     // chi passa a un'altra app non deve perdere l'ultima modifica
