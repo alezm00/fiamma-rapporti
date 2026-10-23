@@ -6,7 +6,7 @@ import { formatReportNumber, nextNumber, setNextNumber } from '../model/index.js
 import { checkRecipients } from '../model/mail.js';
 import { getLogo, setLogo, removeLogo } from '../data/photos.js';
 import * as folder from '../backup/folder/index.js';
-import { createBackup, restoreBackup } from '../backup/file.js';
+import { createBackup, restoreBackup } from '../backup/zip-backup.js';
 import { $, fieldElement, showBoxMsg, debounce, downloadFile } from '../ui/util.js';
 
 // wide = il campo occupa tutta la riga, gli altri stanno in due colonne

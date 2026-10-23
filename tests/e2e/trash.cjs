@@ -120,10 +120,10 @@ run(async () => {
   await page.waitForSelector('#view-editor:not([hidden])');
   await page.click('#btn-delete');
   await onHome();
-  const zipBytes = await page.evaluate(async () => { const b = await import('/src/backup/file.js'); const r = await b.createBackup(); return Array.from(new Uint8Array(await r.blob.arrayBuffer())); });
+  const zipBytes = await page.evaluate(async () => { const b = await import('/src/backup/zip-backup.js'); const r = await b.createBackup(); return Array.from(new Uint8Array(await r.blob.arrayBuffer())); });
   await page.evaluate(async () => { const db = await import('/src/data/db.js'); await db.clear(db.REPORTS); await db.clear(db.PHOTOS); });
   assert((await listIds()).join() === '0,0', 'archivio vuoto');
-  await page.evaluate(async (bytes) => { const b = await import('/src/backup/file.js'); await b.restoreBackup(new Blob([new Uint8Array(bytes)])); }, zipBytes);
+  await page.evaluate(async (bytes) => { const b = await import('/src/backup/zip-backup.js'); await b.restoreBackup(new Blob([new Uint8Array(bytes)])); }, zipBytes);
   assert((await listIds()).join() === '0,1', 'dopo il ripristino è ancora nel cestino');
   log('backup -> il cestino si ripristina com\'era');
 

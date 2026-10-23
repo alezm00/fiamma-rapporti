@@ -57,7 +57,7 @@ L'icona di condivisione accanto a "Salva PDF" invia il solo PDF.
     measures: [{ id, label, json: (il JSON TJF del QR), addedAt }],
     photoCount }
   ```
-  Quello che si legge da fuori (cartella, backup) viene sempre ripulito da `normalizeReport` (`model.js`): tipi sbagliati, campi in più, identificativi non validi.
+  Quello che si legge da fuori (cartella, backup) viene sempre ripulito da `normalizeReport` (`src/model/normalize.js`): tipi sbagliati, campi in più, identificativi non validi.
   Scegliendo la cartella, se dentro ci sono già delle impostazioni (di solito di un altro telefono) l'app chiede se **caricarle al posto di quelle del telefono**: ditta, email e logo; il numero progressivo non torna mai indietro (per ogni anno vale il più alto). Rispondendo di no il telefono resta com'è e le impostazioni nella cartella non vengono cancellate.
   È una copia **a senso unico** (telefono → cartella): i rapporti si modificano solo sul telefono. Un rapporto nel cestino viene tolto dalla cartella e vi torna se lo ripristini. Sincronizzando la cartella con Drive, Syncthing o altro si ha un backup e l'ufficio legge i PDF. "Ripristina dalla cartella" rilegge i `rapporto.json` e le foto e li unisce a quelli del telefono (a parità di rapporto vince la modifica più recente). Su un telefono nuovo: scegli la cartella, poi tocca *Ripristina dalla cartella* per i rapporti.
   - Il telefono può chiedere di nuovo il permesso a ogni apertura: le modifiche restano in coda e partono quando lo riattivi (la home lo ricorda).
@@ -80,7 +80,7 @@ Tenendo premuta l'icona sulla schermata Home compaiono le scorciatoie **Nuovo ra
 
 ## Sviluppo
 - Nessuna compilazione e nessun npm: file statici (`python3 -m http.server`).
-- Test della logica: `node --test tests/*.test.mjs` (modello e numerazione, date, QR del Testo, indirizzi, email, impostazioni, ZIP, codice fiscale, elenco dei file del service worker).
+- Test della logica: `node --test` dalla radice (trova da solo le prove in `tests/unit/`): modello e numerazione, date, QR del Testo, indirizzi, email, impostazioni, ZIP, codice fiscale, elenco dei file del service worker, ordine delle cartelle di `src/`.
 - Prove nel browser (Playwright con Chromium, fotocamera finta, cartella privata del browser al posto di quella scelta): `tests/e2e/run.sh [prova …]`, senza argomenti le fa tutte. Le prove: `reports` (rapporto e misure), `pdf`, `send` (email e condivisione), `folder` (cartella di salvataggio), `settings-folder` (impostazioni dalla cartella), `backup` (ZIP), `offline`, `form` (modulo, foto, posizione), `nav` (tasto indietro, fotocamera), `save` (esito del salvataggio, archivio assente), `trash`, `long-list`, `units` (apparecchi). Servono Playwright (`run.sh` imposta `NODE_PATH` dall'installazione globale), Pillow, ffmpeg e poppler (`pdftotext`, `pdfimages`); la base comune è `tests/e2e/lib.cjs`. La scelta vera della cartella su Android non si può provare così.
 - **Pubblicazione**: il sito è su GitHub Pages dal ramo `main` (<https://alezm00.github.io/fiamma-rapporti/>). I file sono salvati sul telefono dal service worker (`sw.js`): dopo ogni modifica aumentare `CACHE` e aggiungere i file nuovi a `FILES` (la prova `tests/sw.test.mjs` controlla che non ne manchi nessuno). L'app scarica la nuova versione alla prima apertura con internet e la usa dall'apertura successiva.
 
@@ -88,22 +88,39 @@ Tenendo premuta l'icona sulla schermata Home compaiono le scorciatoie **Nuovo ra
 Lo stile usa [Tailwind CSS 4](https://tailwindcss.com) nella versione "browser" (`vendor/tailwindcss-browser.js`).
 - `css/tailwind.css`: colori e font (`@theme`) e i componenti ricorrenti (`btn`, `btn-primary`, `card`, `input`, `fld`, `lbl`, `sect`, `icon`, `chip`). L'interfaccia è compatta e "da strumento": etichette piccole in maiuscolo, titoli di sezione con linea, numeri, date e codici in carattere a larghezza fissa (`font-mono`), valori misurati in carattere normale a cifre tabulari.
 - `css/load-tailwind.js`: legge quel file e avvia Tailwind; la pagina resta nascosta finché gli stili non sono pronti.
-- Le classi create dal JavaScript vanno scritte in `ui.js`: vengono registrate all'avvio, così il loro stile è già pronto quando servono.
+- Le classi create dal JavaScript vanno scritte in `src/ui/classes.js`: vengono registrate all'avvio, così il loro stile è già pronto quando servono.
 - Per aggiornare Tailwind: sostituire `vendor/tailwindcss-browser.js` con `dist/index.global.js` del pacchetto npm `@tailwindcss/browser` e alzare la versione in `sw.js`.
 - Il build "browser" compila gli stili a ogni apertura (circa 25 KB di CSS): sul telefono aggiunge qualche decimo di secondo all'apertura.
 
 ### File
-- `index.html`, `app.js`: pagina e avvio; `nav.js`: schermate e tasto indietro di Android
-- `screens/`: `home` (elenco), `editor` (rapporto), `scan` (fotocamera), `measure` (valori di una misura), `quick` (scansioni rapide), `trash` (cestino), `settings`
-- `model.js`: rapporto, stati, numerazione, ricerca, raggruppamento delle misure (solo logica, provata con `node --test`)
-- `store.js`, `db.js`, `photos.js`: archivio sul telefono (IndexedDB), foto e logo
-- `folder.js`: copia nella cartella di salvataggio; `backup.js`, `zip.js`: backup in un file ZIP (senza librerie)
-- `report.js`: creazione del PDF; `mail.js`: oggetto, testo e destinatari; `settings.js`: impostazioni
-- `scanner.js`, `tjf.js`: lettura del QR e decodifica dei dati Testo; `quickscans.js`: scansioni rapide
-- `dates.js`, `geo.js`, `validate.js`, `util.js`, `ui.js`: date e orari, posizione e indirizzo, codice fiscale, utilità e campi del modulo, classi di stile
-- `css/`: tema e componenti di Tailwind (`tailwind.css`) e il suo caricamento (`load-tailwind.js`)
-- `tests/`: prove della logica (`*.test.mjs`) e nel browser (`e2e/`, con i campioni QR in `e2e/fixtures/`)
-- `sw.js`, `manifest.json`, `img/`: PWA offline. L'icona (foglio con fiamma e mirino del QR) è `img/icon.svg`; `node tools/make-icons.cjs` ne ricava i PNG (serve Playwright)
+Il programma sta in `src/`, a livelli: `screens` si appoggia a `backup`, `pdf`, `ui` e `data`; questi a `model`; `model` a `qr` e `lib`. Non si risale mai (la logica non conosce lo schermo): la prova `tests/unit/layers.test.mjs` controlla anche questo, e che ogni importazione trovi il suo file.
+
+```
+index.html  manifest.json  sw.js        pagina, PWA e uso offline (devono stare in radice)
+css/  img/  vendor/  tools/             stile, immagini, librerie incluse, strumenti
+tests/unit/  tests/e2e/                 prove della logica e prove nel browser
+src/
+  app.js                                avvio: schermate, service worker, scorciatoie dell'icona
+  screens/                              una schermata per file; l'editor ha una cartella
+    home  trash  scan  measure  quick  settings
+    editor/   index (ingresso, uscita) · form (campi) · session (salvataggio) · units · materials ·
+              measures · photos · address · send (PDF, email) · actions (chiudi, duplica, elimina)
+  ui/       nav (schermate, tasto indietro) · classes (classi di stile create dal JS) · util (DOM, avvisi, campi)
+  backup/   zip-backup (backup in un file) · folder/ (copia nella cartella di salvataggio:
+            index · state · writer · settings-file · restore · files · paths)
+  pdf/      index · libs · text · sheet (pagina, riquadri) · header · parties · materials · measures · photos · footer
+  data/     db (IndexedDB) · store (rapporti) · photos (foto e logo) · settings · quickscans
+  model/    values · units · report (stati, numeri, orari) · list (ricerca, mesi, cestino) · measures ·
+            normalize (dati letti da fuori) · mail (oggetto e testo dell'email) · index (riunisce il modello)
+  qr/       scanner (fotocamera, zxing) · tjf/ (decodifica dei dati Testo: index · channels · items · format · labels)
+  lib/      dates · validate (codice fiscale) · geo (posizione e indirizzo) · zip (ZIP senza librerie)
+```
+- La logica di `model/`, `qr/tjf/` e `lib/` non tocca il DOM né il database, ed è provata con `node --test`.
+- Un file nuovo in `src/` va aggiunto a `FILES` in `sw.js` (lo controlla `tests/unit/sw.test.mjs`).
+- Le prove nel browser caricano i moduli dall'indirizzo `/src/…` (per esempio `import('/src/data/store.js')`).
+- `css/`: tema e componenti di Tailwind (`tailwind.css`) e il suo caricamento (`load-tailwind.js`).
+- `tests/`: prove della logica (`unit/*.test.mjs`) e nel browser (`e2e/`, con i campioni QR in `e2e/fixtures/`).
+- `sw.js`, `manifest.json`, `img/`: PWA offline. L'icona (foglio con fiamma e mirino del QR) è `img/icon.svg`; `node tools/make-icons.cjs` ne ricava i PNG (serve Playwright).
 - `vendor/`: librerie incluse nell'app, con le rispettive licenze
   - Tailwind CSS 4.3.3, build "browser" (stile, MIT)
   - zxing-wasm 3.1.5 (lettore QR, MIT)

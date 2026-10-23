@@ -108,9 +108,9 @@ run(async () => {
 
   // 8) backup e ripristino conservano gli apparecchi
   const before = await page.evaluate(async () => JSON.stringify((await (await import('/src/data/store.js')).listReports()).map((r) => r.plant.units.map((u) => [u.kind, u.brand, u.model]))));
-  const zip = await page.evaluate(async () => { const r = await (await import('/src/backup/file.js')).createBackup(); return Array.from(new Uint8Array(await r.blob.arrayBuffer())); });
+  const zip = await page.evaluate(async () => { const r = await (await import('/src/backup/zip-backup.js')).createBackup(); return Array.from(new Uint8Array(await r.blob.arrayBuffer())); });
   await page.evaluate(async () => { const db = await import('/src/data/db.js'); await db.clear(db.REPORTS); });
-  await page.evaluate(async (z) => (await import('/src/backup/file.js')).restoreBackup(new Blob([new Uint8Array(z)])), zip);
+  await page.evaluate(async (z) => (await import('/src/backup/zip-backup.js')).restoreBackup(new Blob([new Uint8Array(z)])), zip);
   const after = await page.evaluate(async () => JSON.stringify((await (await import('/src/data/store.js')).listReports()).map((r) => r.plant.units.map((u) => [u.kind, u.brand, u.model]))));
   assert(before === after, 'apparecchi uguali dopo il ripristino');
   log('backup -> apparecchi conservati');
