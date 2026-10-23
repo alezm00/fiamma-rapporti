@@ -10,12 +10,14 @@
 
 import * as db from '../../data/db.js';
 import * as store from '../../data/store.js';
-import { normalizeReport } from '../../model/index.js';
-import { folderPath } from './paths.js';
-import { pad } from '../../lib/dates.js';
-import { listPhotos, photosForPdf, logoForPdf, getLogo, importPhoto, importLogo } from '../../data/photos.js';
-import { createReportPdf } from '../../pdf/index.js';
-import { loadSettings, saveSettings, updateSettings, mergeSettings, normalizeSettings } from '../../data/settings.js';
+import { updateSettings } from '../../data/settings.js';
+import { ROOT, dir, writeFile, readFile, missing } from './files.js';
+import { loadLink, loadQueue, saveQueue, freshIndex } from './state.js';
+import { writeReport, removeReport } from './writer.js';
+import { peekSettings, takeSettingsFrom, writeSettings } from './settings-file.js';
+import { restoreRoot } from './restore.js';
+
+export { peekSettings };
 
 export const events = new EventTarget(); // 'state': cambia lo stato della copia
 const emitState = () => events.dispatchEvent(new Event('state'));
@@ -23,22 +25,10 @@ const emitState = () => events.dispatchEvent(new Event('state'));
 // solo per i test: simula il permesso scaduto ('prompt') o negato
 export const testing = { permission: null };
 
-const ROOT = 'Fiamma';
 const DELAY = 2000; // pausa dopo l'ultima modifica, prima di scrivere
 const MODE = { mode: 'readwrite' };
 
 export const supported = () => typeof globalThis.showDirectoryPicker === 'function';
-
-// ---------------------------------------------------------------------------
-// Stato salvato nel telefono: cartella collegata, coda delle modifiche, cosa è già scritto
-// ---------------------------------------------------------------------------
-
-const loadLink = async () => (await db.get(db.META, 'folder')) ?? null;
-const loadQueue = async () => (await db.get(db.META, 'folderQueue'))?.items ?? {};
-const saveQueue = (items) => db.put(db.META, { key: 'folderQueue', items });
-const freshIndex = () => ({ key: 'folderIndex', reports: {}, logo: '' });
-const loadIndex = async () => (await db.get(db.META, 'folderIndex')) ?? freshIndex();
-const saveIndex = (index) => db.put(db.META, index);
 
 let linked = false;
 let lastError = '';
@@ -71,141 +61,6 @@ export async function status() {
         lastWrite: link?.lastWrite ?? 0,
         error: lastError,
     };
-}
-
-// ---------------------------------------------------------------------------
-// Scrittura di file e cartelle
-// ---------------------------------------------------------------------------
-
-async function dir(parent, names, create = true) {
-    let d = parent;
-    for (const name of names) d = await d.getDirectoryHandle(name, { create });
-    return d;
-}
-
-async function writeFile(parent, name, data) {
-    const handle = await parent.getFileHandle(name, { create: true });
-    const w = await handle.createWritable();
-    try {
-        await w.write(data);
-        await w.close();
-    } catch (e) {
-        await w.abort().catch(() => {});
-        throw e;
-    }
-}
-
-async function readFile(parent, name) {
-    return (await parent.getFileHandle(name)).getFile();
-}
-
-// Un File preso dalla cartella dipende dal file che sta nella cartella: se poi lo riscrivi (o cambia) non si legge più.
-// Quello che si tiene sul telefono (foto, logo) si copia quindi in memoria.
-async function memoryCopy(file) {
-    return new Blob([await file.arrayBuffer()], { type: 'image/jpeg' });
-}
-
-const missing = (e) => e?.name === 'NotFoundError' || e?.name === 'TypeMismatchError';
-
-async function removeDir(parent, name) {
-    try {
-        await parent.removeEntry(name, { recursive: true });
-    } catch (e) {
-        if (!missing(e)) throw e;
-    }
-}
-
-async function subdirs(parent) {
-    const out = [];
-    for await (const [name, handle] of parent.entries()) if (handle.kind === 'directory') out.push([name, handle]);
-    return out;
-}
-
-const id8 = (id) => String(id).replace(/[^A-Za-z0-9]/g, '').slice(0, 8);
-
-// ---------------------------------------------------------------------------
-// Un rapporto nella cartella
-// ---------------------------------------------------------------------------
-
-async function writeReport(link, id) {
-    const doc = await store.getReport(id);
-    if (!doc || doc.deletedAt) return removeReport(link, id); // eliminato o nel cestino: via anche dalla cartella
-    const { year, dir: name } = folderPath(doc);
-    const years = await dir(link.handle, [ROOT, 'rapporti', year]);
-    const index = await loadIndex();
-    const prev = index.reports[id];
-
-    // il rapporto ha cambiato nome o anno (la bozza prende il numero alla chiusura): via la cartella vecchia
-    if (prev && (prev.year !== year || prev.dir !== name)) {
-        const old = await dir(link.handle, [ROOT, 'rapporti', prev.year], false).catch(() => null);
-        if (old) await removeDir(old, prev.dir);
-    }
-    for (const [other] of await subdirs(years)) {
-        if (other !== name && other.endsWith(`_${id8(id)}`)) await removeDir(years, other);
-    }
-
-    const d = await years.getDirectoryHandle(name, { create: true });
-    const photos = await listPhotos(id);
-    const sig = photos.map((p) => p.id).join(',');
-    if (!prev || prev.year !== year || prev.dir !== name || prev.photos !== sig) {
-        await removeDir(d, 'foto');
-        if (photos.length) {
-            const fd = await d.getDirectoryHandle('foto', { create: true });
-            for (const [i, p] of photos.entries()) await writeFile(fd, `${pad(i + 1)}.jpg`, p.blob);
-        }
-    }
-    const file = { ...doc, photos: photos.map((p, i) => ({ id: p.id, file: `foto/${pad(i + 1)}.jpg`, width: p.width, height: p.height, addedAt: p.addedAt })) };
-    await writeFile(d, 'rapporto.json', JSON.stringify(file, null, 2));
-    index.reports[id] = { year, dir: name, photos: sig };
-    await saveIndex(index);
-
-    if (doc.status !== 'draft') {
-        const bytes = await createReportPdf(doc, loadSettings(), { photos: await photosForPdf(id), logo: await logoForPdf() });
-        await writeFile(d, 'rapporto.pdf', bytes);
-    }
-}
-
-async function removeReport(link, id) {
-    const index = await loadIndex();
-    const prev = index.reports[id];
-    if (prev) {
-        const years = await dir(link.handle, [ROOT, 'rapporti', prev.year], false).catch(() => null);
-        if (years) await removeDir(years, prev.dir);
-        delete index.reports[id];
-        await saveIndex(index);
-        return;
-    }
-    // senza traccia (dopo un ripristino): si cerca per id in tutti gli anni
-    const rapporti = await dir(link.handle, [ROOT, 'rapporti'], false).catch(() => null);
-    if (!rapporti) return;
-    for (const [, years] of await subdirs(rapporti)) {
-        for (const [name] of await subdirs(years)) if (name.endsWith(`_${id8(id)}`)) await removeDir(years, name);
-    }
-}
-
-// impostazioni e logo (senza la data dell'ultimo backup, che è di questo telefono)
-async function writeSettings(link) {
-    const root = await dir(link.handle, [ROOT]);
-    // le impostazioni già in cartella non si perdono: su un telefono nuovo, collegare la cartella
-    // prima del ripristino non deve sovrascriverle con quelle vuote
-    let existing = null;
-    try {
-        existing = JSON.parse(await (await readFile(root, 'impostazioni.json')).text());
-    } catch {}
-    const { lastBackup, ...settings } = mergeSettings(loadSettings(), existing);
-    const logo = await getLogo();
-    // come per le impostazioni, il logo già in cartella non si perde se qui non c'è
-    const logoInfo = logo ? { width: logo.width, height: logo.height } : (existing?.logo ?? null);
-    await writeFile(root, 'impostazioni.json', JSON.stringify({ ...settings, logo: logoInfo }, null, 2));
-    if (logo) {
-        const index = await loadIndex();
-        const sig = String(logo.blob.size);
-        if (sig !== index.logo) {
-            await writeFile(root, 'logo.jpg', logo.blob);
-            index.logo = sig;
-            await saveIndex(index);
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -309,40 +164,6 @@ export async function pick() {
     }
 }
 
-// Le impostazioni già salvate in una cartella (di solito da un altro telefono):
-// { settings, logo, modified } oppure null se non ce ne sono (o il file non si legge).
-export async function peekSettings(handle) {
-    try {
-        const root = await dir(handle, [ROOT], false);
-        const file = await readFile(root, 'impostazioni.json');
-        const raw = JSON.parse(await file.text());
-        return { settings: normalizeSettings(raw), logo: raw?.logo ?? null, modified: file.lastModified };
-    } catch (e) {
-        if (missing(e) || e instanceof SyntaxError) return null;
-        throw e;
-    }
-}
-
-// Prende le impostazioni dalla cartella al posto di quelle del telefono (ditta, email, numerazione, logo).
-// Il numero progressivo non torna mai indietro: per ogni anno vale il più alto.
-async function takeSettingsFrom(handle) {
-    const found = await peekSettings(handle);
-    if (!found) return false;
-    const local = loadSettings();
-    const counters = { ...found.settings.counters };
-    for (const [year, n] of Object.entries(local.counters)) counters[year] = Math.max(counters[year] || 0, n);
-    saveSettings({ ...found.settings, counters, lastBackup: local.lastBackup });
-    if (found.logo) {
-        try {
-            const root = await dir(handle, [ROOT], false);
-            await importLogo(await memoryCopy(await readFile(root, 'logo.jpg')), found.logo.width, found.logo.height, { replace: true });
-        } catch (e) {
-            if (!missing(e)) throw e; // senza il file del logo si tiene quello che c'è
-        }
-    }
-    return true;
-}
-
 // Collega la cartella scelta e la riempie con tutti i rapporti.
 // fromFolder = true: prima prende le impostazioni salvate nella cartella (vedi takeSettingsFrom).
 export async function linkHandle(handle, { fromFolder = false } = {}) {
@@ -403,44 +224,6 @@ export async function test() {
 // ---------------------------------------------------------------------------
 // Ripristino dalla cartella: unisce i rapporti trovati a quelli del telefono
 // ---------------------------------------------------------------------------
-
-// Legge i rapporti della cartella Fiamma e li unisce a quelli del telefono
-async function restoreRoot(root, result) {
-    const rapporti = await dir(root, ['rapporti'], false).catch(() => null);
-    for (const [, years] of rapporti ? await subdirs(rapporti) : []) {
-        for (const [, d] of await subdirs(years)) {
-            let raw;
-            try {
-                raw = JSON.parse(await (await readFile(d, 'rapporto.json')).text());
-            } catch {
-                result.skipped++;
-                continue;
-            }
-            const doc = normalizeReport(raw);
-            if (!doc) {
-                result.skipped++;
-                continue;
-            }
-            if (await store.importReport(doc)) result.reports++;
-            const fotoDir = await d.getDirectoryHandle('foto').catch(() => null);
-            for (const p of Array.isArray(raw.photos) ? raw.photos : []) {
-                if (!fotoDir || !/^[\w.-]+\.jpg$/.test(String(p?.file).replace(/^foto\//, ''))) continue;
-                try {
-                    const blob = await memoryCopy(await readFile(fotoDir, p.file.replace(/^foto\//, '')));
-                    if (await importPhoto({ id: p.id, reportId: doc.id, blob, width: p.width, height: p.height, addedAt: p.addedAt })) result.photos++;
-                } catch {}
-            }
-        }
-    }
-    try {
-        const settings = JSON.parse(await (await readFile(root, 'impostazioni.json')).text());
-        saveSettings(mergeSettings(loadSettings(), settings));
-        const size = settings.logo;
-        if (size) await importLogo(await memoryCopy(await readFile(root, 'logo.jpg')), size.width, size.height);
-    } catch (e) {
-        if (!missing(e) && !(e instanceof SyntaxError)) throw e;
-    }
-}
 
 export async function restore() {
     const link = await loadLink();

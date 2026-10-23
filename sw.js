@@ -8,8 +8,13 @@ const FILES = [
     // programma
     './src/app.js',
     './src/backup/file.js',
+    './src/backup/folder/files.js',
     './src/backup/folder/index.js',
     './src/backup/folder/paths.js',
+    './src/backup/folder/restore.js',
+    './src/backup/folder/settings-file.js',
+    './src/backup/folder/state.js',
+    './src/backup/folder/writer.js',
     './src/data/db.js',
     './src/data/photos.js',
     './src/data/quickscans.js',
