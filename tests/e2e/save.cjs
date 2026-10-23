@@ -1,15 +1,7 @@
-const { chromium } = require('playwright');
-const [SP, FX, BASE = 'http://localhost:8801/'] = process.argv.slice(2);
-const log = (...a) => console.log('•', ...a);
-const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
-const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now() - t < ms) { if (await fn()) return; await new Promise((r) => setTimeout(r, 150)); } throw new Error('timeout in attesa'); };
-(async () => {
-  const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'it-IT', timezoneId: 'Europe/Rome' });
-  const page = await ctx.newPage();
-  const errors = []; page.on('pageerror', (e) => errors.push(e.message)); page.on('console', (m) => m.type() === 'error' && !/QuotaExceeded|piena/.test(m.text()) && errors.push(m.text()));
-  const dialogs = []; page.on('dialog', (d) => { dialogs.push(d.message()); d.accept(); });
-  await page.goto(BASE);
+const { SP, FX, BASE, log, assert, until, run, start, open, finish } = require('./lib.cjs');
+run(async () => {
+  const session = await start({ ignoreErrors: /QuotaExceeded|piena/ });
+  const { browser, ctx, page, errors, dialogs } = session;
   await page.waitForSelector('#view-home:not([hidden])');
   const saveText = () => page.textContent('#e-save');
   const failWrites = () => page.evaluate(() => { window.__put = window.__put || IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function () { throw new DOMException('piena', 'QuotaExceededError'); }; });
@@ -79,12 +71,8 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   assert(errors.length === 0, 'errori: ' + errors.join(' // '));
 
   // 7) archivio del telefono non disponibile (navigazione privata): la home lo dice, l'app resta usabile
-  const priv = await browser.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, locale: 'it-IT', timezoneId: 'Europe/Rome' });
-  await priv.addInitScript(() => Object.defineProperty(window, 'indexedDB', { value: undefined, configurable: true }));
-  const p2 = await priv.newPage();
-  const errors2 = []; p2.on('pageerror', (e) => errors2.push(e.message));
-  await p2.goto(BASE);
-  await p2.waitForSelector('#view-home:not([hidden])');
+  const priv = await open(browser, { before: (p) => p.addInitScript(() => Object.defineProperty(window, 'indexedDB', { value: undefined, configurable: true })) });
+  const p2 = priv.page;
   await until(async () => /archivio del telefono non è disponibile/.test((await p2.textContent('#home-reminder')) || ''));
   assert((await p2.getAttribute('#home-reminder button', 'data-type')) === null && /err/.test(await p2.getAttribute('#home-reminder button', 'class')), 'avviso in rosso');
   await p2.click('#btn-new');
@@ -96,7 +84,5 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   await p2.click('#e-back');
   await p2.waitForSelector('#view-home:not([hidden])');
   await p2.screenshot({ path: `${SP}/shots5/23-no-storage-home.png`, fullPage: false });
-  assert(errors2.length === 0, 'errori senza archivio: ' + errors2.join(' // '));
-  await browser.close();
-  log('ok');
-})().catch((e) => { console.error('FAILED', e.message); process.exit(1); });
+  await finish(session, priv);
+});

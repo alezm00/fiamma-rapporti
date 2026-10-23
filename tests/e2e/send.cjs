@@ -1,33 +1,27 @@
-const { chromium } = require('playwright');
 const fs = require('fs');
-const [SP, FX, BASE = 'http://localhost:8801/'] = process.argv.slice(2);
-const log = (...a) => console.log('•', ...a);
+const { SP, FX, BASE, log, assert, until, launch, open, finish, run } = require('./lib.cjs');
 const TODAY = new Date().toLocaleDateString('it-IT', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', year: 'numeric' }); // gg/mm/aaaa, come nel browser di prova
-const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
 const CAPTURE_MAILTO = () => document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a'); if (a && a.href.startsWith('mailto:')) { window.__mailto = a.href; e.preventDefault(); } }, true);
 const STUB_SHARE = () => {
   navigator.canShare = (d) => !!d?.files?.length;
   navigator.share = async (d) => { window.__shared = { title: d.title, text: d.text, name: d.files[0].name, type: d.files[0].type, size: d.files[0].size }; };
 };
-(async () => {
-  const browser = await chromium.launch();
-  const mk = async (share) => {
-    const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'it-IT', timezoneId: 'Europe/Rome', acceptDownloads: true, permissions: ['clipboard-read', 'clipboard-write'] });
-    const page = await ctx.newPage();
-    page.errors = []; page.on('pageerror', (e) => page.errors.push(e.message)); page.on('console', (m) => m.type() === 'error' && page.errors.push(m.text()));
-    page.on('dialog', (d) => d.accept());
-    await page.addInitScript(CAPTURE_MAILTO);
-    if (share) await page.addInitScript(STUB_SHARE);
-    await page.goto(BASE);
-    await page.waitForSelector('#view-home:not([hidden])');
-    return { ctx, page };
-  };
+run(async () => {
+  const browser = await launch();
+  const mk = (share) => open(browser, {
+    context: { permissions: ['clipboard-read', 'clipboard-write'] },
+    before: async (page) => {
+      await page.addInitScript(CAPTURE_MAILTO);
+      if (share) await page.addInitScript(STUB_SHARE);
+    },
+  });
   const vis = (page, sel) => page.isVisible(sel);
   const badge = (page) => page.textContent('#e-badge');
   const setConfig = (page, patch) => page.evaluate((p) => { const k = 'testoqr.config'; const s = JSON.parse(localStorage.getItem(k) || '{}'); localStorage.setItem(k, JSON.stringify({ ...s, ...p })); }, patch);
 
   // ============ impostazioni ============
-  const { ctx, page } = await mk(true);
+  const first = await mk(true);
+  const { ctx, page } = first;
   await page.click('#btn-settings');
   await page.waitForSelector('#view-settings:not([hidden])');
   log('metodo predefinito:', await page.$eval('input[name="s-method"]:checked', (r) => r.value));
@@ -142,8 +136,8 @@ const STUB_SHARE = () => {
   const m2 = (await page.textContent('#report-msg')).trim();
   log('senza destinatario ->', m2, '| tipo:', await page.getAttribute('#report-msg', 'data-type'));
   assert(/Nessun destinatario/.test(m2), 'avviso senza destinatario');
-  log('errori pagina:', page.errors.length ? page.errors : 'nessuno');
-  assert(!page.errors.length, 'errori');
+  log('errori pagina:', first.errors.length ? first.errors : 'nessuno');
+  assert(!first.errors.length, 'errori');
   await ctx.close();
 
   // ============ senza condivisione (desktop): ripiega su Gmail/mailto ============
@@ -156,7 +150,5 @@ const STUB_SHARE = () => {
   const [dl2] = await Promise.all([b.page.waitForEvent('download'), b.page.click('#btn-pdf-email')]);
   await b.page.waitForFunction(() => window.__mailto);
   log('senza supporto: scarica il PDF', dl2.suggestedFilename(), 'e apre mailto ->', (await b.page.evaluate(() => window.__mailto)).slice(0, 60) + '…');
-  assert(!b.page.errors.length, 'errori: ' + b.page.errors);
-  await browser.close();
-  log('ok');
-})().catch((e) => { console.error('FAILED', e.message); process.exit(1); });
+  await finish(b);
+});

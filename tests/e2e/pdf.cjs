@@ -1,17 +1,10 @@
-const { chromium } = require('playwright');
 const { execSync } = require('child_process');
 const fs = require('fs');
-const [SP, FX, BASE = 'http://localhost:8801/'] = process.argv.slice(2);
-const log = (...a) => console.log('•', ...a);
-const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
+const { SP, FX, BASE, log, assert, until, run, start, finish } = require('./lib.cjs');
 fs.mkdirSync(`${SP}/pdf5`, { recursive: true });
-(async () => {
-  const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'it-IT', timezoneId: 'Europe/Rome', acceptDownloads: true });
-  const page = await ctx.newPage();
-  const errors = []; page.on('pageerror', (e) => errors.push(e.message)); page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  page.on('dialog', (d) => d.accept());
-  await page.goto(BASE);
+run(async () => {
+  const session = await start();
+  const { browser, ctx, page, errors, dialogs } = session;
   await page.waitForSelector('#view-home:not([hidden])');
 
   // impostazioni: ditta, logo, numerazione
@@ -120,7 +113,17 @@ fs.mkdirSync(`${SP}/pdf5`, { recursive: true });
   log(info.split('\n').filter((l) => /Pages|Title|Producer/.test(l)).join(' | '));
   execSync(`pdftoppm -r 70 -png ${p} ${SP}/pdf5/chiuso`);
   log('immagini:', execSync(`pdfimages -list ${p}`).toString().split('\n').length - 3);
-  assert(errors.length === 0, 'errori: ' + errors.join(' // '));
-  await browser.close();
-  log('ok');
-})().catch((e) => { console.error('FAILED', e.message); process.exit(1); });
+  // una sola misura (non affiancata): sotto la tabella ci sono i dati della misura, con le fasi della prova
+  const json = JSON.parse(require('zlib').gunzipSync(fs.readFileSync(`${FX}/sample-10389.json.gz`)).toString());
+  const solo = await page.evaluate(async (j) => {
+    const m = await import('/model.js'); const r = await import('/report.js');
+    const doc = m.newReport({ id: 'soloM001' });
+    m.addMeasure(doc, j, { label: 'Prima' });
+    return Array.from(await r.createReportPdf(doc, {}, {}));
+  }, json);
+  fs.writeFileSync(`${SP}/pdf5/solo.pdf`, Buffer.from(solo));
+  const soloTxt = execSync(`pdftotext -layout ${SP}/pdf5/solo.pdf -`).toString();
+  log('fasi nel PDF ->', soloTxt.split('\n').filter((l) => /Fase \d/.test(l)).map((l) => l.trim()).join(' | '));
+  assert(/Fase 1 \(1 min 00 s\)/.test(soloTxt) && /Fase 3 \(1 min 00 s\)/.test(soloTxt) && (soloTxt.match(/\d\d:\d\d:\d\d → \d\d:\d\d:\d\d/g) || []).length === 3, 'fasi della prova nel PDF (etichetta con durata, tre intervalli di orari)');
+  await finish(session);
+});

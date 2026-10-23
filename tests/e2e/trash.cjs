@@ -1,15 +1,7 @@
-const { chromium } = require('playwright');
-const [SP, FX, BASE = 'http://localhost:8801/'] = process.argv.slice(2);
-const log = (...a) => console.log('•', ...a);
-const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
-const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now() - t < ms) { if (await fn()) return; await new Promise((r) => setTimeout(r, 200)); } throw new Error('timeout in attesa'); };
-(async () => {
-  const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'it-IT', timezoneId: 'Europe/Rome' });
-  const page = await ctx.newPage();
-  const errors = []; page.on('pageerror', (e) => errors.push(e.message)); page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  const dialogs = []; page.on('dialog', (d) => { dialogs.push(d.message()); d.accept(); });
-  await page.goto(BASE);
+const { SP, FX, BASE, log, assert, until, run, start, finish } = require('./lib.cjs');
+run(async () => {
+  const session = await start();
+  const { browser, ctx, page, errors, dialogs } = session;
   await page.waitForSelector('#view-home:not([hidden])');
   const rows = () => page.$$eval('#report-list > li:not([data-month])', (l) => l.length);
   const trashRows = () => page.$$eval('#trash-list > li', (l) => l.length);
@@ -155,7 +147,5 @@ const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now(
   await until(async () => { await process(); return !(await tree()).some((f) => f.endsWith('rapporto.json')); });
   log('di nuovo nel cestino -> tolto dalla cartella');
 
-  assert(errors.length === 0, 'errori: ' + errors.join(' // '));
-  await browser.close();
-  log('ok');
-})().catch((e) => { console.error('FAILED', e.message); process.exit(1); });
+  await finish(session);
+});

@@ -1,17 +1,7 @@
-const { chromium } = require('playwright');
-const [SP, FX, BASE = 'http://localhost:8801/'] = process.argv.slice(2);
-const log = (...a) => console.log('•', ...a);
-const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
-const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now() - t < ms) { if (await fn()) return; await new Promise((r) => setTimeout(r, 200)); } throw new Error('timeout in attesa'); };
-(async () => {
-  const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'it-IT', timezoneId: 'Europe/Rome' });
-  const page = await ctx.newPage();
-  const errors = []; page.on('pageerror', (e) => errors.push(e.message)); page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  let answer = true;
-  const dialogs = [];
-  page.on('dialog', (d) => { dialogs.push(d.message()); answer ? d.accept() : d.dismiss(); });
-  await page.goto(BASE);
+const { SP, FX, BASE, log, assert, until, run, start, finish } = require('./lib.cjs');
+run(async () => {
+  const session = await start();
+  const { browser, ctx, page, errors, dialogs } = session;
   await page.waitForSelector('#view-home:not([hidden])');
 
   // cartelle di prova nella memoria privata del browser; il selettore di sistema è sostituito da una funzione
@@ -56,7 +46,7 @@ const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now(
   await openSettings();
   assert((await page.inputValue('#s-co-name')) === '' && (await page.inputValue('#s-email')) === '', 'impostazioni vuote');
   await target('cartella-A');
-  answer = false;
+  dialogs.accept = false;
   dialogs.length = 0;
   await page.click('#s-folder-link');
   await page.waitForFunction(() => /Cartella collegata/.test(document.getElementById('s-folder-msg').textContent));
@@ -69,7 +59,7 @@ const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now(
   assert(a.company === 'Ditta Uno Srl' && a.technician === 'Luca Bianchi', 'No: le impostazioni nella cartella non si perdono');
 
   // 3) "Sì": le impostazioni della cartella sostituiscono quelle del telefono
-  answer = true;
+  dialogs.accept = true;
   await page.click('#s-folder-unlink');
   await page.waitForFunction(() => !document.getElementById('s-folder-link').hidden);
   dialogs.length = 0;
@@ -141,7 +131,5 @@ const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now(
   await page.click('#s-folder-link');
   await page.waitForTimeout(300);
   assert(dialogs.length === 0 && !(await page.isVisible('#s-folder-tools')) && (await page.inputValue('#s-co-name')) === 'Ditta dalla cartella', 'selettore annullato: nulla cambia');
-  assert(errors.length === 0, 'errori: ' + errors.join(' // '));
-  await browser.close();
-  log('ok');
-})().catch((e) => { console.error('FAILED', e.message); process.exit(1); });
+  await finish(session);
+});

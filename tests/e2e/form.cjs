@@ -1,17 +1,13 @@
-const { chromium } = require('playwright');
 const fs = require('fs');
 const { execSync } = require('child_process');
-const [SP, FX, BASE = 'http://localhost:8801/'] = process.argv.slice(2);
-const log = (...a) => console.log('•', ...a);
-const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
-(async () => {
-  const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'it-IT', timezoneId: 'Europe/Rome', acceptDownloads: true, geolocation: { latitude: 45.9569, longitude: 12.6603 }, permissions: ['geolocation'] });
-  const page = await ctx.newPage();
-  const errors = []; page.on('pageerror', (e) => errors.push(e.message)); page.on('console', (m) => m.type() === 'error' && !/nominatim|ERR_FAILED|Failed to load resource/.test(m.text()) && errors.push(m.text()));
-  page.on('dialog', (d) => d.accept());
-  await page.route('https://nominatim.openstreetmap.org/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ address: { road: 'Via Roma', house_number: '12', postcode: '33170', city: 'Pordenone', 'ISO3166-2-lvl6': 'IT-PN' } }) }));
-  await page.goto(BASE);
+const { SP, FX, BASE, log, assert, until, run, start, finish } = require('./lib.cjs');
+run(async () => {
+  const session = await start({
+    context: { geolocation: { latitude: 45.9569, longitude: 12.6603 }, permissions: ['geolocation'] },
+    ignoreErrors: /nominatim|ERR_FAILED|Failed to load resource/,
+    before: (page) => page.route('https://nominatim.openstreetmap.org/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ address: { road: 'Via Roma', house_number: '12', postcode: '33170', city: 'Pordenone', 'ISO3166-2-lvl6': 'IT-PN' } }) })),
+  });
+  const { browser, ctx, page, errors, dialogs } = session;
   await page.waitForSelector('#view-home:not([hidden])');
   await page.click('#btn-new');
   await page.waitForSelector('#view-editor:not([hidden])');
@@ -92,7 +88,5 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await page.waitForFunction(() => document.querySelectorAll('#trash-list > li').length === 0);
   const left = await page.evaluate(async () => { const db = await import('/db.js'); return (await db.getAll(db.PHOTOS)).length; });
   assert(left === 0, 'foto eliminate con il rapporto: ' + left);
-  assert(errors.length === 0, 'errori: ' + errors.join(' // '));
-  await browser.close();
-  log('ok');
-})().catch((e) => { console.error('FAILED', e.message); process.exit(1); });
+  await finish(session);
+});

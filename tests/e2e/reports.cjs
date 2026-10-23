@@ -1,14 +1,11 @@
-const { chromium } = require('playwright');
-const [SP, FX, BASE = 'http://localhost:8801/'] = process.argv.slice(2);
-const log = (...a) => console.log('•', ...a);
-const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
-(async () => {
-  const browser = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${FX}/cam.y4m`] });
-  const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'it-IT', timezoneId: 'Europe/Rome', acceptDownloads: true, permissions: ['camera'] });
-  const page = await ctx.newPage();
-  const errors = []; page.on('pageerror', (e) => errors.push(e.message)); page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  page.on('dialog', (d) => { log('dialog:', d.message()); d.accept(); });
-  await page.goto(BASE);
+const { SP, FX, BASE, log, assert, until, run, start, finish } = require('./lib.cjs');
+run(async () => {
+  const session = await start({
+    args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${FX}/cam.y4m`],
+    context: { permissions: ['camera'] },
+  });
+  const { browser, ctx, page, errors, dialogs } = session;
+  page.on('dialog', (d) => log('dialog:', d.message()));
   await page.waitForSelector('#view-home:not([hidden])');
   const visible = (id) => page.isVisible(id);
   const shot = (n) => page.screenshot({ path: `${SP}/shots5/${n}.png`, fullPage: true });
@@ -155,7 +152,5 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await page.click('#btn-settings');
   await page.waitForSelector('#view-settings:not([hidden])');
   await shot('8-settings');
-  assert(!errors.length, 'errori: ' + errors.join(' // '));
-  await browser.close();
-  log('tutto ok');
-})().catch((e) => { console.error('FAILED', e.message); process.exit(1); });
+  await finish(session);
+});

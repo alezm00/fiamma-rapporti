@@ -1,19 +1,11 @@
-const { chromium } = require('playwright');
 const { execSync } = require('child_process');
 const fs = require('fs');
-const [SP, FX, BASE = 'http://localhost:8801/'] = process.argv.slice(2);
-const log = (...a) => console.log('•', ...a);
+const { SP, FX, BASE, log, assert, until, run, start, finish } = require('./lib.cjs');
 const ISO_TODAY = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' }); // aaaa-mm-gg
-const until = async (fn, ms = 15000) => { const t = Date.now(); while (Date.now() - t < ms) { if (await fn()) return; await new Promise((r) => setTimeout(r, 300)); } throw new Error('timeout in attesa'); };
-const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
 fs.mkdirSync(`${SP}/dl`, { recursive: true });
-(async () => {
-  const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'it-IT', timezoneId: 'Europe/Rome', acceptDownloads: true });
-  const page = await ctx.newPage();
-  const errors = []; page.on('pageerror', (e) => errors.push(e.message)); page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  page.on('dialog', (d) => d.accept());
-  await page.goto(BASE);
+run(async () => {
+  const session = await start();
+  const { browser, ctx, page, errors, dialogs } = session;
   await page.waitForSelector('#view-home:not([hidden])');
 
   // utilità nella pagina
@@ -200,7 +192,5 @@ fs.mkdirSync(`${SP}/dl`, { recursive: true });
   log('cartella sparita -> errore:', JSON.stringify(st.error), '| in coda', st.pending);
   assert(st.pending >= 1, 'coda intatta');
 
-  assert(errors.length === 0, 'errori: ' + errors.join(' // '));
-  await browser.close();
-  log('ok');
-})().catch((e) => { console.error('FAILED', e.message); process.exit(1); });
+  await finish(session);
+});

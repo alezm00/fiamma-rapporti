@@ -1,17 +1,9 @@
-const { chromium } = require('playwright');
 const { execSync } = require('child_process');
 const fs = require('fs');
-const [SP, FX, BASE = 'http://localhost:8801/'] = process.argv.slice(2);
-const log = (...a) => console.log('•', ...a);
-const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
-(async () => {
-  const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'it-IT', timezoneId: 'Europe/Rome', acceptDownloads: true });
-  await ctx.addInitScript(() => { delete window.showDirectoryPicker; }); // browser senza cartella di salvataggio
-  const page = await ctx.newPage();
-  const errors = []; page.on('pageerror', (e) => errors.push(e.message)); page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  page.on('dialog', (d) => d.accept());
-  await page.goto(BASE);
+const { SP, FX, BASE, log, assert, until, run, start, finish } = require('./lib.cjs');
+run(async () => {
+  const session = await start({ before: (page, ctx) => ctx.addInitScript(() => { delete window.showDirectoryPicker; }) }); // browser senza cartella di salvataggio
+  const { browser, ctx, page, errors, dialogs } = session;
   await page.waitForSelector('#view-home:not([hidden])');
   assert((await page.$('#home-reminder button')) === null, 'nessun promemoria senza rapporti');
 
@@ -99,7 +91,5 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   // dopo un backup recente niente promemoria
   log('promemoria dopo backup ->', (await page.$('#home-reminder button')) ? 'presente' : 'assente');
   assert((await page.$('#home-reminder button')) === null || !(await page.isVisible('#home-reminder button')), 'nessun promemoria dopo il backup');
-  assert(errors.length === 0, 'errori: ' + errors.join(' // '));
-  await browser.close();
-  log('ok');
-})().catch((e) => { console.error('FAILED', e.message); process.exit(1); });
+  await finish(session);
+});

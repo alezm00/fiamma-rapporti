@@ -1,14 +1,10 @@
-const { chromium } = require('playwright');
-const [SP, FX, BASE = 'http://localhost:8801/'] = process.argv.slice(2);
-const log = (...a) => console.log('•', ...a);
-const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
-(async () => {
-  const browser = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${SP}/blank.y4m`] });
-  const ctx = await browser.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, locale: 'it-IT', timezoneId: 'Europe/Rome', permissions: ['camera'] });
-  const page = await ctx.newPage();
-  const errors = []; page.on('pageerror', (e) => errors.push(e.message)); page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  page.on('dialog', (d) => d.accept());
-  await page.goto(BASE);
+const { SP, FX, BASE, log, assert, until, run, start, finish } = require('./lib.cjs');
+run(async () => {
+  const session = await start({
+    args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${SP}/blank.y4m`],
+    context: { permissions: ['camera'] },
+  });
+  const { browser, ctx, page, errors, dialogs } = session;
   await page.waitForSelector('#view-home:not([hidden])');
   const where = async () => page.evaluate(() => [...document.querySelectorAll('main, section')].filter((e) => e.id.startsWith('view-') && !e.hidden).map((e) => e.id.slice(5)).join('+'));
   const wait = async (name) => { await page.waitForSelector(`#view-${name}:not([hidden])`, { timeout: 15000 }); const w = await where(); assert(w === name, `schermata ${name}, trovata ${w}`); };
@@ -116,7 +112,5 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await p2.setInputFiles('#in-photo', `${FX}/qr-sample.png`);
   await p2.waitForSelector('#view-measure:not([hidden])', { timeout: 20000 });
   log('QR da foto dopo errore fotocamera -> ok');
-  assert(errors.length === 0, 'errori: ' + errors.join(' // '));
-  await browser.close();
-  log('ok');
-})().catch((e) => { console.error('FAILED', e.message); process.exit(1); });
+  await finish(session);
+});
