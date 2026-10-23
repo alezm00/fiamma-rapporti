@@ -10,7 +10,8 @@
 
 import * as db from '../../data/db.js';
 import * as store from '../../data/store.js';
-import { folderPath, normalizeReport } from '../../model/index.js';
+import { normalizeReport } from '../../model/index.js';
+import { folderPath } from './paths.js';
 import { pad } from '../../lib/dates.js';
 import { listPhotos, photosForPdf, logoForPdf, getLogo, importPhoto, importLogo } from '../../data/photos.js';
 import { createReportPdf } from '../../pdf/index.js';

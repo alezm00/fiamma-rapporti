@@ -268,7 +268,8 @@ test('rapporto letto da fuori: campi puliti e tipi giusti', async () => {
 });
 
 test('percorso nella cartella: anno, numero, cliente e id', async () => {
-    const { folderPath, newReport, closeReport } = await import('../../src/model/index.js');
+    const { newReport, closeReport } = await import('../../src/model/index.js');
+    const { folderPath } = await import('../../src/backup/folder/paths.js');
     const doc = newReport({ now: at(2025, 12, 30), id: 'ab12cd34-0000' });
     doc.customer.name = 'Anna Verdi';
     assert.deepEqual(folderPath(doc), { year: '2025', dir: 'BOZZA_2025-12-30_Anna-Verdi_ab12cd34' });
