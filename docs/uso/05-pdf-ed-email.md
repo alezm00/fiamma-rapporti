@@ -32,7 +32,7 @@ Se il codice fiscale ha un avviso, il PDF si crea lo stesso e il messaggio dice 
 
 ## Inviare per email
 
-**Invia email** crea il PDF e prepara l'invio, con **oggetto** e **testo** già scritti.
+**Invia email** crea il PDF e prepara l'invio, con **oggetto** e **testo** già scritti. Quelli qui sotto sono i testi **originali**: li puoi cambiare nelle Impostazioni ([Testo dell'email](06-impostazioni.md#testo-dellemail)).
 
 **Oggetto**: `Rapporto di intervento n. 2026/012 - Mario Rossi - targa AB12 - 22/10/2026` (per una bozza: `Rapporto di intervento (bozza) - …`).
 

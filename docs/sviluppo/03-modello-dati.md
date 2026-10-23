@@ -106,12 +106,26 @@ Stanno in `localStorage` (`testoqr.config`), come JSON:
   email,                       // destinatario/i, "a@x.it, b@y.it"
   method,                      // 'share' (menu di Android) | 'mailto' (Gmail)
   company: { name, vat, address, phone, email, technician },
+  mail: { subject, body },     // testo dell'email scelto dall'utente; '' = quello originale (DEFAULT_MAIL)
   counters: { "2026": 11 },    // ultimo numero usato per anno
   lastBackup                   // millisecondi dell'ultima copia (cartella o file), 0 se mai
 }
 ```
 
-`normalizeSettings` porta qualunque oggetto a questa forma. `mergeSettings(locali, in_arrivo)` (usata nei ripristini) riempie **solo i campi vuoti** e per ogni anno tiene il contatore **più alto**.
+`normalizeSettings` porta qualunque oggetto a questa forma (oggetto al massimo 300 caratteri, messaggio 5000). `mergeSettings(locali, in_arrivo)` (usata nei ripristini) riempie **solo i campi vuoti** e per ogni anno tiene il contatore **più alto**.
+
+## L'email: il testo con segnaposto
+
+Oggetto e messaggio di "Invia email" sono **modelli con segnaposto** tra graffe (`{cliente}`), in `src/model/mail.js`. L'utente li modifica nelle impostazioni (`mail.subject`, `mail.body`); `DEFAULT_MAIL` è il modello originale e vale quando il campo è vuoto.
+
+- `mailValues(rapporto, ditta)` calcola il valore di ogni segnaposto (testi su una riga, **vuoti se il dato manca**). I segnaposto sono elencati in `MAIL_PLACEHOLDERS` (chiave ed esempio), che serve anche alla schermata delle impostazioni.
+- **Regola delle parti vuote**: un pezzo di testo che contiene un segnaposto *noto* ma vuoto **sparisce**. I pezzi sono le **righe** del messaggio e, nell'oggetto, le parti separate da `" - "` del **modello** (non quelle dentro ai valori). Un segnaposto *sconosciuto* resta com'è (`unknownPlaceholders` lo segnala; un segnaposto è tale solo se è in `MAIL_PLACEHOLDERS`: `{constructor}` o `{Numero}` no).
+- `renderSubject` mette l'oggetto su una riga (a capo = spazio); `renderBody` non lascia mai due righe vuote di seguito né vuote agli estremi.
+- `buildSubject(doc, modello)` e `buildBody(doc, ditta, modello)`: con un modello vuoto, o che non produce niente, ripiegano su `DEFAULT_MAIL`. Con il modello originale il risultato è identico al testo che l'app produceva prima che fosse modificabile (lo provano i test).
+
+`src/screens/editor/send.js` passa `settings.mail.subject` e `settings.mail.body`; l'icona "solo PDF" non usa il testo.
+
+**Aggiungere un segnaposto**: una voce in `MAIL_PLACEHOLDERS` e il suo valore in `mailValues`; una riga nella tabella di [Impostazioni](../uso/06-impostazioni.md#testo-dellemail); un caso in `tests/unit/mail.test.mjs` (la prova controlla già che ogni voce elencata abbia un valore).
 
 ## L'archivio (IndexedDB)
 

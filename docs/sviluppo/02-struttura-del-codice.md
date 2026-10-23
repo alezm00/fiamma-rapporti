@@ -43,7 +43,7 @@ Per l'ordine delle dipendenze vedi [Architettura](01-architettura.md).
 | `src/model/list.js` | `searchText`, `filterReports`, `sortReports`, `yearsOf`, `monthLabel`, `groupByMonth`, e il cestino: `TRASH_DAYS`, `trashDaysLeft`, `isExpired`. |
 | `src/model/measures.js` | `addMeasure`, `nextMeasureLabel` (Prima, Dopo, Misura 3…), `groupMeasures` (confronto affiancato o tabelle separate). |
 | `src/model/normalize.js` | `normalizeReport(oggetto)`: rifà un rapporto pulito da dati letti da fuori (cartella, backup), oppure `null`. |
-| `src/model/mail.js` | `parseRecipients`, `checkRecipients`, `buildSubject`, `buildBody`, `mailtoUrl`. |
+| `src/model/mail.js` | Destinatari (`parseRecipients`, `checkRecipients`), `mailtoUrl`, e il **testo** con segnaposto: `DEFAULT_MAIL`, `MAIL_PLACEHOLDERS`, `mailValues`, `renderSubject`, `renderBody`, `unknownPlaceholders`, `buildSubject`, `buildBody`. |
 
 ## `src/data/` — quello che resta sul telefono
 
@@ -103,6 +103,7 @@ Ogni schermata esporta `init()` (una volta, collega i pulsanti), `enter(params)`
 | `src/screens/quick.js` | Elenco delle scansioni rapide. |
 | `src/screens/trash.js` | Cestino: ripristina, elimina per sempre, svuota. |
 | `src/screens/settings.js` | Impostazioni: ditta, logo, numerazione, email, cartella di salvataggio, backup. |
+| `src/screens/settings-mail.js` | La scheda "Testo dell'email": oggetto e messaggio, segnaposto da toccare, anteprima con un rapporto d'esempio, ripristino (`initMail`, `fillMail`, `readMail`). |
 | `src/screens/editor/index.js` | Il rapporto: ingresso, uscita, collegamento di tutte le parti. |
 | `src/screens/editor/session.js` | Il rapporto aperto (`session.doc`) e il salvataggio automatico (`touch`, `flush`, `saveNow`, `retrySave`, `guarded`). |
 | `src/screens/editor/form.js` | I campi semplici (`FIELDS`: dove va ogni campo nel rapporto), intestazione, durata, destinatario, avviso del codice fiscale. |

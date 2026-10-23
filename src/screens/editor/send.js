@@ -44,8 +44,8 @@ async function onEmail() {
     const recipients = checkRecipients(settings.email);
     const problems = validateCustomer();
     await flush();
-    const subject = buildSubject(session.doc);
-    const body = buildBody(session.doc, settings.company);
+    const subject = buildSubject(session.doc, settings.mail.subject);
+    const body = buildBody(session.doc, settings.company, settings.mail.body);
     const useShare = settings.method !== 'mailto' && canShareFiles();
 
     const notes = [];

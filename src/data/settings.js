@@ -4,7 +4,11 @@ const KEY = 'testoqr.config';
 
 export const EMPTY_COMPANY = { name: '', vat: '', address: '', phone: '', email: '', technician: '' };
 
-const text = (v) => (typeof v === 'string' ? v : '');
+// Il testo dell'email scelto dall'utente: vuoto = quello originale (src/model/mail.js, DEFAULT_MAIL)
+export const EMPTY_MAIL = { subject: '', body: '' };
+const MAIL_MAX = { subject: 300, body: 5000 };
+
+const text = (v, max = Infinity) => (typeof v === 'string' ? v.slice(0, max) : '');
 
 // da un oggetto qualunque (localStorage, file di backup) a impostazioni complete e del tipo giusto
 export function normalizeSettings(s) {
@@ -14,10 +18,13 @@ export function normalizeSettings(s) {
     for (const [year, n] of Object.entries(s?.counters && typeof s.counters === 'object' ? s.counters : {})) {
         if (/^\d{4}$/.test(year) && Number.isFinite(n) && n >= 0) counters[year] = Math.floor(n);
     }
+    const mail = {};
+    for (const k of Object.keys(EMPTY_MAIL)) mail[k] = text(s?.mail?.[k], MAIL_MAX[k]);
     return {
         email: text(s?.email),
         method: s?.method === 'mailto' ? 'mailto' : 'share',
         company,
+        mail,
         counters,
         lastBackup: Number(s?.lastBackup) || 0,
     };
@@ -52,10 +59,13 @@ export function mergeSettings(local, incoming) {
     for (const k of Object.keys(company)) company[k] = company[k] || inc.company[k];
     const counters = { ...local.counters };
     for (const [year, n] of Object.entries(inc.counters)) counters[year] = Math.max(counters[year] || 0, n);
+    const mail = { ...local.mail };
+    for (const k of Object.keys(mail)) mail[k] = mail[k] || inc.mail[k];
     return {
         ...local,
         email: local.email || inc.email,
         company,
+        mail,
         counters,
     };
 }

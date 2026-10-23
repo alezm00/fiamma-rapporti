@@ -136,6 +136,76 @@ run(async () => {
   const m2 = (await page.textContent('#report-msg')).trim();
   log('senza destinatario ->', m2, '| tipo:', await page.getAttribute('#report-msg', 'data-type'));
   assert(/Nessun destinatario/.test(m2), 'avviso senza destinatario');
+
+  // ============ testo dell'email: modello personale con segnaposto ============
+  const sendAgain = async () => {
+    await page.evaluate(() => { window.__shared = null; });
+    await page.click('#btn-pdf-email');
+    await page.waitForFunction(() => window.__shared);
+    return page.evaluate(() => window.__shared);
+  };
+  const number = (await page.textContent('#e-title')).replace('Rapporto n. ', '');
+  await page.click('#e-back');
+  await page.waitForSelector('#view-home:not([hidden])');
+  await page.click('#btn-settings');
+  await page.waitForSelector('#view-settings:not([hidden])');
+  const ORIGINAL_SUBJECT = '{titolo} - {cliente} - targa {targa} - {data}';
+  assert((await page.inputValue('#s-mail-subject')) === ORIGINAL_SUBJECT && /\{rapporto\}/.test(await page.inputValue('#s-mail-body')), 'si parte dal testo originale');
+  log('anteprima originale ->', (await page.textContent('#s-mail-preview-subject')).trim());
+  assert(/^Rapporto di intervento n\. \d{4}\/012 - Mario Rossi - targa AB12 - \d\d\/\d\d\/\d{4}$/.test((await page.textContent('#s-mail-preview-subject')).trim()), 'anteprima dell\'oggetto originale');
+  assert(!(await vis(page, '#s-mail-msg')), 'nessun avviso sui segnaposto');
+
+  await page.fill('#s-mail-subject', '{numero} · {cliente}');
+  await page.fill('#s-mail-body', 'Gentile {cliente},\nin allegato {rapporto}.\nTel. {telefono}\nGrazie,\n{tecnico}');
+  await page.press('#s-mail-body', 'Tab');
+  const preview = (await page.textContent('#s-mail-preview-body')).trim();
+  log('anteprima personale ->', JSON.stringify(preview));
+  assert(/^Gentile Mario Rossi,\nin allegato il rapporto di intervento n\. \d{4}\/012\.\nTel\. 333 1234567\nGrazie,\nLuca Bianchi$/.test(preview), 'anteprima del messaggio');
+  // un segnaposto toccato si inserisce dove sta il cursore, e salva
+  await page.click('#s-mail-body');
+  await page.keyboard.press('Control+End');
+  await page.click('#s-mail-chips button:has-text("{targa}")');
+  assert((await page.inputValue('#s-mail-body')).endsWith('{tecnico}{targa}'), 'segnaposto inserito alla fine: ' + (await page.inputValue('#s-mail-body')));
+  assert(/Luca BianchiAB12$/.test((await page.textContent('#s-mail-preview-body')).trim()), 'l\'anteprima lo usa');
+  // un errore di battitura si segnala
+  await page.fill('#s-mail-body', 'Ciao {clinete}');
+  assert(await vis(page, '#s-mail-msg') && /\{clinete\}/.test(await page.textContent('#s-mail-msg')), 'avviso del segnaposto che non esiste');
+  await page.fill('#s-mail-body', 'Gentile {cliente},\nin allegato {rapporto}.\nTel. {telefono}\nGrazie,\n{tecnico}');
+  assert(!(await vis(page, '#s-mail-msg')), 'avviso sparito');
+  await page.press('#s-mail-body', 'Tab');
+  await page.reload();
+  await page.waitForSelector('#view-home:not([hidden])');
+  await page.click('#btn-settings');
+  await page.waitForSelector('#view-settings:not([hidden])');
+  assert((await page.inputValue('#s-mail-subject')) === '{numero} · {cliente}' && /^Gentile \{cliente\},/.test(await page.inputValue('#s-mail-body')), 'il testo personale resta dopo il ricaricamento');
+  assert((await page.evaluate(() => JSON.parse(localStorage.getItem('testoqr.config')).mail.subject)) === '{numero} · {cliente}', 'salvato nelle impostazioni');
+  await page.screenshot({ path: `${SP}/shots5/12-mail-text.png`, fullPage: true });
+  await page.click('#btn-settings-back');
+  await page.waitForSelector('#view-home:not([hidden])');
+  await page.click('#report-list li button');
+  await page.waitForSelector('#view-editor:not([hidden])');
+  sh = await sendAgain();
+  log('email personale -> oggetto:', JSON.stringify(sh.title), '| testo:', JSON.stringify(sh.text));
+  assert(sh.title === `${number} · Mario Rossi`, 'oggetto personale');
+  const phone = await page.inputValue('#c-phone');
+  assert(phone && sh.text === `Gentile Mario Rossi,\nin allegato il rapporto di intervento n. ${number}.\nTel. ${phone}\nGrazie,\nLuca Bianchi`, 'messaggio personale');
+  // ripristino: tornano l'oggetto e il messaggio originali, e non resta niente nelle impostazioni
+  await page.click('#e-back');
+  await page.waitForSelector('#view-home:not([hidden])');
+  await page.click('#btn-settings');
+  await page.waitForSelector('#view-settings:not([hidden])');
+  await page.click('#s-mail-reset');
+  assert((await page.inputValue('#s-mail-subject')) === ORIGINAL_SUBJECT && /Buongiorno,/.test(await page.inputValue('#s-mail-body')), 'ripristinato');
+  await page.press('#s-mail-body', 'Tab');
+  await page.waitForTimeout(500);
+  assert((await page.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem('testoqr.config')).mail))) === '{"subject":"","body":""}', 'nelle impostazioni resta vuoto (= originale)');
+  await page.click('#btn-settings-back');
+  await page.waitForSelector('#view-home:not([hidden])');
+  await page.click('#report-list li button');
+  await page.waitForSelector('#view-editor:not([hidden])');
+  sh = await sendAgain();
+  assert(sh.title === `Rapporto di intervento n. ${number} - Mario Rossi - targa 06BD529A822E2B20 - ${TODAY}` && /^Buongiorno,\n\nin allegato il rapporto di intervento n\./.test(sh.text), 'dopo il ripristino: oggetto e testo originali');
+  log('dopo il ripristino -> oggetto:', JSON.stringify(sh.title));
   log('errori pagina:', first.errors.length ? first.errors : 'nessuno');
   assert(!first.errors.length, 'errori');
   await ctx.close();

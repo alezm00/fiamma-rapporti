@@ -19,7 +19,7 @@ Una copia **a senso unico**: dal telefono verso la cartella. I rapporti si modif
 
 1. **Impostazioni → Cartella di salvataggio → Scegli cartella**.
 2. Scegli (o crea) una cartella: su Android **non si può scegliere** la radice della memoria né la cartella *Download*; scegli una **sottocartella** (per esempio *Documenti/Fiamma*).
-3. Se nella cartella ci sono già impostazioni salvate (di un altro telefono), l'app chiede se **caricarle al posto di quelle di questo telefono**: valgono ditta, email, logo e numerazione; il numero progressivo dei rapporti non torna mai indietro (per ogni anno vale il più alto). Rispondendo **No** il telefono resta com'è e le impostazioni nella cartella non vengono cancellate.
+3. Se nella cartella ci sono già impostazioni salvate (di un altro telefono), l'app chiede se **caricarle al posto di quelle di questo telefono**: valgono ditta, email (destinatario e testo), logo e numerazione; il numero progressivo dei rapporti non torna mai indietro (per ogni anno vale il più alto). Rispondendo **No** il telefono resta com'è e le impostazioni nella cartella non vengono cancellate.
 4. L'app comincia a copiare tutti i rapporti ("Cartella collegata: sto copiando i rapporti"). Tocca **Prova cartella** per controllare che funzioni: scrive e rilegge un file di prova.
 
 ### Cosa ci trovi

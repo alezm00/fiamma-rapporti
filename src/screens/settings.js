@@ -7,6 +7,7 @@ import { checkRecipients } from '../model/mail.js';
 import { getLogo, setLogo, removeLogo } from '../data/photos.js';
 import * as folder from '../backup/folder/index.js';
 import { createBackup, restoreBackup } from '../backup/zip-backup.js';
+import { fillMail, readMail, initMail } from './settings-mail.js';
 import { $, fieldElement, showBoxMsg, debounce, downloadFile } from '../ui/util.js';
 
 // wide = il campo occupa tutta la riga, gli altri stanno in due colonne
@@ -49,6 +50,7 @@ function fill() {
     for (const def of COMPANY_DEFS) $(`s-co-${def.key}`).value = s.company[def.key] || '';
     $('s-email-hint').hidden = true;
     fillNumbering(s.counters);
+    fillMail(s.mail);
 }
 
 function persist() {
@@ -58,6 +60,7 @@ function persist() {
         email: $('s-email').value.trim(),
         method: document.querySelector('input[name="s-method"]:checked')?.value === 'mailto' ? 'mailto' : 'share',
         company,
+        mail: readMail(),
     });
 }
 
@@ -104,7 +107,7 @@ async function runFolder(button, action) {
 // la domanda quando la cartella scelta contiene già delle impostazioni
 function askSettings(handle, { settings, modified }) {
     const who = [settings.company.name, settings.email].filter(Boolean).join(', ');
-    return `Nella cartella «${handle.name}» ci sono impostazioni salvate${modified ? ` il ${when(modified)}` : ''}${who ? ` (${who})` : ''}.\n\nCaricarle al posto di quelle di questo telefono? Valgono ditta, email, logo e numerazione; il numero progressivo dei rapporti non torna mai indietro.`;
+    return `Nella cartella «${handle.name}» ci sono impostazioni salvate${modified ? ` il ${when(modified)}` : ''}${who ? ` (${who})` : ''}.\n\nCaricarle al posto di quelle di questo telefono? Valgono ditta, email (destinatario e testo), logo e numerazione; il numero progressivo dei rapporti non torna mai indietro.`;
 }
 
 function initFolder() {
@@ -190,6 +193,7 @@ export function leave() {
 
 export function init() {
     buildFields('s-company', 's-co-', COMPANY_DEFS);
+    initMail();
 
     $('btn-settings-back').addEventListener('click', () => nav.back());
     initFolder();

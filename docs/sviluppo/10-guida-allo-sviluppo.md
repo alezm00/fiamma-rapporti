@@ -83,6 +83,10 @@ Tutto parte da `UNIT_KINDS` in `src/model/units.js`.
 3. Se va nel PDF: `src/pdf/header.js`. Se va nella cartella: `writeSettings` la copia già con tutte le impostazioni (tranne `lastBackup`).
 4. `tests/unit/settings.test.mjs`.
 
+### Un nuovo segnaposto per il testo dell'email
+
+[Modello dati → L'email](03-modello-dati.md#lemail-il-testo-con-segnaposto): una voce in `MAIL_PLACEHOLDERS` e il valore in `mailValues` (`src/model/mail.js`), la tabella in [Impostazioni](../uso/06-impostazioni.md#testo-dellemail), e un caso in `tests/unit/mail.test.mjs`.
+
 ### Un nuovo tipo di intervento o di esito
 
 Un elemento in `INTERVENTION_TYPES` o `OUTCOMES` (`src/model/report.js`): i menu, il PDF e l'email lo usano da `typeLabel` / `outcomeLabel`.

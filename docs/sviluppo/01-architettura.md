@@ -103,7 +103,7 @@ sequenceDiagram
 | Cosa | Dove | Chiave |
 |---|---|---|
 | Rapporti, foto, logo, stato della cartella | IndexedDB `testoqr-reports` | stores `reports`, `photos`, `meta` |
-| Impostazioni (ditta, email, contatori) | `localStorage` | `testoqr.config` |
+| Impostazioni (ditta, email e suo testo, contatori) | `localStorage` | `testoqr.config` |
 | Scansioni rapide (ultime 20) | `localStorage` | `testoqr.scans` |
 | Copia di sicurezza | Cartella scelta dall'utente | `Fiamma/…` |
 | File dell'app per l'uso offline | Cache del service worker | `fiamma-vN` |

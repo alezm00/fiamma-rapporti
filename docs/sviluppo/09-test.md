@@ -15,7 +15,7 @@ Usano `node:test` e `node:assert`, senza librerie. `node --test` senza argomenti
 |---|---|
 | `tests/unit/model.test.mjs` | Il modello: bozza vuota, chiusura e numero progressivo per anno, prossimo numero modificabile, stati, duplicazione, durata, ricerca (senza accenti, più parole), etichette e confronto delle misure, nome dei file, bozza vuota, `normalizeReport`, percorso nella cartella, apparecchi, cestino, elenco lungo per mesi e anni, `describeReport`. |
 | `tests/unit/tjf.test.mjs` | La lettura dei QR con i campioni reali di `tests/e2e/fixtures/`: gzip, righe, unità, colonne Media/Min/Max, fasi della prova, numeri e date, dati non validi, `topValues`. |
-| `tests/unit/mail.test.mjs` | Destinatari, oggetto, testo e `mailto:` dell'email. |
+| `tests/unit/mail.test.mjs` | Destinatari, oggetto, testo e `mailto:` dell'email; il modello con segnaposto: valori, righe che spariscono, parti dell'oggetto, segnaposto sconosciuti, ripiego sul testo originale. |
 | `tests/unit/validate.test.mjs` | Codice fiscale e partita IVA, con i casi di `tests/unit/cf-vectors.json` (anche omocodia). |
 | `tests/unit/settings.test.mjs` | `normalizeSettings` e `mergeSettings` (solo campi vuoti, contatore più alto). |
 | `tests/unit/zip.test.mjs` | ZIP: CRC, scrittura e lettura, file rovinati; se `unzip` è installato verifica che lo legga. |
@@ -66,9 +66,9 @@ Node, **Playwright** installato per tutto il sistema (`run.sh` imposta `NODE_PAT
 |---|---|
 | `reports` | Il percorso completo: nuovo rapporto, campi, materiali, misura da file e da fotocamera finta, stessa misura non duplicata, scansione rapida, ricerca e filtri, chiusura e numero, duplica, elimina, bozza vuota scartata, i dati restano dopo il ricaricamento. |
 | `pdf` | Un rapporto completo (4 apparecchi, materiali, 3 misure, foto, logo) in PDF come bozza e chiuso: testi, nome del file, pagine, prima pagina compatta, fasi della prova, foto per pagina. |
-| `send` | Email: condivisione (finta), `mailto`, destinatario copiato negli appunti, stato "Inviato" e ritorno a "Completato" dopo una modifica, assenza di destinatario, ripiego senza condivisione. |
+| `send` | Email: condivisione (finta), `mailto`, destinatario copiato negli appunti, stato "Inviato" e ritorno a "Completato" dopo una modifica, assenza di destinatario, ripiego senza condivisione; il testo personale (anteprima, segnaposto toccati, avviso, ricaricamento, email inviata, ripristino). |
 | `folder` | La cartella di salvataggio: collegamento, copia, rinomina, permesso scaduto con coda, impostazioni, ripristino su telefono nuovo, eliminazione, foto rileggibili. |
-| `settings-folder` | Scegliendo una cartella con impostazioni salvate: domanda, "No" non cambia niente, "Sì" carica ditta, email, logo e numerazione; contatore che non torna indietro; selettore annullato. |
+| `settings-folder` | Scegliendo una cartella con impostazioni salvate: domanda, "No" non cambia niente, "Sì" carica ditta, email (anche il testo), logo e numerazione; contatore che non torna indietro; selettore annullato. |
 | `backup` | Backup ZIP e ripristino, con e senza foto; promemoria della home. |
 | `offline` | Cache piena, rete spenta, l'app si apre e lavora. |
 | `form` | Il modulo: codice fiscale con il suo avviso, salvataggio automatico, indirizzo dalla posizione (Nominatim finto), foto (ridimensionamento, rotazione EXIF, PNG trasparente, limite di 20, PDF con 20 foto). |

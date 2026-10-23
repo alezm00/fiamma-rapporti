@@ -293,13 +293,33 @@
             <input id="s-email" class="input" type="email" inputmode="email" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ufficio@esempio.it">
         </label>
         <div id="s-email-hint" class="mt-1.5 rounded border border-warn-edge bg-warn-bg px-2.5 py-1.5 text-[.78rem] leading-[1.35] text-warn-fg" hidden></div>
-        <p class="mt-1.5 text-[.72rem] text-muted">Più indirizzi si separano con una virgola. L'oggetto è creato in automatico: «Rapporto di intervento n. 2026/012 - Cliente - targa - data».</p>
+        <p class="mt-1.5 text-[.72rem] text-muted">Più indirizzi si separano con una virgola. Oggetto e messaggio si scrivono nella scheda qui sotto.</p>
         <div class="mt-2.5 flex flex-col gap-0.5"><span class="lbl">Il tasto "Invia email"</span>
             <label class="flex items-start gap-2.5 py-1.5 text-[.78rem] leading-[1.35] text-soft"><input type="radio" name="s-method" value="share" class="mt-0.5 size-4 shrink-0 accent-brand">
                 <span>Apre il menu di Android: scegli Gmail e la mail si apre con il PDF già allegato, oggetto e testo pronti.<small class="mt-0.5 block text-[.72rem] text-muted">Il destinatario viene copiato negli appunti: toccalo sopra la tastiera nel campo "A".</small></span></label>
             <label class="flex items-start gap-2.5 py-1.5 text-[.78rem] leading-[1.35] text-soft"><input type="radio" name="s-method" value="mailto" class="mt-0.5 size-4 shrink-0 accent-brand">
                 <span>Apre subito Gmail con destinatario, oggetto e testo già compilati.<small class="mt-0.5 block text-[.72rem] text-muted">Il PDF si salva nei download e va allegato con la graffetta.</small></span></label>
         </div>
+    </div>
+    <div class="card">
+        <h3 class="sect">Testo dell'email</h3>
+        <p class="mb-2 text-[.72rem] text-muted">L'oggetto e il messaggio di "Invia email". I <b>segnaposto</b> tra graffe, come {cliente}, diventano i dati del rapporto. Una riga del messaggio (o una parte dell'oggetto tra « - ») con un segnaposto vuoto non compare.</p>
+        <label class="fld"><span class="lbl">Oggetto</span>
+            <input id="s-mail-subject" class="input" type="text" maxlength="300" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="fld mt-2"><span class="lbl">Messaggio</span>
+            <textarea id="s-mail-body" class="input min-h-[11em] resize-y" rows="11" maxlength="5000" spellcheck="false"></textarea>
+        </label>
+        <div class="mt-2"><span class="lbl">Segnaposto: tocca per inserirli</span>
+            <div id="s-mail-chips" class="mt-1 flex flex-wrap gap-1.5"></div>
+        </div>
+        <div class="mt-2"><div id="s-mail-msg" hidden></div></div>
+        <div class="mt-2.5 rounded border border-edge bg-field p-2.5">
+            <span class="lbl">Anteprima, con un rapporto d'esempio</span>
+            <p id="s-mail-preview-subject" class="mt-1 text-[.82rem] font-bold leading-[1.35] text-white"></p>
+            <pre id="s-mail-preview-body" class="mt-1.5 font-sans text-[.78rem] leading-[1.4] whitespace-pre-wrap text-soft"></pre>
+        </div>
+        <button id="s-mail-reset" type="button" class="btn mt-2.5">Ripristina il testo originale</button>
     </div>
     <div class="card">
         <h3 class="sect">Cartella di salvataggio</h3>

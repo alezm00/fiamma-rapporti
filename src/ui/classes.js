@@ -99,6 +99,9 @@ export const CLS = {
     photoImg: 'block size-full cursor-pointer object-cover',
     photoDel: 'absolute top-0.5 right-0.5 flex size-6 cursor-pointer items-center justify-center rounded-full bg-black/70 text-[.8rem] text-white',
 
+    // segnaposto del testo dell'email (impostazioni)
+    mailChip: 'chip font-mono',
+
     // campi generati dal JS (impostazioni e apparecchi)
     field: 'fld',
     fieldWide: 'fld col-span-2',

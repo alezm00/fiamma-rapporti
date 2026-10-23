@@ -12,7 +12,7 @@ run(async () => {
     window.showDirectoryPicker = (...a) => window.__pick(...a);
   });
   const target = (name) => page.evaluate((n) => { window.__target = n; }, name);
-  const peek = (name) => page.evaluate(async (n) => { const f = await import('/src/backup/folder/index.js'); const root = await navigator.storage.getDirectory(); const r = await f.peekSettings(await root.getDirectoryHandle(n)); return r && { company: r.settings.company.name, email: r.settings.email, technician: r.settings.company.technician, counters: r.settings.counters, logo: r.logo }; }, name);
+  const peek = (name) => page.evaluate(async (n) => { const f = await import('/src/backup/folder/index.js'); const root = await navigator.storage.getDirectory(); const r = await f.peekSettings(await root.getDirectoryHandle(n)); return r && { company: r.settings.company.name, email: r.settings.email, technician: r.settings.company.technician, mailSubject: r.settings.mail.subject, counters: r.settings.counters, logo: r.logo }; }, name);
   const openSettings = async () => { await page.click('#btn-settings'); await page.waitForSelector('#view-settings:not([hidden])'); };
   const closeSettings = async () => { await page.click('#btn-settings-back'); await page.waitForSelector('#view-home:not([hidden])'); };
   await prepare();
@@ -22,6 +22,7 @@ run(async () => {
   await page.fill('#s-co-name', 'Ditta Uno Srl');
   await page.fill('#s-co-technician', 'Luca Bianchi');
   await page.fill('#s-email', 'ufficio@dittauno.it');
+  await page.fill('#s-mail-subject', '{cliente} - {data}');
   await page.setInputFiles('#s-logo-in', `${SP}/img/logo.png`);
   await page.waitForSelector('#s-logo-img:not([hidden])');
   await page.fill('#s-next', '6');
@@ -35,7 +36,7 @@ run(async () => {
   await page.evaluate(async () => (await import('/src/backup/folder/index.js')).process());
   let a = await peek('cartella-A');
   log('nella cartella A ->', JSON.stringify(a));
-  assert(a.company === 'Ditta Uno Srl' && a.email === 'ufficio@dittauno.it' && a.technician === 'Luca Bianchi' && a.counters['2026'] === 5 && a.logo.width > 0, 'impostazioni scritte nella cartella');
+  assert(a.company === 'Ditta Uno Srl' && a.email === 'ufficio@dittauno.it' && a.technician === 'Luca Bianchi' && a.mailSubject === '{cliente} - {data}' && a.counters['2026'] === 5 && a.logo.width > 0, 'impostazioni scritte nella cartella (con il testo dell\'email)');
 
   // 2) telefono nuovo (dati azzerati): "Scegli cartella" chiede se prendere le impostazioni; "No" non cambia nulla
   await closeSettings(); // uscendo dalle impostazioni si salvano: prima, poi si azzera
@@ -66,7 +67,7 @@ run(async () => {
   await page.click('#s-folder-link');
   await page.waitForFunction(() => /Impostazioni caricate/.test(document.getElementById('s-folder-msg').textContent));
   log('dopo "Sì" ->', await page.textContent('#s-folder-msg'));
-  assert((await page.inputValue('#s-co-name')) === 'Ditta Uno Srl' && (await page.inputValue('#s-co-technician')) === 'Luca Bianchi' && (await page.inputValue('#s-email')) === 'ufficio@dittauno.it', 'ditta ed email caricate');
+  assert((await page.inputValue('#s-co-name')) === 'Ditta Uno Srl' && (await page.inputValue('#s-co-technician')) === 'Luca Bianchi' && (await page.inputValue('#s-email')) === 'ufficio@dittauno.it' && (await page.inputValue('#s-mail-subject')) === '{cliente} - {data}', 'ditta, email e testo dell\'email caricati');
   log('numero', await page.inputValue('#s-next'), '| logo visibile', await page.isVisible('#s-logo-img'), '| logo in archivio', await page.evaluate(async () => { const db = await import('/src/data/db.js'); return !!(await db.get(db.META, 'logo')); }));
   assert((await page.inputValue('#s-next')) === '6' && await page.isVisible('#s-logo-img'), 'numerazione e logo caricati');
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('testoqr.config')));

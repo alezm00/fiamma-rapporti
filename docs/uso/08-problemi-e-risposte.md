@@ -59,6 +59,12 @@ Le scorciatoie dell'icona (Nuovo rapporto, Scansione rapida) compaiono dopo che 
 - La **bozza** porta "BOZZA" e non il numero: chiudi il rapporto per avere il numero.
 - Il PDF si rifà **ogni volta** da quello che c'è nel rapporto in quel momento: dopo una modifica, salvalo di nuovo.
 
+## Il testo dell'email non viene come volevo
+
+- **Una riga manca**: contiene un segnaposto di cui il rapporto non ha il dato (per esempio `{telefono}` senza telefono): è voluto. Controlla l'anteprima nelle Impostazioni.
+- **Compare `{qualcosa}` così com'è**: il segnaposto non esiste o è scritto male (l'avviso giallo nelle Impostazioni lo segnala). I segnaposto si scrivono tutti in minuscolo, tra graffe, senza spazi.
+- **Voglio tornare al testo di prima**: *Ripristina il testo originale* nella scheda *Testo dell'email*.
+
 ## L'indirizzo dalla posizione non funziona
 
 - **"Permesso di posizione negato"**: abilitalo dalle impostazioni del sito (icona a sinistra dell'indirizzo) e riprova.
