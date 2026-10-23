@@ -125,5 +125,21 @@ run(async () => {
   const soloTxt = execSync(`pdftotext -layout ${SP}/pdf5/solo.pdf -`).toString();
   log('fasi nel PDF ->', soloTxt.split('\n').filter((l) => /Fase \d/.test(l)).map((l) => l.trim()).join(' | '));
   assert(/Fase 1 \(1 min 00 s\)/.test(soloTxt) && /Fase 3 \(1 min 00 s\)/.test(soloTxt) && (soloTxt.match(/\d\d:\d\d:\d\d → \d\d:\d\d:\d\d/g) || []).length === 3, 'fasi della prova nel PDF (etichetta con durata, tre intervalli di orari)');
+  // compatto: nella prima pagina ci stanno già intervento, lavori e materiali (con 4 apparecchi)
+  const page1 = execSync(`pdftotext -f 1 -l 1 -layout ${SP}/pdf5/chiuso.pdf -`).toString();
+  assert(/INTERVENTO/.test(page1) && /LAVORI ESEGUITI/.test(page1) && /MATERIALI/.test(page1), 'prima pagina compatta: intervento, lavori, materiali');
+  // foto grandi: al massimo 4 per foglio (due righe)
+  const six = await page.evaluate(async () => {
+    const s = await import('/src/data/store.js'); const p = await import('/src/data/photos.js'); const r = await import('/src/pdf/index.js');
+    const doc = (await s.listReports())[0];
+    const one = await p.photosForPdf(doc.id);
+    return Array.from(await r.createReportPdf(doc, {}, { photos: [...one, ...one] }));
+  });
+  fs.writeFileSync(`${SP}/pdf5/sei-foto.pdf`, Buffer.from(six));
+  const pages = Number(execSync(`pdfinfo ${SP}/pdf5/sei-foto.pdf`).toString().match(/Pages:\s+(\d+)/)[1]);
+  const perPage = [];
+  for (let n = 1; n <= pages; n++) perPage.push((execSync(`pdftotext -f ${n} -l ${n} ${SP}/pdf5/sei-foto.pdf -`).toString().match(/^Foto \d+$/gm) || []).length);
+  log('sei foto -> pagine:', pages, '| foto per pagina:', perPage.join(','));
+  assert(perPage.reduce((a, b) => a + b, 0) === 6 && Math.max(...perPage) <= 4, 'al massimo 4 foto per pagina: ' + perPage);
   await finish(session);
 });

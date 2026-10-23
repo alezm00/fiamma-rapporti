@@ -8,34 +8,34 @@ import { MARGIN, CONTENT_W, BOTTOM, PAGE_H, GAP, RIGHT } from './sheet.js';
 const phaseItem = ({ label, range, duration }) => ({ label: duration ? `${label} (${duration})` : label, value: range });
 
 export function drawMeasures(sheet, r) {
-    const { fontB, INK, GREY, LINE, FILL, ACCENT, put, text, width, wrap, truncate, printable, ensure, newPage, fieldsBox } = sheet;
+    const { fontB, INK, GREY, LINE, FILL, ACCENT, put, text, width, wrap, truncate, printable, ensure, newPage, fieldsBox, textBox } = sheet;
     // columns: intestazioni; rows: [{ short, label, unit, values }]; info: righe grigie sotto il titolo
     function drawTable(title, info, columns, rows) {
         const n = columns.length;
         const unitW = 54;
         const valW = Math.min(n > 1 ? 100 : 120, (CONTENT_W - unitW - 150) / n);
         const labelW = CONTENT_W - unitW - n * valW;
-        const ROW_H = 21;
-        const HEAD_H = 19;
-        const infoLines = info.flatMap((t) => wrap(printable(t), 9, CONTENT_W));
+        const ROW_H = 17;
+        const HEAD_H = 16;
+        const infoLines = info.flatMap((t) => wrap(printable(t), 8.5, CONTENT_W));
 
         const tableHead = () => {
             sheet.page.drawRectangle({ x: MARGIN, y: sheet.y - HEAD_H, width: CONTENT_W, height: HEAD_H, color: FILL });
             const base = sheet.y - HEAD_H / 2 - 3;
-            put('Parametro', MARGIN + 8, base, 9, { f: fontB, color: GREY });
-            columns.forEach((col, i) => put(truncate(printable(col), 9, valW - 10, fontB), MARGIN + labelW + (i + 1) * valW - 8, base, 9, { f: fontB, color: GREY, align: 'right' }));
-            put('Unità', MARGIN + labelW + n * valW + 8, base, 9, { f: fontB, color: GREY });
+            put('Parametro', MARGIN + 8, base, 8.5, { f: fontB, color: GREY });
+            columns.forEach((col, i) => put(truncate(printable(col), 8.5, valW - 10, fontB), MARGIN + labelW + (i + 1) * valW - 8, base, 8.5, { f: fontB, color: GREY, align: 'right' }));
+            put('Unità', MARGIN + labelW + n * valW + 8, base, 8.5, { f: fontB, color: GREY });
             sheet.y -= HEAD_H;
         };
 
         // il confronto resta su una pagina sola se ci entra; altrimenti continua con l'intestazione ripetuta
-        const total = 16 + infoLines.length * 12 + HEAD_H + ROW_H * rows.length;
-        ensure(total <= PAGE_H - MARGIN - BOTTOM ? total : 16 + infoLines.length * 12 + HEAD_H + ROW_H * 2);
+        const total = 14 + infoLines.length * 11 + HEAD_H + ROW_H * rows.length;
+        ensure(total <= PAGE_H - MARGIN - BOTTOM ? total : 14 + infoLines.length * 11 + HEAD_H + ROW_H * 2);
         text(printable(title).toUpperCase(), MARGIN, sheet.y, 8.5, { f: fontB, color: ACCENT });
-        sheet.y -= 16;
+        sheet.y -= 14;
         for (const l of infoLines) {
-            text(l, MARGIN, sheet.y, 9, { color: GREY });
-            sheet.y -= 12;
+            text(l, MARGIN, sheet.y, 8.5, { color: GREY });
+            sheet.y -= 11;
         }
         if (infoLines.length) sheet.y -= 2;
         tableHead();
@@ -44,18 +44,18 @@ export function drawMeasures(sheet, r) {
                 newPage();
                 tableHead();
             }
-            const base = sheet.y - ROW_H / 2 - 4;
+            const base = sheet.y - ROW_H / 2 - 3.5;
             let tx = MARGIN + 8;
             if (row.short && row.short !== row.label) {
-                put(row.short, tx, base, 11, { f: fontB });
-                tx += width(row.short, 11, fontB) + 8;
+                put(row.short, tx, base, 10.5, { f: fontB });
+                tx += width(row.short, 10.5, fontB) + 8;
             }
-            put(truncate(row.label, 10, MARGIN + labelW - tx - 6), tx, base, 10, { color: GREY });
+            put(truncate(row.label, 9.5, MARGIN + labelW - tx - 6), tx, base, 9.5, { color: GREY });
             row.values.forEach((v0, i) => {
                 const v = String(v0 ?? '').replace(/^-(?=\d)/, '−');
-                put(v, MARGIN + labelW + (i + 1) * valW - 8, base, 12, { f: fontB, color: /^-+$/.test(v) ? GREY : INK, align: 'right' });
+                put(v, MARGIN + labelW + (i + 1) * valW - 8, base, 11.5, { f: fontB, color: /^-+$/.test(v) ? GREY : INK, align: 'right' });
             });
-            put(row.unit, MARGIN + labelW + n * valW + 8, base, 10, { color: GREY });
+            put(row.unit, MARGIN + labelW + n * valW + 8, base, 9.5, { color: GREY });
             sheet.y -= ROW_H;
             sheet.page.drawLine({ start: { x: MARGIN, y: sheet.y }, end: { x: RIGHT, y: sheet.y }, thickness: 0.5, color: LINE });
         }
@@ -85,9 +85,9 @@ export function drawMeasures(sheet, r) {
             if (rows.length) {
                 drawTable(`Misure Testo · ${block.label} · ${rep.title}`, [when(rep, '')].filter((t) => t !== ''), cols, rows);
             } else {
-                ensure(40);
+                ensure(30);
                 text(printable(`Misura "${block.label}": ${rep.errors.length ? rep.errors.join(' ') : 'il QR non contiene valori di misura.'}`), MARGIN, sheet.y, 10, { color: GREY });
-                sheet.y -= 24;
+                sheet.y -= 20;
             }
             const extra = [
                 ...rep.header,
@@ -95,21 +95,16 @@ export function drawMeasures(sheet, r) {
                 ...(rep.note ? [{ label: 'Nota sulla misura', value: rep.note }] : []),
             ];
             const phaseOnly = extra.filter((it) => it.label !== 'Combustibile');
-            if (phaseOnly.length) fieldsBox(`Dati misura · ${block.label}`, phaseOnly, 3);
+            if (phaseOnly.length) fieldsBox(`Dati misura · ${block.label}`, phaseOnly, 4);
         }
     }
 
-    // gli strumenti in un riquadro solo: una riga ciascuno (nome, numero di serie, firmware)
+    // gli strumenti in un riquadro solo, una riga ciascuno: nome · numero di serie · firmware
     if (devices.size) {
-        const items = [];
-        for (const s of devices.values()) {
-            const get = (k) => s.items.find((i) => i.key === k);
-            items.push(
-                { label: 'Strumento', value: get('name')?.value || s.title },
-                { label: 'N. di serie', value: get('serial')?.value },
-                { label: 'Firmware', value: get('firmwareVersion')?.value },
-            );
-        }
-        fieldsBox(devices.size > 1 ? 'Strumenti di misura' : 'Strumento di misura', items, 3);
+        const rows = [...devices.values()].map((s) => {
+            const get = (k) => s.items.find((i) => i.key === k)?.value;
+            return [get('name') || s.title, get('serial') && `N. di serie ${get('serial')}`, get('firmwareVersion') && `Firmware ${get('firmwareVersion')}`].filter(Boolean).join('  ·  ');
+        });
+        textBox(devices.size > 1 ? 'STRUMENTI DI MISURA' : 'STRUMENTO DI MISURA', rows.map(printable));
     }
 }

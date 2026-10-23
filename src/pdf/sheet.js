@@ -10,8 +10,10 @@ export const RIGHT = PAGE_W - MARGIN;
 export const CONTENT_W = PAGE_W - MARGIN * 2;
 export const BOTTOM = MARGIN + 18; // spazio per il piè di pagina
 export const PAD = 10;
-export const TITLE_H = 24;
-export const GAP = 12; // spazio tra i blocchi
+export const TITLE_H = 18; // altezza del titolo di un riquadro
+export const GAP = 8; // spazio tra i blocchi
+export const FIELD_SIZE = 10; // corpo del testo nei riquadri
+export const LINE_H = 12; // distanza tra due righe di testo nei riquadri
 
 export function createSheet(pdf, { font, fontB, rgb }) {
     const INK = rgb(0.1, 0.1, 0.1);
@@ -81,37 +83,46 @@ export function createSheet(pdf, { font, fontB, rgb }) {
 
     // --- riquadri con campi etichetta/valore -------------------------------
 
-    function layoutFields(items, cellW) {
-        return items.map(({ label, value }) => {
-            const v = printable(value);
-            const l = v ? wrap(v, 10.5, cellW) : ['—'];
-            return { label, lines: l, empty: !v, h: 10 + l.length * 13 + 5 };
-        });
+    // un campo occupa "span" colonne (1 se non indicato); con "grow" ne prende due se il testo non entra in una
+    function layoutField({ label, value, span = 1 }, cellW) {
+        const v = printable(value);
+        const l = v ? wrap(v, FIELD_SIZE, cellW * span - 8) : ['—'];
+        return { label, lines: l, empty: !v, span, h: 9 + l.length * LINE_H + 2 };
     }
 
-    // righe di celle: "cols" campi per riga
+    // righe di celle: un riquadro è largo "cols" colonne, i campi vanno a capo quando la riga è piena
     function layoutRows(items, cols, innerW) {
         const rows = [];
         const cellW = innerW / cols;
-        for (let i = 0; i < items.length; i += cols) {
-            const cells = layoutFields(items.slice(i, i + cols), cellW - 8);
-            rows.push({ cells, cellW, h: Math.max(...cells.map((x) => x.h)) });
+        let row = null;
+        for (const item of items) {
+            const fits = !item.grow || width(printable(item.value), FIELD_SIZE) <= cellW - 8;
+            const span = Math.min(fits ? item.span ?? 1 : 2, cols);
+            if (!row || row.used + span > cols) {
+                row = { cells: [], cellW, used: 0, h: 0 };
+                rows.push(row);
+            }
+            const cell = layoutField({ ...item, span }, cellW);
+            cell.x = row.used * cellW;
+            row.cells.push(cell);
+            row.used += span;
+            row.h = Math.max(row.h, cell.h);
         }
         return rows;
     }
 
-    const boxHeight = (rows) => TITLE_H + rows.reduce((n, row) => n + row.h, 0) + 4;
+    const boxHeight = (rows) => TITLE_H + rows.reduce((n, row) => n + row.h, 0) + 2;
 
     function drawBox(title, rows, x, w, h) {
         page.drawRectangle({ x, y: y - h, width: w, height: h, borderColor: LINE, borderWidth: 0.8 });
-        text(title.toUpperCase(), x + PAD, y - 9, 8.5, { f: fontB, color: ACCENT });
+        text(title.toUpperCase(), x + PAD, y - 6, 8.5, { f: fontB, color: ACCENT });
         let top = y - TITLE_H;
         for (const row of rows) {
-            row.cells.forEach((cell, i) => {
-                const cx = x + PAD + i * row.cellW;
-                text(truncate(cell.label, 8, row.cellW - 8), cx, top, 8, { color: GREY });
-                cell.lines.forEach((l, j) => text(l, cx, top - 10 - j * 13, 10.5, { color: cell.empty ? GREY : INK }));
-            });
+            for (const cell of row.cells) {
+                const cx = x + PAD + cell.x;
+                text(truncate(cell.label, 7.5, row.cellW * cell.span - 5), cx, top, 7.5, { color: GREY });
+                cell.lines.forEach((l, j) => text(l, cx, top - 9 - j * LINE_H, FIELD_SIZE, { color: cell.empty ? GREY : INK }));
+            }
             top -= row.h;
         }
     }
@@ -128,15 +139,15 @@ export function createSheet(pdf, { font, fontB, rgb }) {
 
     // riquadro di testo libero: continua sulla pagina dopo se serve
     function textBox(title, ls) {
-        const all = ls.flatMap((par) => wrap(par || ' ', 10.5, CONTENT_W - PAD * 2));
+        const all = ls.flatMap((par) => wrap(par || ' ', FIELD_SIZE, CONTENT_W - PAD * 2));
         for (let i = 0, first = true; i < all.length; first = false) {
-            ensure(TITLE_H + 13 * Math.min(3, all.length - i) + 5);
-            const fit = Math.max(1, Math.floor((y - BOTTOM - TITLE_H - 5) / 13));
+            ensure(TITLE_H + LINE_H * Math.min(3, all.length - i) + 3);
+            const fit = Math.max(1, Math.floor((y - BOTTOM - TITLE_H - 3) / LINE_H));
             const chunk = all.slice(i, i + fit);
-            const h = TITLE_H + chunk.length * 13 + 5;
+            const h = TITLE_H + chunk.length * LINE_H + 3;
             page.drawRectangle({ x: MARGIN, y: y - h, width: CONTENT_W, height: h, borderColor: LINE, borderWidth: 0.8 });
-            text(first ? title : `${title} (SEGUE)`, MARGIN + PAD, y - 9, 8.5, { f: fontB, color: ACCENT });
-            chunk.forEach((l, j) => text(l, MARGIN + PAD, y - TITLE_H - j * 13, 10.5));
+            text(first ? title : `${title} (SEGUE)`, MARGIN + PAD, y - 6, 8.5, { f: fontB, color: ACCENT });
+            chunk.forEach((l, j) => text(l, MARGIN + PAD, y - TITLE_H - j * LINE_H, FIELD_SIZE));
             y -= h + GAP;
             i += chunk.length;
         }

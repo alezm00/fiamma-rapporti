@@ -1,6 +1,5 @@
 // Cliente, impianto (una scheda per ogni apparecchio), intervento e lavori eseguiti.
 
-import { formatDay } from '../lib/dates.js';
 import { typeLabel, outcomeLabel, unitsSummary, unitTitle, unitValues, durationMinutes, formatDuration } from '../model/index.js';
 import { code, oneLine } from './text.js';
 
@@ -10,26 +9,25 @@ export function drawParties(sheet, r) {
     const plant = r.plant ?? {};
     const work = r.intervention ?? {};
     fieldsBox('Cliente', [
-        { label: 'Nome e cognome', value: customer.name },
+        { label: 'Nome e cognome', value: customer.name, span: 2 },
         { label: 'Codice fiscale', value: code(customer.fiscalCode) },
-        { label: 'Indirizzo', value: oneLine(customer.address) },
         { label: 'Telefono', value: customer.phone },
-    ], 2);
+        { label: 'Indirizzo', value: oneLine(customer.address), span: 4 },
+    ], 4);
     // l'impianto (targa, riepilogo) e una scheda per ogni apparecchio: caldaie, pompe di calore, condizionatori
     const units = plant.units ?? [];
     fieldsBox('Impianto', [
         { label: 'Targa impianto', value: code(plant.plateCode) },
-        { label: 'Apparecchi', value: unitsSummary(plant) },
-    ], 2);
-    for (const unit of units) fieldsBox(unitTitle(unit, units), unitValues(unit), 4);
+        { label: 'Apparecchi', value: unitsSummary(plant), span: 3 },
+    ], 4);
+    // il modello occupa due colonne se è lungo (Beretta Luna Duo-Tec MP 24)
+    for (const unit of units) fieldsBox(unitTitle(unit, units), unitValues(unit).map((f) => ({ ...f, grow: f.key === 'model' })), 5);
 
-    // --- intervento: tipo, esito, orari e durata -------------------------------
-
+    // intervento: tipo, esito, orari e durata su una riga (la data è già nell'intestazione)
     const minutes = durationMinutes(work.startTime, work.endTime);
     const what = [
-        { label: 'Tipo di intervento', value: typeLabel(work.type) },
-        { label: 'Esito', value: outcomeLabel(work.outcome) },
-        { label: 'Data', value: formatDay(r.date) },
+        { label: 'Tipo di intervento', value: typeLabel(work.type), span: 2 },
+        { label: 'Esito', value: outcomeLabel(work.outcome), span: 2 },
     ];
     if (work.startTime || work.endTime) {
         what.push(
@@ -38,7 +36,7 @@ export function drawParties(sheet, r) {
             { label: 'Durata', value: formatDuration(minutes) },
         );
     }
-    fieldsBox('Intervento', what, 3);
+    fieldsBox('Intervento', what, 7);
 
     const workLines = lines(work.work);
     if (workLines.join('')) textBox('LAVORI ESEGUITI', workLines);

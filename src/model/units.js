@@ -106,7 +106,7 @@ export function unitValues(unit) {
         if (f.options) value = labelIn(f.options, value) || value;
         else if (f.date) value = formatDay(value) || value;
         else if (f.unit && /^[\d.,\s]+$/.test(value) && value) value = `${value} ${f.unit}`;
-        return { label: f.label, value };
+        return { key: f.key, label: f.label, value };
     });
 }
 

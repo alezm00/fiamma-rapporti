@@ -1,6 +1,6 @@
 // Service worker: salva tutti i file dell'app per l'uso offline.
 // Dopo ogni modifica ai file aumentare la versione, così i telefoni scaricano l'aggiornamento.
-const CACHE = 'fiamma-v29';
+const CACHE = 'fiamma-v30';
 const FILES = [
     './',
     './index.html',

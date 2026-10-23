@@ -1,13 +1,16 @@
 // Foto: griglia a 2 colonne, continua sulle pagine successive.
 
-import { MARGIN, CONTENT_W } from './sheet.js';
+import { MARGIN, CONTENT_W, PAGE_H, BOTTOM } from './sheet.js';
 
 export async function drawPhotos(sheet, photos) {
     const { pdf, fontB, GREY, LINE, ACCENT, text, ensure } = sheet;
     if (photos.length) {
         const PHOTO_GAP = 10;
         const CAPTION_H = 14;
-        const MAX_H = 200;
+        const ROW_GAP = 6;
+        const TITLE_H = 18;
+        // due foto per riga e due righe per pagina: circa 4 foto per foglio (una foto in piedi riempie la sua casella)
+        const MAX_H = Math.floor((PAGE_H - MARGIN - BOTTOM - TITLE_H) / 2 - CAPTION_H - ROW_GAP);
         const cellW = (CONTENT_W - PHOTO_GAP) / 2;
         const images = [];
         for (const ph of photos) {
@@ -18,10 +21,10 @@ export async function drawPhotos(sheet, photos) {
         for (let i = 0; i < images.length; i += 2) {
             const row = images.slice(i, i + 2);
             const rowH = Math.max(...row.map((p) => p.h)) + CAPTION_H;
-            ensure((i === 0 ? 20 : 0) + rowH);
+            ensure((i === 0 ? TITLE_H : 0) + rowH);
             if (i === 0) {
                 text('FOTO', MARGIN, sheet.y, 8.5, { f: fontB, color: ACCENT });
-                sheet.y -= 18;
+                sheet.y -= TITLE_H;
             }
             row.forEach((p, j) => {
                 const x = MARGIN + j * (cellW + PHOTO_GAP);
@@ -29,7 +32,7 @@ export async function drawPhotos(sheet, photos) {
                 sheet.page.drawRectangle({ x, y: sheet.y - p.h, width: p.w, height: p.h, borderColor: LINE, borderWidth: 0.5 });
                 text(`Foto ${i + j + 1}`, x, sheet.y - p.h - 3, 8, { color: GREY });
             });
-            sheet.y -= rowH + 6;
+            sheet.y -= rowH + ROW_GAP;
         }
     }
 }
