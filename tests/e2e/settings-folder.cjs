@@ -12,7 +12,7 @@ run(async () => {
     window.showDirectoryPicker = (...a) => window.__pick(...a);
   });
   const target = (name) => page.evaluate((n) => { window.__target = n; }, name);
-  const peek = (name) => page.evaluate(async (n) => { const f = await import('/folder.js'); const root = await navigator.storage.getDirectory(); const r = await f.peekSettings(await root.getDirectoryHandle(n)); return r && { company: r.settings.company.name, email: r.settings.email, technician: r.settings.company.technician, counters: r.settings.counters, logo: r.logo }; }, name);
+  const peek = (name) => page.evaluate(async (n) => { const f = await import('/src/backup/folder/index.js'); const root = await navigator.storage.getDirectory(); const r = await f.peekSettings(await root.getDirectoryHandle(n)); return r && { company: r.settings.company.name, email: r.settings.email, technician: r.settings.company.technician, counters: r.settings.counters, logo: r.logo }; }, name);
   const openSettings = async () => { await page.click('#btn-settings'); await page.waitForSelector('#view-settings:not([hidden])'); };
   const closeSettings = async () => { await page.click('#btn-settings-back'); await page.waitForSelector('#view-home:not([hidden])'); };
   await prepare();
@@ -32,14 +32,14 @@ run(async () => {
   await page.click('#s-folder-link');
   await page.waitForFunction(() => /Cartella collegata/.test(document.getElementById('s-folder-msg').textContent));
   assert(dialogs.length === 0, 'cartella senza impostazioni: nessuna domanda');
-  await page.evaluate(async () => (await import('/folder.js')).process());
+  await page.evaluate(async () => (await import('/src/backup/folder/index.js')).process());
   let a = await peek('cartella-A');
   log('nella cartella A ->', JSON.stringify(a));
   assert(a.company === 'Ditta Uno Srl' && a.email === 'ufficio@dittauno.it' && a.technician === 'Luca Bianchi' && a.counters['2026'] === 5 && a.logo.width > 0, 'impostazioni scritte nella cartella');
 
   // 2) telefono nuovo (dati azzerati): "Scegli cartella" chiede se prendere le impostazioni; "No" non cambia nulla
   await closeSettings(); // uscendo dalle impostazioni si salvano: prima, poi si azzera
-  await page.evaluate(async () => { const f = await import('/folder.js'); const db = await import('/db.js'); await f.unlink(); await db.remove(db.META, 'logo'); localStorage.clear(); });
+  await page.evaluate(async () => { const f = await import('/src/backup/folder/index.js'); const db = await import('/src/data/db.js'); await f.unlink(); await db.remove(db.META, 'logo'); localStorage.clear(); });
   await page.reload();
   await page.waitForSelector('#view-home:not([hidden])');
   await prepare();
@@ -54,7 +54,7 @@ run(async () => {
   assert(dialogs.length === 1 && /impostazioni salvate/.test(dialogs[0]) && dialogs[0].includes('Ditta Uno Srl') && dialogs[0].includes('ufficio@dittauno.it') && dialogs[0].includes('«cartella-A»') && /Caricarle al posto/.test(dialogs[0]), 'testo della domanda');
   assert((await page.inputValue('#s-co-name')) === '' && !/caricate/.test(await page.textContent('#s-folder-msg')), 'No: il telefono resta com\'era');
   assert(/Collegata/.test(await page.textContent('#s-folder-status')), 'collegata comunque');
-  await page.evaluate(async () => (await import('/folder.js')).process());
+  await page.evaluate(async () => (await import('/src/backup/folder/index.js')).process());
   a = await peek('cartella-A');
   assert(a.company === 'Ditta Uno Srl' && a.technician === 'Luca Bianchi', 'No: le impostazioni nella cartella non si perdono');
 
@@ -67,7 +67,7 @@ run(async () => {
   await page.waitForFunction(() => /Impostazioni caricate/.test(document.getElementById('s-folder-msg').textContent));
   log('dopo "Sì" ->', await page.textContent('#s-folder-msg'));
   assert((await page.inputValue('#s-co-name')) === 'Ditta Uno Srl' && (await page.inputValue('#s-co-technician')) === 'Luca Bianchi' && (await page.inputValue('#s-email')) === 'ufficio@dittauno.it', 'ditta ed email caricate');
-  log('numero', await page.inputValue('#s-next'), '| logo visibile', await page.isVisible('#s-logo-img'), '| logo in archivio', await page.evaluate(async () => { const db = await import('/db.js'); return !!(await db.get(db.META, 'logo')); }));
+  log('numero', await page.inputValue('#s-next'), '| logo visibile', await page.isVisible('#s-logo-img'), '| logo in archivio', await page.evaluate(async () => { const db = await import('/src/data/db.js'); return !!(await db.get(db.META, 'logo')); }));
   assert((await page.inputValue('#s-next')) === '6' && await page.isVisible('#s-logo-img'), 'numerazione e logo caricati');
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('testoqr.config')));
   assert(stored.company.name === 'Ditta Uno Srl' && stored.counters['2026'] === 5, 'salvate sul telefono');

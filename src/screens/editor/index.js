@@ -1,22 +1,22 @@
 // Rapporto di intervento: cliente, impianto, intervento, misure Testo, foto, note.
 // Si salva da solo a ogni modifica (dopo una breve pausa) e quando si esce dalla schermata.
 
-import * as nav from '../nav.js';
-import * as store from '../store.js';
+import * as nav from '../../ui/nav.js';
+import * as store from '../../data/store.js';
 import {
     INTERVENTION_TYPES, OUTCOMES, UNIT_KINDS, newUnit, unitKind, unitTitle, durationMinutes, formatDuration, formatReportNumber, nextNumber, reportYear,
     reportFileName, isBlank, TRASH_DAYS,
-} from '../model.js';
-import { buildReport, topValues } from '../tjf.js';
-import { formatDate, formatTime } from '../dates.js';
-import { createReportPdf, preloadPdfLibs } from '../report.js';
-import { getPosition, geoErrorMessage, reverseGeocode } from '../geo.js';
-import { checkFiscalCode } from '../validate.js';
-import { listPhotos, addPhoto, removePhoto, photosForPdf, logoForPdf } from '../photos.js';
-import { buildBody, buildSubject, checkRecipients, mailtoUrl } from '../mail.js';
-import { loadSettings } from '../settings.js';
-import { CLS } from '../ui.js';
-import { $, el, fieldElement, showBoxMsg, toast, debounce, downloadFile, openMailto, canShareFiles, statusBadge, explainSaveError } from '../util.js';
+} from '../../model/index.js';
+import { buildReport, topValues } from '../../qr/tjf/index.js';
+import { formatDate, formatTime } from '../../lib/dates.js';
+import { createReportPdf, preloadPdfLibs } from '../../pdf/index.js';
+import { getPosition, geoErrorMessage, reverseGeocode } from '../../lib/geo.js';
+import { checkFiscalCode } from '../../lib/validate.js';
+import { listPhotos, addPhoto, removePhoto, photosForPdf, logoForPdf } from '../../data/photos.js';
+import { buildBody, buildSubject, checkRecipients, mailtoUrl } from '../../model/mail.js';
+import { loadSettings } from '../../data/settings.js';
+import { CLS } from '../../ui/classes.js';
+import { $, el, fieldElement, showBoxMsg, toast, debounce, downloadFile, openMailto, canShareFiles, statusBadge, explainSaveError } from '../../ui/util.js';
 
 const MAX_PHOTOS = 20;
 

@@ -1,13 +1,13 @@
 // Elenco dei rapporti: ricerca, filtri per stato e anno, mesi, nuovo rapporto, scansione rapida, cestino.
 
-import * as nav from '../nav.js';
-import * as store from '../store.js';
-import { usingMemory } from '../db.js';
-import { filterReports, groupByMonth, yearsOf, describeReport, isBlank } from '../model.js';
-import { loadSettings } from '../settings.js';
-import * as folder from '../folder.js';
-import { CLS, MSG_TYPES } from '../ui.js';
-import { $, el, statusBadge } from '../util.js';
+import * as nav from '../ui/nav.js';
+import * as store from '../data/store.js';
+import { usingMemory } from '../data/db.js';
+import { filterReports, groupByMonth, yearsOf, describeReport, isBlank } from '../model/index.js';
+import { loadSettings } from '../data/settings.js';
+import * as folder from '../backup/folder/index.js';
+import { CLS, MSG_TYPES } from '../ui/classes.js';
+import { $, el, statusBadge } from '../ui/util.js';
 
 let reports = [];
 let trashCount = 0;

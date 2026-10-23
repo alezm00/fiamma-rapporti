@@ -28,8 +28,8 @@ run(async () => {
   const png = () => page.evaluate(async () => { const c = document.createElement('canvas'); c.width = 600; c.height = 400; const x = c.getContext('2d'); x.fillStyle = '#3a8'; x.fillRect(0, 0, 600, 400); const b = await new Promise((r) => c.toBlob(r, 'image/png')); return Array.from(new Uint8Array(await b.arrayBuffer())); });
 
   // 1) collegamento a una cartella (la cartella privata del browser fa da cartella scelta)
-  await page.evaluate(async () => { await window.T.wipe(); const f = await import('/folder.js'); await f.linkHandle(await window.T.dest()); });
-  let st = await page.evaluate(async () => (await import('/folder.js')).status());
+  await page.evaluate(async () => { await window.T.wipe(); const f = await import('/src/backup/folder/index.js'); await f.linkHandle(await window.T.dest()); });
+  let st = await page.evaluate(async () => (await import('/src/backup/folder/index.js')).status());
   log('stato dopo il collegamento ->', JSON.stringify(st));
   assert(st.linked && st.name === 'SD-card' && st.permission === 'granted' && st.pending === 0, 'collegata');
   log('cartella vuota ->', JSON.stringify(strip(await tree())));
@@ -48,10 +48,10 @@ run(async () => {
   await page.waitForSelector('#view-measure:not([hidden])');
   await page.click('#m-back');
   await page.waitForSelector('#view-editor:not([hidden])');
-  st = await page.evaluate(async () => (await import('/folder.js')).status());
+  st = await page.evaluate(async () => (await import('/src/backup/folder/index.js')).status());
   log('subito dopo la modifica: in coda ->', st.pending);
   assert(st.pending >= 1, 'modifica in coda');
-  await until(async () => (await page.evaluate(async () => (await import('/folder.js')).status())).pending === 0);
+  await until(async () => (await page.evaluate(async () => (await import('/src/backup/folder/index.js')).status())).pending === 0);
   let files = strip(await tree());
   log('dopo la pausa ->', JSON.stringify(files));
   const draftDir = files.find((f) => f.endsWith('rapporto.json')).replace('/rapporto.json', '');
@@ -63,7 +63,7 @@ run(async () => {
   // 3) chiusura: cartella rinominata, PDF
   await page.click('#btn-close');
   await page.waitForFunction(() => /Rapporto n\./.test(document.getElementById('e-title').textContent));
-  await page.evaluate(async () => (await import('/folder.js')).process());
+  await page.evaluate(async () => (await import('/src/backup/folder/index.js')).process());
   files = strip(await tree());
   log('dopo la chiusura ->', JSON.stringify(files));
   assert(files.some((f) => /2026\/2026-001_Mario-Rossi_[0-9a-f]{8}\/rapporto\.pdf$/.test(f)) && !files.some((f) => f.includes('BOZZA')), 'rinominata e con PDF, bozza tolta');
@@ -76,18 +76,18 @@ run(async () => {
 
   // 4) cambio nome: la cartella si rinomina e non resta quella vecchia
   await page.fill('#c-name', 'Mario Rossi Verdi');
-  await until(async () => (await page.evaluate(async () => (await import('/folder.js')).status())).pending > 0);
-  await page.evaluate(async () => (await import('/folder.js')).process());
+  await until(async () => (await page.evaluate(async () => (await import('/src/backup/folder/index.js')).status())).pending > 0);
+  await page.evaluate(async () => (await import('/src/backup/folder/index.js')).process());
   files = strip(await tree());
   assert(files.filter((f) => f.endsWith('rapporto.json')).length === 1 && files.some((f) => f.includes('Mario-Rossi-Verdi')), 'una sola cartella, nuovo nome');
   log('rinomina ->', files.find((f) => f.endsWith('rapporto.json')));
 
   // 5) permesso scaduto: la coda resta, la home lo ricorda, un tocco riattiva
-  await page.evaluate(async () => { (await import('/folder.js')).testing.permission = 'prompt'; });
+  await page.evaluate(async () => { (await import('/src/backup/folder/index.js')).testing.permission = 'prompt'; });
   await page.fill('#c-phone', '0434 123123');
-  await until(async () => (await page.evaluate(async () => (await import('/folder.js')).status())).pending > 0);
-  await page.evaluate(async () => (await import('/folder.js')).process());
-  st = await page.evaluate(async () => (await import('/folder.js')).status());
+  await until(async () => (await page.evaluate(async () => (await import('/src/backup/folder/index.js')).status())).pending > 0);
+  await page.evaluate(async () => (await import('/src/backup/folder/index.js')).process());
+  st = await page.evaluate(async () => (await import('/src/backup/folder/index.js')).status());
   const before = await tree();
   log('permesso scaduto -> stato', st.permission, '| in coda', st.pending);
   assert(st.permission === 'prompt' && st.pending === 1, 'coda con permesso scaduto');
@@ -124,10 +124,10 @@ run(async () => {
   await page.screenshot({ path: `${SP}/shots5/13-settings-folder.png`, fullPage: true });
 
   // 7) telefono nuovo: si azzera tutto, si ricollega, si ripristina
-  const snapshot = await page.evaluate(async () => { const s = await import('/store.js'); return JSON.stringify(await s.listReports()); });
-  const photosBefore = await page.evaluate(async () => { const db = await import('/db.js'); return (await db.getAll(db.PHOTOS)).length; });
+  const snapshot = await page.evaluate(async () => { const s = await import('/src/data/store.js'); return JSON.stringify(await s.listReports()); });
+  const photosBefore = await page.evaluate(async () => { const db = await import('/src/data/db.js'); return (await db.getAll(db.PHOTOS)).length; });
   await page.evaluate(async () => {
-    const f = await import('/folder.js'); const db = await import('/db.js');
+    const f = await import('/src/backup/folder/index.js'); const db = await import('/src/data/db.js');
     await f.unlink();
     await db.clear(db.REPORTS); await db.clear(db.PHOTOS);
     localStorage.clear();
@@ -136,30 +136,30 @@ run(async () => {
   await page.waitForSelector('#view-home:not([hidden])');
   await installT();
   assert((await page.$$('#report-list > li:not([data-month])')).length === 0, 'telefono vuoto');
-  await page.evaluate(async () => { const f = await import('/folder.js'); const root = await navigator.storage.getDirectory(); await f.linkHandle(await root.getDirectoryHandle('SD-card')); });
-  await page.evaluate(async () => (await import('/folder.js')).process());
+  await page.evaluate(async () => { const f = await import('/src/backup/folder/index.js'); const root = await navigator.storage.getDirectory(); await f.linkHandle(await root.getDirectoryHandle('SD-card')); });
+  await page.evaluate(async () => (await import('/src/backup/folder/index.js')).process());
   // il ricollegamento non deve aver cancellato nulla dalla cartella
   assert((await tree()).filter((f) => f.includes('rapporto.json')).length === 1, 'cartella intatta dopo il ricollegamento');
-  const res = await page.evaluate(async () => (await import('/folder.js')).restore());
+  const res = await page.evaluate(async () => (await import('/src/backup/folder/index.js')).restore());
   log('ripristino ->', JSON.stringify(res));
-  const after = await page.evaluate(async () => { const s = await import('/store.js'); return JSON.stringify(await s.listReports()); });
-  const photosAfter = await page.evaluate(async () => { const db = await import('/db.js'); return (await db.getAll(db.PHOTOS)).length; });
+  const after = await page.evaluate(async () => { const s = await import('/src/data/store.js'); return JSON.stringify(await s.listReports()); });
+  const photosAfter = await page.evaluate(async () => { const db = await import('/src/data/db.js'); return (await db.getAll(db.PHOTOS)).length; });
   assert(res.reports === 1 && res.photos === 2 && photosAfter === photosBefore, 'conteggi del ripristino');
   assert(after === snapshot, 'rapporto identico dopo il ripristino');
   const restored = await page.evaluate(() => JSON.parse(localStorage.getItem('testoqr.config')));
   assert(restored.company.name === 'Termoidraulica Bianchi' && restored.counters['2026'] === 1, 'impostazioni ripristinate');
-  st = await page.evaluate(async () => (await import('/folder.js')).status());
+  st = await page.evaluate(async () => (await import('/src/backup/folder/index.js')).status());
   assert(st.pending === 0, 'il ripristino non rimette nulla in coda: ' + st.pending);
   // le foto ripristinate dalla cartella si possono riscrivere nella stessa cartella (non dipendono più dal suo file)
   await page.evaluate(async () => {
-    const s = await import('/store.js'); const ph = await import('/photos.js');
+    const s = await import('/src/data/store.js'); const ph = await import('/src/data/photos.js');
     const doc = (await s.listReports())[0];
     const c = document.createElement('canvas'); c.width = 300; c.height = 200; c.getContext('2d').fillRect(0, 0, 300, 200);
     const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
     await ph.addPhoto(doc.id, new File([blob], 'nuova.png', { type: 'image/png' }));
     doc.photoCount = (await ph.listPhotos(doc.id)).length;
     await s.saveReport(doc);
-    await (await import('/folder.js')).process();
+    await (await import('/src/backup/folder/index.js')).process();
   });
   const sizes = await page.evaluate(async () => {
     const out = []; const walk = async (d, p) => { for await (const [n, h] of d.entries()) { if (h.kind === 'directory') await walk(h, p + n + '/'); else if (p.includes('/foto/')) out.push((await (await h.getFile()).arrayBuffer()).byteLength); } };
@@ -179,16 +179,16 @@ run(async () => {
   await page.waitForSelector('#view-editor:not([hidden])');
   await page.click('#btn-delete');
   await page.waitForSelector('#view-home:not([hidden])');
-  await page.evaluate(async () => (await import('/folder.js')).process());
+  await page.evaluate(async () => (await import('/src/backup/folder/index.js')).process());
   files = strip(await tree());
   log('dopo l\'eliminazione ->', JSON.stringify(files));
   assert(!files.some((f) => f.includes('rapporto.json')), 'eliminato dalla cartella');
 
   // 9) cartella non più raggiungibile: errore chiaro, coda intatta
-  await page.evaluate(async () => { const s = await import('/store.js'); const r = await s.createReport(); r.customer.name = 'Prova errore'; await s.saveReport(r); });
+  await page.evaluate(async () => { const s = await import('/src/data/store.js'); const r = await s.createReport(); r.customer.name = 'Prova errore'; await s.saveReport(r); });
   await page.evaluate(async () => { const root = await navigator.storage.getDirectory(); await root.removeEntry('SD-card', { recursive: true }); });
-  await page.evaluate(async () => (await import('/folder.js')).process());
-  st = await page.evaluate(async () => (await import('/folder.js')).status());
+  await page.evaluate(async () => (await import('/src/backup/folder/index.js')).process());
+  st = await page.evaluate(async () => (await import('/src/backup/folder/index.js')).status());
   log('cartella sparita -> errore:', JSON.stringify(st.error), '| in coda', st.pending);
   assert(st.pending >= 1, 'coda intatta');
 

@@ -1,11 +1,11 @@
 // Scansioni rapide: le ultime 20 letture, solo per rivedere i valori.
 
-import * as nav from '../nav.js';
-import { buildReport, topValues } from '../tjf.js';
-import { formatDate } from '../dates.js';
-import { loadScans, removeScan, clearScans } from '../quickscans.js';
-import { CLS } from '../ui.js';
-import { $, el } from '../util.js';
+import * as nav from '../ui/nav.js';
+import { buildReport, topValues } from '../qr/tjf/index.js';
+import { formatDate } from '../lib/dates.js';
+import { loadScans, removeScan, clearScans } from '../data/quickscans.js';
+import { CLS } from '../ui/classes.js';
+import { $, el } from '../ui/util.js';
 
 function render() {
     const list = loadScans();

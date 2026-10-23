@@ -1,7 +1,7 @@
 // Rapporti salvati sul telefono. Ogni modifica avvisa chi è in ascolto (es. la copia nella cartella).
 
 import * as db from './db.js';
-import * as model from './model.js';
+import * as model from '../model/index.js';
 import { loadSettings, saveSettings } from './settings.js';
 import { removeReportPhotos } from './photos.js';
 

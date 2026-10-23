@@ -1,13 +1,13 @@
 // Lettura del QR del Testo con la fotocamera, da una foto o da un file.
 // Due modi: 'quick' (scansione rapida) e 'attach' (aggiunge la misura a un rapporto).
 
-import * as nav from '../nav.js';
-import * as store from '../store.js';
-import * as scanner from '../scanner.js';
-import { bytesToJson, buildReport } from '../tjf.js';
-import { addMeasure } from '../model.js';
-import { addScan } from '../quickscans.js';
-import { $, showBoxMsg, toast, vibrate } from '../util.js';
+import * as nav from '../ui/nav.js';
+import * as store from '../data/store.js';
+import * as scanner from '../qr/scanner.js';
+import { bytesToJson, buildReport } from '../qr/tjf/index.js';
+import { addMeasure } from '../model/index.js';
+import { addScan } from '../data/quickscans.js';
+import { $, showBoxMsg, toast, vibrate } from '../ui/util.js';
 
 let params = {};
 let camera = null;

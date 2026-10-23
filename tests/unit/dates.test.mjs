@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pad, dayString, formatDay, formatTime, formatDate } from '../dates.js';
+import { pad, dayString, formatDay, formatTime, formatDate } from '../../src/lib/dates.js';
 
 test('date: gg/mm/aaaa, aaaa-mm-gg e orari', () => {
     const d = new Date(2026, 9, 2, 7, 5, 9);

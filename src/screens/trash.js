@@ -1,10 +1,10 @@
 // Cestino: i rapporti eliminati restano 30 giorni, poi vanno via per sempre (con misure e foto).
 
-import * as nav from '../nav.js';
-import * as store from '../store.js';
-import { trashDaysLeft, describeReport } from '../model.js';
-import { CLS } from '../ui.js';
-import { $, el, toast, explainSaveError } from '../util.js';
+import * as nav from '../ui/nav.js';
+import * as store from '../data/store.js';
+import { trashDaysLeft, describeReport } from '../model/index.js';
+import { CLS } from '../ui/classes.js';
+import { $, el, toast, explainSaveError } from '../ui/util.js';
 
 async function render() {
     const list = await store.listTrash();

@@ -13,7 +13,7 @@ run(async () => {
   log('appena aperto ->', await saveText());
   assert(/^Salvato \d\d:\d\d$/.test(await saveText()), 'scritta iniziale');
   await page.fill('#c-name', 'Mario Rossi');
-  await until(async () => (await page.evaluate(async () => (await (await import('/store.js')).listReports())[0]?.customer.name)) === 'Mario Rossi');
+  await until(async () => (await page.evaluate(async () => (await (await import('/src/data/store.js')).listReports())[0]?.customer.name)) === 'Mario Rossi');
   await until(async () => /^Salvato \d\d:\d\d$/.test(await saveText()));
   log('dopo il salvataggio ->', await saveText());
 
@@ -27,13 +27,13 @@ run(async () => {
   assert((await page.inputValue('#c-name')) === 'Mario Rossi Verdi', 'il testo resta a schermo');
   await page.screenshot({ path: `${SP}/shots5/16-save-error.png`, fullPage: false });
   // nel database c'è ancora il vecchio nome
-  assert((await page.evaluate(async () => (await (await import('/store.js')).listReports())[0].customer.name)) === 'Mario Rossi', 'non salvato');
+  assert((await page.evaluate(async () => (await (await import('/src/data/store.js')).listReports())[0].customer.name)) === 'Mario Rossi', 'non salvato');
 
   // 3) tocco sulla scritta con la scrittura di nuovo possibile: salva
   await allowWrites();
   await page.click('#e-save');
   await until(async () => /^Salvato \d\d:\d\d$/.test(await saveText()));
-  assert((await page.evaluate(async () => (await (await import('/store.js')).listReports())[0].customer.name)) === 'Mario Rossi Verdi', 'salvato dopo il tocco');
+  assert((await page.evaluate(async () => (await (await import('/src/data/store.js')).listReports())[0].customer.name)) === 'Mario Rossi Verdi', 'salvato dopo il tocco');
   log('dopo il tocco ->', await saveText());
 
   // 4) l'errore sparisce anche con una modifica successiva
@@ -43,7 +43,7 @@ run(async () => {
   await allowWrites();
   await page.fill('#c-phone', '0434 123123');
   await until(async () => /^Salvato/.test(await saveText()));
-  assert((await page.evaluate(async () => (await (await import('/store.js')).listReports())[0].customer.phone)) === '0434 123123', 'salvato alla modifica successiva');
+  assert((await page.evaluate(async () => (await (await import('/src/data/store.js')).listReports())[0].customer.phone)) === '0434 123123', 'salvato alla modifica successiva');
   log('ritenta alla modifica successiva -> ok');
 
   // 5) uscendo con un salvataggio fallito: avviso

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeSettings, mergeSettings } from '../settings.js';
+import { normalizeSettings, mergeSettings } from '../../src/data/settings.js';
 
 test('impostazioni: valori strani diventano campi del tipo giusto', () => {
     const s = normalizeSettings({

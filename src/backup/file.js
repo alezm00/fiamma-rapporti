@@ -1,13 +1,13 @@
 // Backup in un file ZIP (rapporti, foto, impostazioni, logo) e ripristino.
 // Funziona su qualunque browser, anche dove la cartella di salvataggio non è disponibile.
 
-import * as db from './db.js';
-import { normalizeReport } from './model.js';
-import { dayString } from './dates.js';
-import { importReport } from './store.js';
-import { loadSettings, saveSettings, mergeSettings, updateSettings } from './settings.js';
-import { getLogo, importPhoto, importLogo } from './photos.js';
-import { createZip, readZip } from './zip.js';
+import * as db from '../data/db.js';
+import { normalizeReport } from '../model/index.js';
+import { dayString } from '../lib/dates.js';
+import { importReport } from '../data/store.js';
+import { loadSettings, saveSettings, mergeSettings, updateSettings } from '../data/settings.js';
+import { getLogo, importPhoto, importLogo } from '../data/photos.js';
+import { createZip, readZip } from '../lib/zip.js';
 
 const FORMAT = 1;
 const APP = 'fiamma';

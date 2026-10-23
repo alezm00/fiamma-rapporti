@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createZip, readZip, crc32 } from '../zip.js';
+import { createZip, readZip, crc32 } from '../../src/lib/zip.js';
 
 test('crc32 di un valore noto', () => {
     assert.equal(crc32(new TextEncoder().encode('123456789')), 0xcbf43926);

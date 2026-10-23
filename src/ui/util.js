@@ -1,6 +1,6 @@
 // Funzioni di utilità condivise dalle schermate.
-import { MSG, MSG_TYPES, TOAST, CLS, BADGES } from './ui.js';
-import { STATUSES } from './model.js';
+import { MSG, MSG_TYPES, TOAST, CLS, BADGES } from './classes.js';
+import { STATUSES } from '../model/index.js';
 
 export const $ = (id) => document.getElementById(id);
 

@@ -3,11 +3,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 
-const root = new URL('../', import.meta.url);
+const root = new URL('../../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), 'utf8');
 const files = [...read('sw.js').matchAll(/^\s+'\.\/([^']*)',?$/gm)].map((m) => m[1]).filter(Boolean);
 const listed = new Set(files);
-const jsIn = (dir) => readdirSync(new URL(dir, root)).filter((f) => f.endsWith('.js')).map((f) => `${dir === '.' ? '' : `${dir}/`}${f}`);
+// ogni .js sotto una cartella, anche nelle sottocartelle: "src/model/index.js"
+const jsIn = (dir) => readdirSync(new URL(`${dir}/`, root), { recursive: true }).filter((f) => f.endsWith('.js')).map((f) => `${dir}/${f}`);
 
 test('service worker: i file elencati esistono', () => {
     assert.ok(files.length > 30, `elenco letto male: ${files.length} file`);
@@ -17,7 +18,7 @@ test('service worker: i file elencati esistono', () => {
 });
 
 test('service worker: nessun modulo, icona o libreria dimenticati', () => {
-    const modules = [...jsIn('.'), ...jsIn('screens'), ...jsIn('css')].filter((f) => f !== 'sw.js');
+    const modules = [...jsIn('src'), ...jsIn('css')];
     assert.deepEqual(modules.filter((f) => !listed.has(f)), [], 'moduli mancanti in FILES');
     const manifest = JSON.parse(read('manifest.json'));
     const icons = [...manifest.icons, ...manifest.shortcuts.flatMap((s) => s.icons)].map((i) => i.src);

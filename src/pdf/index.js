@@ -1,9 +1,9 @@
 // Rapporto di intervento in PDF (pdf-lib + font Liberation Sans): tutto in locale, funziona anche offline.
 // Le librerie e i font si caricano solo quando serve il PDF.
-import { formatDay, formatDate } from './dates.js';
+import { formatDay, formatDate } from '../lib/dates.js';
 import {
     groupMeasures, typeLabel, outcomeLabel, unitsSummary, unitTitle, unitValues, durationMinutes, formatDuration,
-} from './model.js';
+} from '../model/index.js';
 
 const PAGE_W = 595.28; // A4
 const PAGE_H = 841.89;

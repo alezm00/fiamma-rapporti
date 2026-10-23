@@ -8,7 +8,7 @@ run(async () => {
 
   // 120 rapporti in 36 mesi (novembre 2023 - ottobre 2026), creati direttamente nell'archivio
   const made = await page.evaluate(async () => {
-    const db = await import('/db.js'); const model = await import('/model.js'); const dates = await import('/dates.js');
+    const db = await import('/src/data/db.js'); const model = await import('/src/model/index.js'); const dates = await import('/src/lib/dates.js');
     const per = {};
     for (let i = 0; i < 120; i++) {
       const back = i % 36;
@@ -68,13 +68,13 @@ run(async () => {
   await page.click('#h-status [data-status="done"]');
   assert((await rows()) === 40, 'completati: ' + (await rows()));
   await page.click('#h-years [data-year="2026"]');
-  const done2026 = await page.evaluate(async () => { const db = await import('/db.js'); return (await db.getAll(db.REPORTS)).filter((r) => r.status === 'done' && r.date.startsWith('2026')).length; });
+  const done2026 = await page.evaluate(async () => { const db = await import('/src/data/db.js'); return (await db.getAll(db.REPORTS)).filter((r) => r.status === 'done' && r.date.startsWith('2026')).length; });
   assert((await rows()) === done2026, `completati del 2026: ${await rows()} invece di ${done2026}`);
   await page.click('#h-status [data-status="all"]');
   await page.click('#h-years [data-year="all"]');
 
   // eliminando tutti quelli di un anno il filtro scompare da solo
-  await page.evaluate(async () => { const db = await import('/db.js'); for (const r of await db.getAll(db.REPORTS)) if (r.date.startsWith('2023')) await db.remove(db.REPORTS, r.id); });
+  await page.evaluate(async () => { const db = await import('/src/data/db.js'); for (const r of await db.getAll(db.REPORTS)) if (r.date.startsWith('2023')) await db.remove(db.REPORTS, r.id); });
   await page.click('#btn-settings');
   await page.waitForSelector('#view-settings:not([hidden])');
   await page.click('#btn-settings-back');
@@ -82,7 +82,7 @@ run(async () => {
   const chips2 = await page.$$eval('#h-years > button', (b) => b.map((x) => x.textContent));
   assert(chips2.join() === 'Tutti gli anni,2026,2025,2024', 'anno 2023 sparito dai chip: ' + chips2);
   // un solo anno: niente filtro
-  await page.evaluate(async () => { const db = await import('/db.js'); for (const r of await db.getAll(db.REPORTS)) if (!r.date.startsWith('2026')) await db.remove(db.REPORTS, r.id); });
+  await page.evaluate(async () => { const db = await import('/src/data/db.js'); for (const r of await db.getAll(db.REPORTS)) if (!r.date.startsWith('2026')) await db.remove(db.REPORTS, r.id); });
   await page.click('#btn-settings');
   await page.waitForSelector('#view-settings:not([hidden])');
   await page.click('#btn-settings-back');

@@ -1,13 +1,13 @@
 // Impostazioni: ditta e tecnico, logo, numerazione, email, cartella di salvataggio, backup.
 
-import * as nav from '../nav.js';
-import { loadSettings, updateSettings } from '../settings.js';
-import { formatReportNumber, nextNumber, setNextNumber } from '../model.js';
-import { checkRecipients } from '../mail.js';
-import { getLogo, setLogo, removeLogo } from '../photos.js';
-import * as folder from '../folder.js';
-import { createBackup, restoreBackup } from '../backup.js';
-import { $, fieldElement, showBoxMsg, debounce, downloadFile } from '../util.js';
+import * as nav from '../ui/nav.js';
+import { loadSettings, updateSettings } from '../data/settings.js';
+import { formatReportNumber, nextNumber, setNextNumber } from '../model/index.js';
+import { checkRecipients } from '../model/mail.js';
+import { getLogo, setLogo, removeLogo } from '../data/photos.js';
+import * as folder from '../backup/folder/index.js';
+import { createBackup, restoreBackup } from '../backup/file.js';
+import { $, fieldElement, showBoxMsg, debounce, downloadFile } from '../ui/util.js';
 
 // wide = il campo occupa tutta la riga, gli altri stanno in due colonne
 const COMPANY_DEFS = [

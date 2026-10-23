@@ -8,13 +8,13 @@
 //       rapporti/2026/2026-012_Mario-Rossi_ab12cd34/   (bozza: BOZZA_2026-10-22_Mario-Rossi_ab12cd34)
 //           rapporto.json, rapporto.pdf (solo se chiuso), foto/01.jpg…
 
-import * as db from './db.js';
-import * as store from './store.js';
-import { folderPath, normalizeReport } from './model.js';
-import { pad } from './dates.js';
-import { listPhotos, photosForPdf, logoForPdf, getLogo, importPhoto, importLogo } from './photos.js';
-import { createReportPdf } from './report.js';
-import { loadSettings, saveSettings, updateSettings, mergeSettings, normalizeSettings } from './settings.js';
+import * as db from '../../data/db.js';
+import * as store from '../../data/store.js';
+import { folderPath, normalizeReport } from '../../model/index.js';
+import { pad } from '../../lib/dates.js';
+import { listPhotos, photosForPdf, logoForPdf, getLogo, importPhoto, importLogo } from '../../data/photos.js';
+import { createReportPdf } from '../../pdf/index.js';
+import { loadSettings, saveSettings, updateSettings, mergeSettings, normalizeSettings } from '../../data/settings.js';
 
 export const events = new EventTarget(); // 'state': cambia lo stato della copia
 const emitState = () => events.dispatchEvent(new Event('state'));

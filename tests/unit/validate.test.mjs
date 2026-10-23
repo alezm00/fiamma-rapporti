@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { checkFiscalCode } from '../validate.js';
+import { checkFiscalCode } from '../../src/lib/validate.js';
 
 // codici generati con una libreria di riferimento: validi (anche con omocodia), errati, partite IVA
 const v = JSON.parse(readFileSync(new URL('./cf-vectors.json', import.meta.url), 'utf8'));

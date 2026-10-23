@@ -7,7 +7,7 @@ run(async () => {
   const editor = () => page.waitForSelector('#view-editor:not([hidden])');
   const titles = () => page.$$eval('#e-units > section > div h4', (h) => h.map((x) => x.textContent));
   const kinds = () => page.$$eval('#e-units > section', (s) => s.map((x) => x.dataset.kind));
-  const stored = () => page.evaluate(async () => { const s = await import('/store.js'); const l = await s.listReports(); return l[0]?.plant; });
+  const stored = () => page.evaluate(async () => { const s = await import('/src/data/store.js'); const l = await s.listReports(); return l[0]?.plant; });
   const wait = (ms) => page.waitForTimeout(ms);
 
   // 1) un rapporto nuovo parte senza apparecchi: messaggio e tre tasti per aggiungerli
@@ -88,12 +88,12 @@ run(async () => {
 
   // 6) duplica: gli stessi apparecchi, indipendenti
   await page.click('#btn-duplicate');
-  for (let i = 0; i < 50 && (await page.evaluate(async () => (await (await import('/store.js')).listReports()).length)) < 2; i++) await wait(100);
+  for (let i = 0; i < 50 && (await page.evaluate(async () => (await (await import('/src/data/store.js')).listReports()).length)) < 2; i++) await wait(100);
   await wait(500); // il nuovo rapporto si apre al posto del vecchio
   assert((await titles()).join() === 'Caldaia 1,Pompa di calore,Condizionatore,Caldaia 2' && (await page.inputValue('#u1-model')) === 'Altherma 3', 'duplicato con gli apparecchi');
   await page.fill('#u1-model', 'Altherma 4');
   await wait(700);
-  const both = await page.evaluate(async () => (await (await import('/store.js')).listReports()).map((r) => r.plant.units[1].model).sort());
+  const both = await page.evaluate(async () => (await (await import('/src/data/store.js')).listReports()).map((r) => r.plant.units[1].model).sort());
   assert(both.join() === 'Altherma 3,Altherma 4', 'copie indipendenti: ' + both);
   await page.click('#e-back'); await home();
 
@@ -107,11 +107,11 @@ run(async () => {
   await page.click('#e-back'); await home();
 
   // 8) backup e ripristino conservano gli apparecchi
-  const before = await page.evaluate(async () => JSON.stringify((await (await import('/store.js')).listReports()).map((r) => r.plant.units.map((u) => [u.kind, u.brand, u.model]))));
-  const zip = await page.evaluate(async () => { const r = await (await import('/backup.js')).createBackup(); return Array.from(new Uint8Array(await r.blob.arrayBuffer())); });
-  await page.evaluate(async () => { const db = await import('/db.js'); await db.clear(db.REPORTS); });
-  await page.evaluate(async (z) => (await import('/backup.js')).restoreBackup(new Blob([new Uint8Array(z)])), zip);
-  const after = await page.evaluate(async () => JSON.stringify((await (await import('/store.js')).listReports()).map((r) => r.plant.units.map((u) => [u.kind, u.brand, u.model]))));
+  const before = await page.evaluate(async () => JSON.stringify((await (await import('/src/data/store.js')).listReports()).map((r) => r.plant.units.map((u) => [u.kind, u.brand, u.model]))));
+  const zip = await page.evaluate(async () => { const r = await (await import('/src/backup/file.js')).createBackup(); return Array.from(new Uint8Array(await r.blob.arrayBuffer())); });
+  await page.evaluate(async () => { const db = await import('/src/data/db.js'); await db.clear(db.REPORTS); });
+  await page.evaluate(async (z) => (await import('/src/backup/file.js')).restoreBackup(new Blob([new Uint8Array(z)])), zip);
+  const after = await page.evaluate(async () => JSON.stringify((await (await import('/src/data/store.js')).listReports()).map((r) => r.plant.units.map((u) => [u.kind, u.brand, u.model]))));
   assert(before === after, 'apparecchi uguali dopo il ripristino');
   log('backup -> apparecchi conservati');
 

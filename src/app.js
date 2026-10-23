@@ -1,16 +1,16 @@
 // Avvio dell'app: classi di stile, service worker, schermate e navigazione.
 
-import * as nav from './nav.js';
-import { registerClasses } from './ui.js';
-import * as folder from './folder.js';
+import * as nav from './ui/nav.js';
+import { registerClasses } from './ui/classes.js';
+import * as folder from './backup/folder/index.js';
 import * as home from './screens/home.js';
-import * as editor from './screens/editor.js';
+import * as editor from './screens/editor/index.js';
 import * as scan from './screens/scan.js';
 import * as measure from './screens/measure.js';
 import * as quick from './screens/quick.js';
 import * as trash from './screens/trash.js';
 import * as settings from './screens/settings.js';
-import * as store from './store.js';
+import * as store from './data/store.js';
 
 registerClasses(); // le classi Tailwind create dal JS
 

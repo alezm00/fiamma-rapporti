@@ -2,9 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { bytesToJson, buildReport, formatNumber, toDate, topValues, reportToText } from '../tjf.js';
+import { bytesToJson, buildReport, formatNumber, toDate, topValues, reportToText } from '../../src/qr/tjf/index.js';
 
-const fixture = (name) => bytesToJson(new Uint8Array(readFileSync(new URL(`./e2e/fixtures/${name}`, import.meta.url))));
+const fixture = (name) => bytesToJson(new Uint8Array(readFileSync(new URL(`../e2e/fixtures/${name}`, import.meta.url))));
 
 test('QR gzip: media UNI 10389-1 con valori, unità e intestazione', async () => {
     const r = buildReport(await fixture('sample-10389.json.gz'));

@@ -116,7 +116,7 @@ run(async () => {
   // una sola misura (non affiancata): sotto la tabella ci sono i dati della misura, con le fasi della prova
   const json = JSON.parse(require('zlib').gunzipSync(fs.readFileSync(`${FX}/sample-10389.json.gz`)).toString());
   const solo = await page.evaluate(async (j) => {
-    const m = await import('/model.js'); const r = await import('/report.js');
+    const m = await import('/src/model/index.js'); const r = await import('/src/pdf/index.js');
     const doc = m.newReport({ id: 'soloM001' });
     m.addMeasure(doc, j, { label: 'Prima' });
     return Array.from(await r.createReportPdf(doc, {}, {}));

@@ -1,13 +1,13 @@
 // Valori di una misura Testo: grandi, da ricopiare a mano. Si apre da una scansione rapida
 // o da un rapporto (in quel caso con etichetta, "aggiungi un'altra misura" e "rimuovi").
 
-import * as nav from '../nav.js';
-import * as store from '../store.js';
-import { buildReport, reportToText } from '../tjf.js';
-import { formatDate } from '../dates.js';
-import { getScan } from '../quickscans.js';
-import { CLS } from '../ui.js';
-import { $, el, toast, debounce, keepAwake, releaseAwake, explainSaveError } from '../util.js';
+import * as nav from '../ui/nav.js';
+import * as store from '../data/store.js';
+import { buildReport, reportToText } from '../qr/tjf/index.js';
+import { formatDate } from '../lib/dates.js';
+import { getScan } from '../data/quickscans.js';
+import { CLS } from '../ui/classes.js';
+import { $, el, toast, debounce, keepAwake, releaseAwake, explainSaveError } from '../ui/util.js';
 
 let params = null;
 let doc = null; // il rapporto, se la misura è in un rapporto

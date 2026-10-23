@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatAddress, geoErrorMessage, reverseGeocode } from '../geo.js';
+import { formatAddress, geoErrorMessage, reverseGeocode } from '../../src/lib/geo.js';
 
 test('indirizzo: via, civico, CAP, comune e provincia', () => {
     assert.equal(formatAddress({ address: { road: 'Via Roma', house_number: '12', postcode: '33100', city: 'Udine', 'ISO3166-2-lvl6': 'IT-UD' } }), 'Via Roma 12, 33100 Udine (UD)');

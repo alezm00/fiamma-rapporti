@@ -2,7 +2,7 @@
 // e preparazione di un "report" generico da mostrare a schermo.
 // Schema di riferimento: https://github.com/testo/tjf (slim-schema)
 
-import { pad, formatDate, formatTime } from './dates.js';
+import { pad, formatDate, formatTime } from '../../lib/dates.js';
 
 const INVALID = 4294967295; // valore usato da Testo per "----" (nessuna misura)
 

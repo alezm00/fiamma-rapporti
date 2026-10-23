@@ -59,8 +59,8 @@ run(async () => {
   assert(fs.statSync(`${SP}/dl/nophotos.zip`).size < fs.statSync(zip).size, 'più piccolo senza foto');
 
   // telefono azzerato e ripristino
-  const snap = await page.evaluate(async () => JSON.stringify(await (await import('/store.js')).listReports()));
-  await page.evaluate(async () => { const db = await import('/db.js'); await db.clear(db.REPORTS); await db.clear(db.PHOTOS); await db.remove(db.META, 'logo'); localStorage.clear(); });
+  const snap = await page.evaluate(async () => JSON.stringify(await (await import('/src/data/store.js')).listReports()));
+  await page.evaluate(async () => { const db = await import('/src/data/db.js'); await db.clear(db.REPORTS); await db.clear(db.PHOTOS); await db.remove(db.META, 'logo'); localStorage.clear(); });
   await page.reload();
   await page.waitForSelector('#view-home:not([hidden])');
   assert((await page.$$('#report-list > li:not([data-month])')).length === 0, 'vuoto');
@@ -71,9 +71,9 @@ run(async () => {
   log('ripristino ->', await page.textContent('#s-backup-msg'));
   log('impostazioni ->', await page.inputValue('#s-co-name'), await page.inputValue('#s-email'), '| logo visibile:', await page.isVisible('#s-logo-img'));
   assert((await page.inputValue('#s-co-name')) === 'Termoidraulica Bianchi' && (await page.inputValue('#s-email')) === 'ufficio@esempio.it' && (await page.isVisible('#s-logo-img')), 'impostazioni e logo ripristinati');
-  const snap2 = await page.evaluate(async () => JSON.stringify(await (await import('/store.js')).listReports()));
+  const snap2 = await page.evaluate(async () => JSON.stringify(await (await import('/src/data/store.js')).listReports()));
   assert(snap === snap2, 'rapporti identici');
-  const photos = await page.evaluate(async () => { const db = await import('/db.js'); return (await db.getAll(db.PHOTOS)).length; });
+  const photos = await page.evaluate(async () => { const db = await import('/src/data/db.js'); return (await db.getAll(db.PHOTOS)).length; });
   assert(photos === 2, 'foto ripristinate: ' + photos);
   // ripetere il ripristino non duplica
   await page.setInputFiles('#s-backup-in', zip);

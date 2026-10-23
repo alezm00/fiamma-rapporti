@@ -5,9 +5,9 @@ run(async () => {
   await page.waitForSelector('#view-home:not([hidden])');
   const rows = () => page.$$eval('#report-list > li:not([data-month])', (l) => l.length);
   const trashRows = () => page.$$eval('#trash-list > li', (l) => l.length);
-  const photoCount = () => page.evaluate(async () => { const db = await import('/db.js'); return (await db.getAll(db.PHOTOS)).length; });
+  const photoCount = () => page.evaluate(async () => { const db = await import('/src/data/db.js'); return (await db.getAll(db.PHOTOS)).length; });
   const onHome = () => page.waitForSelector('#view-home:not([hidden])');
-  const listIds = () => page.evaluate(async () => { const s = await import('/store.js'); return [(await s.listReports()).length, (await s.listTrash()).length]; });
+  const listIds = () => page.evaluate(async () => { const s = await import('/src/data/store.js'); return [(await s.listReports()).length, (await s.listTrash()).length]; });
 
   // due rapporti: A (chiuso, con foto e misura), B (bozza)
   const make = async (name, close) => {
@@ -32,7 +32,7 @@ run(async () => {
   await make('Anna Verdi', true);
   await make('Bruno Neri', false);
   assert((await rows()) === 2 && !(await page.isVisible('#h-trash')), 'due rapporti, nessun cestino');
-  const numA = await page.evaluate(async () => (await (await import('/store.js')).listReports()).find((r) => r.customer.name === 'Anna Verdi').number);
+  const numA = await page.evaluate(async () => (await (await import('/src/data/store.js')).listReports()).find((r) => r.customer.name === 'Anna Verdi').number);
 
   // elimina A dall'editor: finisce nel cestino, con foto e misura
   await page.fill('#h-search', 'anna');
@@ -63,7 +63,7 @@ run(async () => {
   await page.click('#t-back');
   await onHome();
   assert((await rows()) === 2 && !(await page.isVisible('#h-trash')), 'A di nuovo in elenco');
-  const back = await page.evaluate(async () => (await (await import('/store.js')).listReports()).find((r) => r.customer.name === 'Anna Verdi'));
+  const back = await page.evaluate(async () => (await (await import('/src/data/store.js')).listReports()).find((r) => r.customer.name === 'Anna Verdi'));
   assert(back.number === numA && back.status === 'done' && back.measures.length === 1 && !back.deletedAt, 'numero, stato e misura conservati');
 
   // elimina per sempre dal cestino
@@ -94,7 +94,7 @@ run(async () => {
 
   // scadenza: 31 giorni = via; 29 giorni = resta con "1 giorno"
   await page.evaluate(async () => {
-    const db = await import('/db.js'); const model = await import('/model.js');
+    const db = await import('/src/data/db.js'); const model = await import('/src/model/index.js');
     for (const [id, days] of [['vecchio01', 31], ['recente01', 29.5]]) {
       const d = model.newReport({ id }); d.customer.name = id; d.deletedAt = Date.now() - days * 86400000; await db.put(db.REPORTS, d);
     }
@@ -120,10 +120,10 @@ run(async () => {
   await page.waitForSelector('#view-editor:not([hidden])');
   await page.click('#btn-delete');
   await onHome();
-  const zipBytes = await page.evaluate(async () => { const b = await import('/backup.js'); const r = await b.createBackup(); return Array.from(new Uint8Array(await r.blob.arrayBuffer())); });
-  await page.evaluate(async () => { const db = await import('/db.js'); await db.clear(db.REPORTS); await db.clear(db.PHOTOS); });
+  const zipBytes = await page.evaluate(async () => { const b = await import('/src/backup/file.js'); const r = await b.createBackup(); return Array.from(new Uint8Array(await r.blob.arrayBuffer())); });
+  await page.evaluate(async () => { const db = await import('/src/data/db.js'); await db.clear(db.REPORTS); await db.clear(db.PHOTOS); });
   assert((await listIds()).join() === '0,0', 'archivio vuoto');
-  await page.evaluate(async (bytes) => { const b = await import('/backup.js'); await b.restoreBackup(new Blob([new Uint8Array(bytes)])); }, zipBytes);
+  await page.evaluate(async (bytes) => { const b = await import('/src/backup/file.js'); await b.restoreBackup(new Blob([new Uint8Array(bytes)])); }, zipBytes);
   assert((await listIds()).join() === '0,1', 'dopo il ripristino è ancora nel cestino');
   log('backup -> il cestino si ripristina com\'era');
 
@@ -133,17 +133,17 @@ run(async () => {
     await root.removeEntry('SD-card', { recursive: true }).catch(() => {});
     const dest = await root.getDirectoryHandle('SD-card', { create: true });
     window.__dest = dest;
-    await (await import('/folder.js')).linkHandle(dest);
+    await (await import('/src/backup/folder/index.js')).linkHandle(dest);
   });
   const tree = () => page.evaluate(async () => { const out = []; const walk = async (d, p) => { for await (const [n, h] of d.entries()) { if (h.kind === 'directory') await walk(h, p + n + '/'); else out.push(p + n); } }; await walk(window.__dest, ''); return out.sort(); });
-  const process = () => page.evaluate(async () => (await import('/folder.js')).process());
+  const process = () => page.evaluate(async () => (await import('/src/backup/folder/index.js')).process());
   await process();
   assert(!(await tree()).some((f) => f.endsWith('rapporto.json')), 'nel cestino: niente in cartella');
-  const id = await page.evaluate(async () => (await (await import('/store.js')).listTrash())[0].id);
-  await page.evaluate(async (i) => (await import('/store.js')).restoreReport(i), id);
+  const id = await page.evaluate(async () => (await (await import('/src/data/store.js')).listTrash())[0].id);
+  await page.evaluate(async (i) => (await import('/src/data/store.js')).restoreReport(i), id);
   await until(async () => { await process(); return (await tree()).some((f) => f.endsWith('rapporto.json')); });
   log('ripristinato -> in cartella:', (await tree()).filter((f) => f.endsWith('rapporto.json'))[0]);
-  await page.evaluate(async (i) => (await import('/store.js')).trashReport(i), id);
+  await page.evaluate(async (i) => (await import('/src/data/store.js')).trashReport(i), id);
   await until(async () => { await process(); return !(await tree()).some((f) => f.endsWith('rapporto.json')); });
   log('di nuovo nel cestino -> tolto dalla cartella');
 

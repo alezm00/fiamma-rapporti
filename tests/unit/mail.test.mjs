@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseRecipients, checkRecipients, buildSubject, buildBody, mailtoUrl } from '../mail.js';
-import { newReport, newUnit } from '../model.js';
+import { parseRecipients, checkRecipients, buildSubject, buildBody, mailtoUrl } from '../../src/model/mail.js';
+import { newReport, newUnit } from '../../src/model/index.js';
 
 const closed = () => {
     const doc = newReport({ now: new Date(2026, 9, 22, 10, 0), id: 'a' });

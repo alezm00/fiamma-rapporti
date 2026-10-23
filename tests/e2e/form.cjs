@@ -48,7 +48,7 @@ run(async () => {
   await page.waitForFunction(() => document.querySelectorAll('#photo-grid > div').length === 3, null, { timeout: 60000 });
   await page.waitForFunction(() => document.getElementById('photo-msg').hidden);
   log('foto ->', await page.textContent('#photo-count'));
-  const recs = await page.evaluate(async () => { const db = await import('/db.js'); return (await db.getAll(db.PHOTOS)).map((p) => ({ w: p.width, h: p.height, type: p.blob.type, kb: Math.round(p.blob.size / 1024) })); });
+  const recs = await page.evaluate(async () => { const db = await import('/src/data/db.js'); return (await db.getAll(db.PHOTOS)).map((p) => ({ w: p.width, h: p.height, type: p.blob.type, kb: Math.round(p.blob.size / 1024) })); });
   log('salvate ->', JSON.stringify(recs.map((r) => `${r.w}x${r.h} ${r.type} ${r.kb}KB`)));
   assert(recs.every((r) => r.type === 'image/jpeg' && Math.max(r.w, r.h) <= 1280 && r.kb < 600), 'ridimensionate');
   assert(recs.some((r) => r.h > r.w && r.h === 1280), 'EXIF 6 raddrizzata');
@@ -80,13 +80,13 @@ run(async () => {
   await page.waitForSelector('#view-editor:not([hidden])');
   await page.click('#btn-delete');
   await page.waitForSelector('#view-home:not([hidden])');
-  const inTrash = await page.evaluate(async () => { const db = await import('/db.js'); return (await db.getAll(db.PHOTOS)).length; });
+  const inTrash = await page.evaluate(async () => { const db = await import('/src/data/db.js'); return (await db.getAll(db.PHOTOS)).length; });
   assert(inTrash === 20, 'nel cestino le foto restano: ' + inTrash);
   await page.click('#h-trash');
   await page.waitForSelector('#view-trash:not([hidden])');
   await page.click('#trash-list li button:last-of-type');
   await page.waitForFunction(() => document.querySelectorAll('#trash-list > li').length === 0);
-  const left = await page.evaluate(async () => { const db = await import('/db.js'); return (await db.getAll(db.PHOTOS)).length; });
+  const left = await page.evaluate(async () => { const db = await import('/src/data/db.js'); return (await db.getAll(db.PHOTOS)).length; });
   assert(left === 0, 'foto eliminate con il rapporto: ' + left);
   await finish(session);
 });

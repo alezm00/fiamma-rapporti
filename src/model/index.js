@@ -1,8 +1,8 @@
 // Rapporto di intervento: struttura, stati, numerazione, ricerca e raggruppamento delle misure.
 // Solo logica, senza accesso al database né al DOM (si prova anche in Node).
 
-import { buildReport } from './tjf.js';
-import { pad, dayString, formatDay } from './dates.js';
+import { buildReport } from '../qr/tjf/index.js';
+import { pad, dayString, formatDay } from '../lib/dates.js';
 
 // piccole funzioni di aiuto: leggere valori di tipo incerto (dati da fuori) e cercare un'etichetta
 const text = (v, max = 20000) => (typeof v === 'string' ? v.slice(0, max) : '');

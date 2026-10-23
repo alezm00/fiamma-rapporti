@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
     newReport, applyEdit, duplicateReport, closeReport, markSent, setNextNumber, nextNumber, formatReportNumber,
     durationMinutes, formatDuration, filterReports, sortReports, nextMeasureLabel, addMeasure, groupMeasures, newUnit,
-} from '../model.js';
+} from '../../src/model/index.js';
 
 const at = (y, m, d, h = 10, min = 0) => new Date(y, m - 1, d, h, min);
 
@@ -32,7 +32,7 @@ test('nuovo rapporto: bozza vuota, senza apparecchi', () => {
 });
 
 test('riga dell\'elenco: numero, cliente, data · tipo · misure · foto', async () => {
-    const { describeReport } = await import('../model.js');
+    const { describeReport } = await import('../../src/model/index.js');
     const doc = newReport({ now: at(2026, 10, 22), id: 'a' });
     assert.deepEqual(describeReport(doc), { number: 'Senza numero', customer: 'Senza cliente', meta: '22/10/2026' });
     doc.number = '2026/012';
@@ -202,7 +202,7 @@ test('nessuna misura', () => {
 });
 
 test('slug e nome del file', async () => {
-    const { slug, reportFileName, newReport } = await import('../model.js');
+    const { slug, reportFileName, newReport } = await import('../../src/model/index.js');
     assert.equal(slug('  Mario D\'Èrrico & Figli  '), 'Mario-D-Errico-Figli');
     const doc = newReport({ now: new Date(2026, 9, 22), id: 'x' });
     doc.customer.name = 'Mario Rossi';
@@ -215,7 +215,7 @@ test('slug e nome del file', async () => {
 });
 
 test('bozza vuota: nessun dato, nessuna misura né foto', async () => {
-    const { isBlank, newReport, newUnit, addMeasure } = await import('../model.js');
+    const { isBlank, newReport, newUnit, addMeasure } = await import('../../src/model/index.js');
     const doc = newReport({ id: 'x' });
     assert.equal(isBlank(doc), true);
     doc.intervention.startTime = '09:00'; // gli orari da soli non contano
@@ -240,7 +240,7 @@ test('bozza vuota: nessun dato, nessuna misura né foto', async () => {
 });
 
 test('rapporto letto da fuori: campi puliti e tipi giusti', async () => {
-    const { normalizeReport, newReport, closeReport } = await import('../model.js');
+    const { normalizeReport, newReport, closeReport } = await import('../../src/model/index.js');
     assert.equal(normalizeReport(null), null);
     assert.equal(normalizeReport({ id: '../evil' }), null);
     assert.equal(normalizeReport([]), null);
@@ -268,7 +268,7 @@ test('rapporto letto da fuori: campi puliti e tipi giusti', async () => {
 });
 
 test('percorso nella cartella: anno, numero, cliente e id', async () => {
-    const { folderPath, newReport, closeReport } = await import('../model.js');
+    const { folderPath, newReport, closeReport } = await import('../../src/model/index.js');
     const doc = newReport({ now: at(2025, 12, 30), id: 'ab12cd34-0000' });
     doc.customer.name = 'Anna Verdi';
     assert.deepEqual(folderPath(doc), { year: '2025', dir: 'BOZZA_2025-12-30_Anna-Verdi_ab12cd34' });
@@ -279,7 +279,7 @@ test('percorso nella cartella: anno, numero, cliente e id', async () => {
 });
 
 test('apparecchi: tipi, campi, titoli e riepilogo', async () => {
-    const { UNIT_KINDS, unitKind, newUnit, unitTitle, unitsSummary, unitValues, unitName } = await import('../model.js');
+    const { UNIT_KINDS, unitKind, newUnit, unitTitle, unitsSummary, unitValues, unitName } = await import('../../src/model/index.js');
     assert.deepEqual(UNIT_KINDS.map((k) => k.id), ['caldaia', 'pompa', 'condizionatore']);
     const keys = (id) => unitKind(id).fields.map((f) => f.key);
     assert.deepEqual(keys('caldaia'), ['brand', 'model', 'serial', 'installDate', 'fuel', 'chamber', 'technology', 'nominalPower', 'actualPower']);
@@ -306,7 +306,7 @@ test('apparecchi: tipi, campi, titoli e riepilogo', async () => {
 });
 
 test('apparecchi: dati letti da fuori ripuliti, bozza vuota e ricerca', async () => {
-    const { normalizeReport, isBlank, newReport, newUnit, searchText } = await import('../model.js');
+    const { normalizeReport, isBlank, newReport, newUnit, searchText } = await import('../../src/model/index.js');
     // senza apparecchi: elenco vuoto
     assert.deepEqual(normalizeReport({ id: 'abcd1234' }).plant, { plateCode: '', units: [] });
     assert.deepEqual(normalizeReport({ id: 'abcd1234', plant: { plateCode: 'T1' } }).plant, { plateCode: 'T1', units: [] });
@@ -338,7 +338,7 @@ test('apparecchi: dati letti da fuori ripuliti, bozza vuota e ricerca', async ()
 });
 
 test('cestino: giorni rimasti e scadenza a 30 giorni', async () => {
-    const { trashDaysLeft, isExpired, newReport, normalizeReport, TRASH_DAYS } = await import('../model.js');
+    const { trashDaysLeft, isExpired, newReport, normalizeReport, TRASH_DAYS } = await import('../../src/model/index.js');
     const DAY = 24 * 3600 * 1000;
     const t0 = Date.UTC(2026, 9, 1, 12);
     const doc = newReport({ id: 'abcd1234' });
@@ -359,7 +359,7 @@ test('cestino: giorni rimasti e scadenza a 30 giorni', async () => {
 });
 
 test('elenco lungo: mesi, anni e filtro per anno', async () => {
-    const { groupByMonth, yearsOf, monthLabel, filterReports, sortReports, newReport } = await import('../model.js');
+    const { groupByMonth, yearsOf, monthLabel, filterReports, sortReports, newReport } = await import('../../src/model/index.js');
     const mk = (id, date, name = 'Cliente') => {
         const r = newReport({ id, now: new Date(`${date}T10:00:00`) });
         r.date = date;
